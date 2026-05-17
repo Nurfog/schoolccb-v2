@@ -1,6 +1,9 @@
 use axum::{
     extract::{Query, State},
-    http::StatusCode,
+    http::{
+        StatusCode,
+        header::{self, HeaderMap, HeaderValue},
+    },
     response::{Html, Redirect},
     routing::{get, post},
     Json, Router,
@@ -82,20 +85,32 @@ async fn proxy_login(
 async fn exchange_token(
     state: State<Arc<AppState>>,
     Json(payload): Json<Value>,
-) -> Json<Value> {
+) -> (HeaderMap, Json<Value>) {
     let code = payload.get("code").and_then(|v| v.as_str()).unwrap_or("");
     if code.is_empty() {
-        return Json(json!({"error": "Código requerido"}));
+        return (HeaderMap::new(), Json(json!({"error": "Código requerido"})));
     }
     let mut store = state.one_time_tokens.write().await;
     match store.remove(code) {
         Some((jwt, created)) => {
             if created.elapsed().as_secs() > 60 {
-                return Json(json!({"error": "Código expirado"}));
+                return (HeaderMap::new(), Json(json!({"error": "Código expirado"})));
             }
-            Json(json!({"token": jwt}))
+            let mut headers = HeaderMap::new();
+            if let Ok(cookie) = HeaderValue::from_str(&format!(
+                "jwt_token={}; Path=/; SameSite=Lax; Max-Age=43200",
+                jwt
+            )) {
+                headers.insert(header::SET_COOKIE, cookie);
+            }
+            if let Ok(marker) =
+                HeaderValue::from_str("session_active=1; Path=/; SameSite=Lax; Max-Age=43200")
+            {
+                headers.append(header::SET_COOKIE, marker);
+            }
+            (headers, Json(json!({"token": jwt})))
         }
-        None => Json(json!({"error": "Código inválido o ya utilizado"})),
+        None => (HeaderMap::new(), Json(json!({"error": "Código inválido o ya utilizado"}))),
     }
 }
 

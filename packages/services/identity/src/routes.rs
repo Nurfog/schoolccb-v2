@@ -1,7 +1,7 @@
 use axum::{
     Json, Router,
     extract::{FromRequestParts, Path, Query, State},
-    http::request::Parts,
+    http::{HeaderMap, HeaderValue, header, request::Parts},
     routing::{delete, get, post, put},
 };
 use jsonwebtoken::{EncodingKey, Header, encode};
@@ -137,7 +137,7 @@ pub(crate) fn generate_token_pair(
 async fn login(
     State(state): State<AppState>,
     Json(payload): Json<schoolccb_common::user::AuthPayload>,
-) -> AuthResult<Json<Value>> {
+) -> AuthResult<(HeaderMap, Json<Value>)> {
     let user = models::find_by_email(&state.pool, &payload.email)
         .await?
         .ok_or(AuthError::InvalidCredentials)?;
@@ -165,7 +165,18 @@ async fn login(
     let (refresh_token, _) = models::create_refresh_token(&state.pool, id, 7).await?;
     let is_root = user.role == "GerenteGeneral";
 
-    Ok(Json(json!({
+    let mut headers = HeaderMap::new();
+    if let Ok(cookie) = HeaderValue::from_str(&format!(
+        "jwt_token={}; Path=/; SameSite=Lax; Max-Age=43200",
+        token
+    )) {
+        headers.insert(header::SET_COOKIE, cookie);
+    }
+    if let Ok(marker) = HeaderValue::from_str("session_active=1; Path=/; SameSite=Lax; Max-Age=43200") {
+        headers.append(header::SET_COOKIE, marker);
+    }
+
+    Ok((headers, Json(json!({
         "token": token,
         "refresh_token": refresh_token,
         "user": {
@@ -179,7 +190,7 @@ async fn login(
             "admin_type": user.admin_type,
             "is_root": is_root
         }
-    })))
+    }))))
 }
 
 async fn forgot_password(
@@ -569,11 +580,20 @@ async fn revoke_all(claims: Claims, State(state): State<AppState>) -> AuthResult
     Ok(Json(json!({ "message": "All sessions revoked" })))
 }
 
-async fn logout(claims: Claims, State(state): State<AppState>) -> AuthResult<Json<Value>> {
+async fn logout(claims: Claims, State(state): State<AppState>) -> AuthResult<(HeaderMap, Json<Value>)> {
     let user_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AuthError::TokenInvalid("Invalid user ID".into()))?;
     models::revoke_all_user_tokens(&state.pool, user_id).await?;
-    Ok(Json(json!({ "message": "Sesión cerrada correctamente" })))
+
+    let mut headers = HeaderMap::new();
+    if let Ok(cookie) = HeaderValue::from_str("jwt_token=; HttpOnly; Path=/; Max-Age=0") {
+        headers.insert(header::SET_COOKIE, cookie);
+    }
+    if let Ok(marker) = HeaderValue::from_str("session_active=; Path=/; Max-Age=0") {
+        headers.append(header::SET_COOKIE, marker);
+    }
+
+    Ok((headers, Json(json!({ "message": "Sesión cerrada correctamente" }))))
 }
 
 #[derive(Serialize, sqlx::FromRow)]

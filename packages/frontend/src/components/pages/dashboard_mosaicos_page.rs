@@ -28,7 +28,8 @@ pub fn DashboardMosaicosPage() -> Element {
                         Mosaico { title: "Docentes", value: "{teachers}", icon: "book", color: "#3b82f6" }
                     }
                 }
-                _ => rsx! {}
+                Some(Err(e)) => rsx! { div { class: "alert alert-error", "Error: {e}" } },
+                None => rsx! { div { class: "loading-spinner", "Cargando..." } },
             }
             match attendance() {
                 Some(Ok(data)) => {
@@ -37,7 +38,8 @@ pub fn DashboardMosaicosPage() -> Element {
                         Mosaico { title: "Asistencia Hoy", value: "{pct:.1}%", icon: "📊", color: "#f59e0b" }
                     }
                 }
-                _ => rsx! {}
+                Some(Err(e)) => rsx! { div { class: "alert alert-error", "Error: {e}" } },
+                None => rsx! { div { class: "loading-spinner", "Cargando..." } },
             }
             match alerts() {
                 Some(Ok(data)) => {
@@ -46,7 +48,8 @@ pub fn DashboardMosaicosPage() -> Element {
                         Mosaico { title: "Alertas", value: "{count}", icon: "⚠️", color: "#ef4444" }
                     }
                 }
-                _ => rsx! {}
+                Some(Err(e)) => rsx! { div { class: "alert alert-error", "Error: {e}" } },
+                None => rsx! { div { class: "loading-spinner", "Cargando..." } },
             }
             match agenda() {
                 Some(Ok(data)) => {
@@ -55,7 +58,8 @@ pub fn DashboardMosaicosPage() -> Element {
                         Mosaico { title: "Proximos Eventos", value: "{items}", icon: "📅", color: "#8b5cf6" }
                     }
                 }
-                _ => rsx! {}
+                Some(Err(e)) => rsx! { div { class: "alert alert-error", "Error: {e}" } },
+                None => rsx! { div { class: "loading-spinner", "Cargando..." } },
             }
         }
     }

@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use serde_json::Value;
 
 use crate::api::client;
+use crate::components::widgets::icon::Icon;
 
 #[component]
 pub fn SubjectsPage() -> Element {
@@ -96,13 +97,13 @@ pub fn SubjectsPage() -> Element {
                                     editing_id.set(sv["id"].as_str().map(|s| s.to_string()));
                                     show_form.set(true);
                                 },
-                                    svg { role: "presentation", view_box: "0 0 24 24", width: "16", height: "16", path { d: "M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" } }
+                                    Icon { name: "edit", size: 16 }
                                 }
                                 button { class: "btn-icon", onclick: move |_| {
                                     if expanded_id() == Some(sid_e.clone()) { expanded_id.set(None); }
                                     else { expanded_id.set(Some(sid_e.clone())); hours_data.set(hours.clone()); }
                                 },
-                                    svg { role: "presentation", view_box: "0 0 24 24", width: "16", height: "16", polyline { points: "6 9 12 15 18 9" } }
+                                    Icon { name: "chevron-down", size: 16 }
                                 }
                                 if active {
                                     button { class: "btn-icon btn-icon-danger", onclick: {
@@ -113,7 +114,7 @@ pub fn SubjectsPage() -> Element {
                                             spawn(async move { let _ = client::delete_json(&format!("/api/grades/subjects/{}", id)).await; subjects.restart(); });
                                         }
                                     },
-                                        svg { role: "presentation", view_box: "0 0 24 24", width: "16", height: "16", path { d: "M3 6h18" } path { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" } }
+                                        Icon { name: "trash", size: 16 }
                                     }
                                 }
                             }

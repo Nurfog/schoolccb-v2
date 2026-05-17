@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::api::client;
+use crate::components::widgets::icon::Icon;
 
 fn current_year() -> i32 {
     js_sys::Date::new_0().get_full_year() as i32
@@ -98,11 +99,7 @@ pub fn GradesPage() -> Element {
                     rsx! {
                         div { class: "info-card",
                             div { class: "info-icon",
-                                svg { role: "presentation", view_box: "0 0 24 24", width: "32", height: "32",
-                                    circle { cx: "12", cy: "12", r: "10" }
-                                    line { x1: "12", y1: "16", x2: "12", y2: "12" }
-                                    line { x1: "12", y1: "8", x2: "12.01", y2: "8" }
-                                }
+                                Icon { name: "info", size: 32 }
                             }
                             div { class: "info-text",
                                 h3 { "Vista de Calificaciones" }

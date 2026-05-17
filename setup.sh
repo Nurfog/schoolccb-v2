@@ -1,148 +1,214 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ─────────────────────────────────────────────────────────────
-# SchoolCBB v2 — Setup Inicial
-# ─────────────────────────────────────────────────────────────
-# Uso: ./setup.sh [--dev]
-#   --dev   Modo desarrollo (puertos locales, sin docker)
-# ─────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# SchoolCBB v2 — Instalador Docker
+#   ./setup.sh              → instalar o actualizar
+#   ./setup.sh --dev        → modo desarrollo (con hot-reload)
+#   ./setup.sh --status     → estado de los servicios
+#   ./setup.sh --logs       → logs en tiempo real
+#   ./setup.sh --stop       → detener todo
+#   ./setup.sh --reset      → reinicio completo (destructivo)
+# ═══════════════════════════════════════════════════════════════
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-MODE="${1:-docker}"
-ENV_FILE=".env"
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+CYAN='\033[0;36m'; MAGENTA='\033[0;35m'; NC='\033[0m'
+BOLD='\033[1m'; DIM='\033[2m'
 
-info()  { echo -e "${CYAN}[INFO]${NC} $1"; }
-ok()    { echo -e "${GREEN}[OK]${NC}   $1"; }
-warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
-err()   { echo -e "${RED}[ERR]${NC}  $1"; }
+info()  { echo -e "  ${CYAN}▸${NC} $1"; }
+ok()    { echo -e "  ${GREEN}✔${NC} $1"; }
+warn()  { echo -e "  ${YELLOW}⚠${NC} $1"; }
+err()   { echo -e "  ${RED}✘${NC} $1"; }
+hr()    { echo -e "  ${DIM}────────────────────────────────────────${NC}"; }
 
 # ─── Banner ──────────────────────────────────────────────────
 echo ""
-echo "╔═══════════════════════════════════════════════╗"
-echo "║        SchoolCBB v2 — Setup Inicial           ║"
-echo "║   Plataforma Escolar Multi-Tenant en Rust     ║"
-echo "╚═══════════════════════════════════════════════╝"
+echo -e "${CYAN}${BOLD}"
+echo "   ╔═══════════════════════════════════════════════╗"
+echo "   ║         SchoolCBB v2 — Instalador             ║"
+echo "   ║   Plataforma Escolar Multi-Tenant en Rust     ║"
+echo "   ╚═══════════════════════════════════════════════╝"
+echo -e "${NC}"
+echo -e "   ${DIM}Documentación: https://schoolccb.cl${NC}"
 echo ""
 
-# ─── 1. Verificar dependencias ──────────────────────────────
-info "Verificando dependencias..."
+# ─── Comandos rápidos ────────────────────────────────────────
+case "${1:-install}" in
+  --status|status)
+    echo -e "  ${BOLD}Estado de servicios${NC}\n"
+    docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || warn "No ejecutando"
+    exit 0
+    ;;
+  --logs|logs)
+    shift; docker compose logs -f "$@"
+    exit 0
+    ;;
+  --stop|stop)
+    info "Deteniendo servicios..."
+    docker compose down
+    ok "Servicios detenidos"
+    exit 0
+    ;;
+  --reset|reset)
+    echo -e "  ${RED}${BOLD}⚠  ¡RESET COMPLETO!${NC}"
+    warn "Esto eliminará TODOS los datos (volúmenes incluidos)."
+    read -r -p "$(echo -e "  ${RED}¿Continuar? (escribe 'reset' para confirmar): ${NC}")" confirm
+    if [ "$confirm" != "reset" ]; then
+      info "Cancelado."
+      exit 0
+    fi
+    info "Deteniendo y eliminando volúmenes..."
+    docker compose down -v
+    rm -f .env
+    ok "Reset completado. Vuelve a ejecutar ./setup.sh"
+    exit 0
+    ;;
+  --dev|dev)
+    MODE="dev"
+    ;;
+  --install|install)
+    MODE="install"
+    ;;
+  *)
+    MODE="install"
+    ;;
+esac
 
-if ! command -v docker &>/dev/null; then
-    err "Docker no encontrado. Instalalo en https://docs.docker.com/engine/install/"
-    exit 1
+# ═══════════════════════════════════════════════════════════════
+# 1. Verificar dependencias del sistema
+# ═══════════════════════════════════════════════════════════════
+echo -e "  ${BOLD}1. Requisitos del sistema${NC}\n"
+
+check_req() {
+  local cmd="$1" name="$2" url="$3"
+  if command -v "$cmd" &>/dev/null; then
+    ok "$name — $(command -v $cmd)"
+  else
+    err "$name no encontrado."
+    echo -e "     ${DIM}Instalar: $url${NC}"
+    FAIL=1
+  fi
+}
+
+check_req "docker" "Docker" "https://docs.docker.com/engine/install/"
+check_req "curl" "curl" "apt install curl"
+check_req "openssl" "OpenSSL" "apt install openssl"
+
+if [ "${FAIL:-0}" = "1" ]; then
+  echo ""; err "Instala los requisitos faltantes y vuelve a ejecutar."
+  exit 1
 fi
-ok "Docker $(docker --version | cut -d' ' -f3 | cut -d',' -f1)"
 
-if ! docker compose version &>/dev/null; then
-    err "Docker Compose no encontrado (docker compose plugin)."
-    exit 1
-fi
-ok "Docker Compose $(docker compose version | cut -d' ' -f4)"
-
-# ─── 2. Configuración interactiva ───────────────────────────
-echo ""
-info "Configuración de la plataforma"
-echo ""
-
-# -- Nombre de la empresa
-read -r -p "$(echo -e "${CYAN}Nombre de la empresa${NC} [SchoolCBB]: ")" COMPANY_NAME
-COMPANY_NAME="${COMPANY_NAME:-SchoolCBB}"
-ok "Nombre: $COMPANY_NAME"
-
-# -- Dominio principal
-read -r -p "$(echo -e "${CYAN}Dominio principal${NC} (ej: schoolccb.cl) [localhost]: ")" DOMAIN
-DOMAIN="${DOMAIN:-localhost}"
-ok "Dominio: $DOMAIN"
-
-# -- Subdominio de la app
-if [ "$DOMAIN" != "localhost" ]; then
-    read -r -p "$(echo -e "${CYAN}Subdominio para la app${NC} (ej: app) [app]: ")" APP_SUBDOMAIN
-    APP_SUBDOMAIN="${APP_SUBDOMAIN:-app}"
-    APP_URL="https://${APP_SUBDOMAIN}.${DOMAIN}"
-    PORTAL_URL="https://${DOMAIN}"
+# Verificar Docker Compose
+if docker compose version &>/dev/null; then
+  ok "Docker Compose — $(docker compose version | cut -d' ' -f4)"
 else
-    APP_URL="http://localhost:8080"
-    PORTAL_URL="http://localhost:3010"
+  err "Docker Compose plugin no disponible."
+  info "Actualiza Docker Desktop o instalá docker-compose-plugin"
+  exit 1
 fi
-ok "App URL: $APP_URL"
-ok "Portal URL: $PORTAL_URL"
 
-# -- Gerente General (superadmin)
+# Verificar que Docker esté corriendo
+if ! docker info &>/dev/null 2>&1; then
+  err "Docker no está corriendo."
+  info "Inicia el servicio Docker y vuelve a intentar."
+  exit 1
+fi
+
+# ─── Hardware mínimo ──────────────────────────────────────────
+MEM_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)
+if [ "$MEM_MB" -gt 0 ] && [ "$MEM_MB" -lt 2000 ]; then
+  warn "Memoria RAM: ${MEM_MB}MB (mínimo recomendado: 4GB)"
+fi
+DISK_KB=$(df / | awk 'NR==2 {print $4}')
+if [ "$DISK_KB" -lt 5000000 ]; then
+  warn "Espacio en disco: $((DISK_KB/1024))MB (mínimo recomendado: 5GB)"
+fi
+
 echo ""
-info "Cuenta de administrador global (Gerente General)"
-echo "Esta cuenta reemplaza al antiguo Root. Tiene acceso completo al CRM, configuración global y gestión de licencias."
-read -r -p "$(echo -e "${CYAN}Email del Gerente General${NC} [juan.allende@gmail.com]: ")" GERENTE_EMAIL
-GERENTE_EMAIL="${GERENTE_EMAIL:-juan.allende@gmail.com}"
 
-read -r -s -p "$(echo -e "${CYAN}Contraseña del Gerente General${NC} [admin123]: ")" GERENTE_PASSWORD
+# ═══════════════════════════════════════════════════════════════
+# 2. Configuración interactiva
+# ═══════════════════════════════════════════════════════════════
+echo -e "  ${BOLD}2. Configuración de la plataforma${NC}\n"
+
+prompt() {
+  local var="$1" msg="$2" default="${3:-}"
+  read -r -p "$(echo -e "  ${CYAN}${msg}${NC} [${default}]: ")" VAL
+  eval "$var=\"${VAL:-$default}\""
+}
+
+prompt COMPANY_NAME "Nombre de la empresa" "SchoolCBB"
+prompt DOMAIN "Dominio principal (sin http)" "localhost"
+
+if [ "$DOMAIN" != "localhost" ]; then
+  prompt APP_SUBDOMAIN "Subdominio de la app" "app"
+  APP_URL="https://${APP_SUBDOMAIN}.${DOMAIN}"
+  PORTAL_URL="https://${DOMAIN}"
+else
+  APP_URL="http://localhost:8080"
+  PORTAL_URL="http://localhost:3010"
+fi
+
+echo ""
+info "Gerente General (superadmin con acceso al CRM y licencias)"
+prompt GERENTE_EMAIL "Email del Gerente General" "admin@${DOMAIN}"
+read -r -s -p "$(echo -e "  ${CYAN}Contraseña${NC} [admin123]: ")" GERENTE_PASSWORD
 GERENTE_PASSWORD="${GERENTE_PASSWORD:-admin123}"
 echo ""
-ok "Gerente General: $GERENTE_EMAIL"
 
-# -- Puerto de la app
-read -r -p "$(echo -e "${CYAN}Puerto de la app (frontend)${NC} [8080]: ")" APP_PORT
-APP_PORT="${APP_PORT:-8080}"
-ok "Puerto: $APP_PORT"
-
-# -- Base de datos
-echo ""
-info "Configuración de base de datos"
-read -r -p "$(echo -e "${CYAN}Host DB${NC} [localhost]: ")" DB_HOST
-DB_HOST="${DB_HOST:-localhost}"
-
-read -r -p "$(echo -e "${CYAN}Puerto DB${NC} [5432]: ")" DB_PORT
-DB_PORT="${DB_PORT:-5432}"
-
-read -r -p "$(echo -e "${CYAN}Usuario DB${NC} [schoolccb]: ")" DB_USER
-DB_USER="${DB_USER:-schoolccb}"
-
-read -r -s -p "$(echo -e "${CYAN}Contraseña DB${NC} [schoolccb]: ")" DB_PASS
+prompt DB_USER "Usuario PostgreSQL" "schoolccb"
+read -r -s -p "$(echo -e "  ${CYAN}Contraseña PostgreSQL${NC} [schoolccb]: ")" DB_PASS
 DB_PASS="${DB_PASS:-schoolccb}"
 echo ""
+prompt DB_NAME "Base de datos PostgreSQL" "schoolccb"
 
-read -r -p "$(echo -e "${CYAN}Nombre DB${NC} [schoolccb]: ")" DB_NAME
-DB_NAME="${DB_NAME:-schoolccb}"
+# ─── Generar secretos ─────────────────────────────────────────
+JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || echo "cambio-en-produccion-por-favor")
+INTERNAL_API_SECRET=$(openssl rand -hex 32 2>/dev/null || echo "dev-secret")
+DB_URL="postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}"
 
-if [ "$DOMAIN" != "localhost" ]; then
-    DB_URL="postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}"
-else
-    DB_URL="postgres://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+echo ""
+
+# ═══════════════════════════════════════════════════════════════
+# 3. Generar .env
+# ═══════════════════════════════════════════════════════════════
+echo -e "  ${BOLD}3. Generando configuración${NC}\n"
+
+if [ -f .env ] && [ "${MODE}" != "dev" ]; then
+  warn "Archivo .env ya existe. Haz backup: cp .env .env.backup"
 fi
 
-# -- JWT Secret
-JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || echo "cambio-en-produccion-por-favor")
+cat > .env << ENVEOF
+# ═══════════════════════════════════════════════════════════════
+# SchoolCBB v2 — Generado por setup.sh el $(date "+%Y-%m-%d %H:%M")
+# ═══════════════════════════════════════════════════════════════
 
-# ─── 3. Generar .env ────────────────────────────────────────
-echo ""
-info "Generando $ENV_FILE..."
+# ─── Generales ────────────────────────────────────────────────
+COMPANY_NAME=${COMPANY_NAME}
+DOMAIN=${DOMAIN}
+APP_URL=${APP_URL}
+PORTAL_URL=${PORTAL_URL}
 
-cat > "$ENV_FILE" <<ENVEOF
-# ─── SchoolCBB v2 — Configuración General ─────────────────
-# Generado por setup.sh — $(date +"%Y-%m-%d %H:%M:%S")
-COMPANY_NAME="${COMPANY_NAME}"
-DOMAIN="${DOMAIN}"
-APP_URL="${APP_URL}"
-PORTAL_URL="${PORTAL_URL}"
+# ─── Gerente General (Superadmin) ─────────────────────────────
+GERENTE_EMAIL=${GERENTE_EMAIL}
+GERENTE_PASSWORD=${GERENTE_PASSWORD}
+GERENTE_NAME=Admin
 
-# ─── Gerente General (Superadmin) ─────────────────────────
-GERENTE_EMAIL="${GERENTE_EMAIL}"
-GERENTE_PASSWORD="${GERENTE_PASSWORD}"
-
-# ─── Base de Datos ────────────────────────────────────────
+# ─── Base de Datos ────────────────────────────────────────────
 DATABASE_URL=${DB_URL}
+DB_USER=${DB_USER}
+DB_PASSWORD=${DB_PASS}
+DB_NAME=${DB_NAME}
 
-# ─── JWT ──────────────────────────────────────────────────
+# ─── JWT ──────────────────────────────────────────────────────
 JWT_SECRET=${JWT_SECRET}
+INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
 
-# ─── Gateway ──────────────────────────────────────────────
+# ─── Gateway ──────────────────────────────────────────────────
 GATEWAY_HOST=0.0.0.0
 GATEWAY_PORT=3000
 FRONTEND_URL=${APP_URL}
@@ -153,87 +219,122 @@ ATTENDANCE_URL=http://attendance:3004
 NOTIFICATIONS_URL=http://notifications:3005
 FINANCE_URL=http://finance:3006
 REPORTING_URL=http://reporting:3007
+PORTAL_URL_INTERNAL=http://portal:3010
+CURRICULUM_URL=http://curriculum:3011
+CRM_URL=http://crm:3012
 
-# ─── Servicios ────────────────────────────────────────────
-IDENTITY_HOST=0.0.0.0
-IDENTITY_PORT=3001
+# ─── Servicios ────────────────────────────────────────────────
+IDENTITY_HOST=0.0.0.0; IDENTITY_PORT=3001
+SIS_HOST=0.0.0.0; SIS_PORT=3002
+ACADEMIC_HOST=0.0.0.0; ACADEMIC_PORT=3003
+ATTENDANCE_HOST=0.0.0.0; ATTENDANCE_PORT=3004
+NOTIFICATIONS_HOST=0.0.0.0; NOTIFICATIONS_PORT=3005
+FINANCE_HOST=0.0.0.0; FINANCE_PORT=3006; FINANCE_GRPC_URL=http://finance:4006
+REPORTING_HOST=0.0.0.0; REPORTING_PORT=3007
+PORTAL_HOST=0.0.0.0; PORTAL_PORT=3010
+CURRICULUM_HOST=0.0.0.0; CURRICULUM_PORT=3011; CURRICULUM_KB_DIR=.agents/skills/curriculo-chile
+CRM_HOST=0.0.0.0; CRM_PORT=3012
 
-SIS_HOST=0.0.0.0
-SIS_PORT=3002
+# ─── Curriculum (CN Chile) ────────────────────────────────────
+CURRICULUM_KB_DIR=.agents/skills/curriculo-chile
 
-ACADEMIC_HOST=0.0.0.0
-ACADEMIC_PORT=3003
+# ─── SMTP (Correo — opcional) ─────────────────────────────────
+# SMTP_HOST=smtp.gmail.com
+# SMTP_PORT=587
+# SMTP_USERNAME=
+# SMTP_PASSWORD=
+# SMTP_FROM=SchoolCBB <noreply@schoolccb.cl>
+# PDF_OUTPUT_DIR=/tmp/proposals
 
-ATTENDANCE_HOST=0.0.0.0
-ATTENDANCE_PORT=3004
-
-NOTIFICATIONS_HOST=0.0.0.0
-NOTIFICATIONS_PORT=3005
-
-FINANCE_HOST=0.0.0.0
-FINANCE_PORT=3006
-FINANCE_GRPC_URL=http://finance:4006
-
-REPORTING_HOST=0.0.0.0
-REPORTING_PORT=3007
-
-PORTAL_HOST=0.0.0.0
-PORTAL_PORT=3010
-
-# ─── Logging ──────────────────────────────────────────────
+# ─── Logging ──────────────────────────────────────────────────
 RUST_LOG=info,schoolccb=debug
 ENVEOF
 
-ok "$ENV_FILE generado"
+ok ".env generado"
 
-# ─── 4. Migraciones SQL ─────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# 4. Construir imágenes
+# ═══════════════════════════════════════════════════════════════
 echo ""
-info "Migraciones de base de datos"
+echo -e "  ${BOLD}4. Construyendo imágenes Docker${NC}\n"
 
-if [ "$DOMAIN" != "localhost" ] || [ "$DB_HOST" != "localhost" ]; then
-    warn "Base de datos remota — asegúrate de ejecutar las migraciones manualmente."
-    warn "Las tablas se crean automáticamente al iniciar los servicios."
-else
-    ok "Las tablas se crearán automáticamente al iniciar los servicios (db_schema.rs)."
+BUILD_FLAGS=""
+if [ "${MODE}" = "dev" ]; then
+  BUILD_FLAGS="--build-arg BUILD_MODE=dev"
+  info "Modo desarrollo — construcción con caché optimizada"
 fi
 
-# ─── 5. Docker Compose ──────────────────────────────────────
-echo ""
-info "Servicios Docker disponibles en docker-compose.yml:"
-echo "  db, gateway, identity, sis, academic, attendance,"
-echo "  notifications, finance, reporting, frontend"
+info "Construyendo servicios backend (11 microservicios)..."
+docker compose build --parallel $BUILD_FLAGS 2>&1 | while IFS= read -r line; do
+  echo -e "  ${DIM}${line}${NC}"
+done
+ok "Imágenes construidas"
 
-if [ "$DOMAIN" == "localhost" ]; then
-    echo ""
-    info "Iniciando servicios..."
-    docker compose up -d
-    echo ""
-    ok "Servicios iniciados"
-    echo ""
-    echo "  Frontend:  http://localhost:${APP_PORT}"
-    echo "  API:       http://localhost:3000"
-    echo "  Gerente General:  ${GERENTE_EMAIL} / ${GERENTE_PASSWORD}"
+# ═══════════════════════════════════════════════════════════════
+# 5. Iniciar servicios
+# ═══════════════════════════════════════════════════════════════
+echo ""
+echo -e "  ${BOLD}5. Iniciando servicios${NC}\n"
+
+if [ "${MODE}" = "dev" ]; then
+  info "Iniciando base de datos para desarrollo local..."
+  docker compose up -d db
+  ok "Base de datos lista en localhost:5432"
+  echo ""
+  info "Para desarrollo local, ejecuta los servicios individualmente:"
+  echo -e "  ${DIM}  cargo run --release -p schoolccb-identity${NC}"
+  echo -e "  ${DIM}  cargo run --release -p schoolccb-gateway${NC}"
+  echo -e "  ${DIM}  cd packages/frontend && dx serve${NC}"
+  echo ""
+  info "O inicia todo con: docker compose up -d"
 else
-    echo ""
-    info "Configuración para producción detectada."
-    echo ""
-    echo "Pasos siguientes:"
-    echo "  1. Revisa docker-compose.yml y ajusta dominios/SSL"
-    echo "  2. Configura nginx con HTTPS (Certbot/Let's Encrypt)"
-    echo "  3. Inicia con: docker compose up -d"
-    echo ""
-    warn "No olvides cambiar JWT_SECRET por un valor seguro en producción."
+  info "Iniciando todos los servicios..."
+  docker compose up -d
+  echo ""
+
+  # ─── Health check polling ─────────────────────────────────
+  info "Esperando health checks..."
+  for i in $(seq 1 60); do
+    HEALTHY=$(docker compose ps --format json 2>/dev/null | python3 -c "
+import json, sys
+try:
+    services = [json.loads(l) for l in sys.stdin]
+    healthy = [s for s in services if s.get('Health') == 'healthy']
+    print(len(healthy))
+except: print(0)
+" 2>/dev/null || echo "0")
+    if [ "$HEALTHY" -ge 12 ] 2>/dev/null; then
+      ok "Todos los servicios saludables"
+      break
+    fi
+    if [ "$i" -eq 60 ]; then
+      warn "Tiempo de espera agotado. Revisa: docker compose logs -f"
+    fi
+    sleep 2
+  done
 fi
 
-# ─── 6. Resumen ─────────────────────────────────────────────
 echo ""
-echo "╔═══════════════════════════════════════════════╗"
-echo "║           Setup completado                     ║"
-echo "╠═══════════════════════════════════════════════╣"
-printf "║ %-20s %-25s ║\n" "Empresa" "$COMPANY_NAME"
-printf "║ %-20s %-25s ║\n" "Gerente email" "$GERENTE_EMAIL"
-printf "║ %-20s %-25s ║\n" "App URL" "$APP_URL"
-printf "║ %-20s %-25s ║\n" "Portal URL" "$PORTAL_URL"
-printf "║ %-20s %-25s ║\n" "JWT Secret" "${JWT_SECRET:0:16}..."
-echo "╚═══════════════════════════════════════════════╝"
+
+# ═══════════════════════════════════════════════════════════════
+# 6. Resumen Final
+# ═══════════════════════════════════════════════════════════════
+echo -e "${GREEN}${BOLD}"
+echo "   ╔═══════════════════════════════════════════════╗"
+echo "   ║       Instalación completada                  ║"
+echo "   ╚═══════════════════════════════════════════════╝"
+echo -e "${NC}"
+echo -e "  ${CYAN}┃${NC}  Empresa:        ${BOLD}${COMPANY_NAME}${NC}"
+echo -e "  ${CYAN}┃${NC}  Frontend:       ${BOLD}${APP_URL}${NC}"
+echo -e "  ${CYAN}┃${NC}  API Gateway:    ${BOLD}http://localhost:3000${NC}"
+echo -e "  ${CYAN}┃${NC}  Portal Público: ${BOLD}${PORTAL_URL}${NC}"
+echo ""
+echo -e "  ${CYAN}┃${NC}  Gerente General: ${BOLD}${GERENTE_EMAIL}${NC}"
+echo ""
+echo -e "  ${DIM}  Comandos útiles:${NC}"
+echo -e "  ${DIM}  ./setup.sh --status   → estado de servicios${NC}"
+echo -e "  ${DIM}  ./setup.sh --logs     → logs en tiempo real${NC}"
+echo -e "  ${DIM}  ./setup.sh --stop     → detener todo${NC}"
+echo -e "  ${DIM}  ./setup.sh --reset    → reinicio completo${NC}"
+echo -e "  ${DIM}  docker compose logs -f → logs detallados${NC}"
 echo ""

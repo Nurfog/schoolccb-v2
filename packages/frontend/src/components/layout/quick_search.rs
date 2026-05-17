@@ -5,6 +5,7 @@ use serde_json::Value;
 use wasm_bindgen::prelude::*;
 
 use crate::api::client;
+use crate::components::widgets::icon::Icon;
 
 #[component]
 pub fn QuickSearch(is_open: Signal<bool>) -> Element {
@@ -119,10 +120,7 @@ pub fn QuickSearch(is_open: Signal<bool>) -> Element {
         div { class: "quick-search-overlay", onclick: close,
             div { class: "quick-search-modal", onclick: |e| e.stop_propagation(),
                 div { class: "quick-search-input-wrap",
-                    svg { role: "presentation", view_box: "0 0 24 24",
-                        circle { cx: "11", cy: "11", r: "8" }
-                        line { x1: "21", y1: "21", x2: "16.65", y2: "16.65" }
-                    }
+                    Icon { name: "search" }
                     input {
                         placeholder: "Buscar alumnos, empleados...",
                         value: "{query_text}",

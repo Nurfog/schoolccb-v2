@@ -5,14 +5,9 @@ use crate::api::client;
 
 fn jwt_claims() -> Option<Value> {
     let window = web_sys::window()?;
-    let doc = window.document()?;
-    let cookie = js_sys::Reflect::get(&doc, &wasm_bindgen::JsValue::from_str("cookie"))
-        .ok()
-        .and_then(|v| v.as_string())?;
-    let token = cookie.split(';').find_map(|c| {
-        let c = c.trim();
-        c.strip_prefix("jwt_token=").map(|v| v.to_string())
-    })?;
+    let store = window.local_storage().ok().flatten()?;
+    let token = store.get_item("jwt_token").ok()?;
+    let token = token?;
     let parts: Vec<&str> = token.split('.').collect();
     let payload_b64 = parts.get(1)?;
     let decoded = window.atob(payload_b64).ok()?;

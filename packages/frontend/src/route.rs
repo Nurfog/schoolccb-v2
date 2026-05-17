@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+use crate::api::client;
 use crate::seo::use_page_title;
 use crate::components::pages::academic_years_page::AcademicYearsPage;
 use crate::components::pages::admission_page::AdmissionPage;
@@ -55,7 +56,7 @@ pub fn has_token() -> bool {
         .unwrap_or_default();
     cookie.split(';').any(|c| {
         let c = c.trim();
-        c.starts_with("jwt_token=") && c.len() > "jwt_token=".len()
+        c == "session_active=1"
     })
 }
 
@@ -155,7 +156,67 @@ pub enum Route {
 pub fn Login() -> Element { use_page_title("Login"); rsx! { LoginPage {} } }
 
 #[component]
-pub fn SessionLogin() -> Element { use_page_title("Iniciando Sesión..."); rsx! { div { "Cargando sesión..." } } }
+pub fn SessionLogin() -> Element {
+    use_page_title("Iniciando Sesión...");
+    let mut error = use_signal(|| None::<String>);
+    let mut started = use_signal(|| false);
+
+    if !started() {
+        started.set(true);
+        let nav = navigator();
+        spawn(async move {
+            let search = web_sys::window()
+                .and_then(|w| w.location().search().ok())
+                .unwrap_or_default();
+            let code = search
+                .strip_prefix('?')
+                .unwrap_or(&search)
+                .split('&')
+                .filter_map(|pair| {
+                    let mut parts = pair.splitn(2, '=');
+                    let key = parts.next()?;
+                    let val = parts.next()?;
+                    if key == "code" { Some(val.to_string()) } else { None }
+                })
+                .next();
+            match code {
+                Some(c) => {
+                    match client::exchange_code(&c).await {
+                        Ok(_) => { let _ = nav.replace("/"); }
+                        Err(e) => error.set(Some(e)),
+                    }
+                }
+                None => {
+                    error.set(Some("Código de sesión no encontrado en la URL".to_string()));
+                }
+            }
+        });
+    }
+
+    rsx! {
+        div { class: "login-container",
+            div { class: "login-card",
+                div { class: "login-header",
+                    div { class: "login-logo", "SC" }
+                    h1 { "SchoolCBB" }
+                    p { "Plataforma Escolar" }
+                }
+                div { style: "text-align: center; padding: 1rem 0;",
+                    if let Some(ref msg) = error() {
+                        div { class: "login-error", role: "alert", "{msg}" }
+                        br {}
+                        a { class: "login-btn", href: "/login",
+                            style: "display: inline-block; text-decoration: none;",
+                            "Volver a iniciar sesión"
+                        }
+                    } else {
+                        div { class: "loading-spinner", "Validando credenciales..." }
+                    }
+                }
+            }
+        }
+    }
+}
 
 #[component]
 pub fn StudentDetailPage(student_id: String) -> Element { require_auth(); use_page_title("Detalle Estudiante"); rsx! { crate::components::pages::student_detail_page::StudentDetailPage { student_id } } }

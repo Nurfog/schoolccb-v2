@@ -3,6 +3,7 @@ use serde_json::Value;
 use wasm_bindgen::prelude::*;
 
 use crate::api::client;
+use crate::components::widgets::icon::Icon;
 
 #[component]
 pub fn SearchableSelect(
@@ -128,10 +129,7 @@ pub fn SearchableSelect(
                         has_selected.set(false);
                         on_select.call("".to_string());
                     },
-                    svg { role: "presentation", view_box: "0 0 24 24", width: "14", height: "14",
-                        line { x1: "18", y1: "6", x2: "6", y2: "18" }
-                        line { x1: "6", y1: "6", x2: "18", y2: "18" }
-                    }
+                    Icon { name: "x", size: 14 }
                 }
             }
             if is_open() && query().len() >= 1 {

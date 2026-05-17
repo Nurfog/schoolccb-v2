@@ -1,4 +1,6 @@
 use dioxus::prelude::*;
+
+use crate::components::widgets::icon::Icon;
 use serde_json::Value;
 
 #[derive(Clone)]
@@ -80,9 +82,7 @@ fn BpfStep(
     };
 
     let icon = if is_completed {
-        rsx! { svg { width: "12", height: "12", view_box: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "3",
-            polyline { points: "20 6 9 17 4 12" }
-        }}
+        rsx! { Icon { name: "check", size: 12 } }
     } else if is_current {
         rsx! { span { "●" } }
     } else {

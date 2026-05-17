@@ -387,7 +387,11 @@ async fn proxy_request(state: &AppState, service: &str, req: Request) -> Respons
             *response.status_mut() = status;
             for (key, value) in resp_headers.iter() {
                 if key != "host" && key != "transfer-encoding" {
-                    response.headers_mut().insert(key, value.clone());
+                    if key == "set-cookie" {
+                        response.headers_mut().append(key, value.clone());
+                    } else {
+                        response.headers_mut().insert(key, value.clone());
+                    }
                 }
             }
             response

@@ -209,7 +209,8 @@ pub fn Sidebar() -> Element {
                                 rsx! { {items.into_iter()} }
                             }
                         }
-                        _ => rsx! { p { class: "empty-hint", "Cargando..." } },
+                        Some(Err(e)) => rsx! { p { class: "empty-hint", "Error: {e}" } },
+                        None => rsx! { p { class: "empty-hint", "Cargando..." } },
                     }
                 }
                 {if user_role != "Root" {
@@ -219,7 +220,8 @@ pub fn Sidebar() -> Element {
                                 arr.iter().filter_map(|m| m["id"].as_str().map(String::from)).collect()
                             }).unwrap_or_default()
                         }
-                        _ => std::collections::HashSet::new()
+                        Some(Err(_)) => std::collections::HashSet::new(),
+                        None => std::collections::HashSet::new(),
                     };
                     let rendered: Vec<_> = MODULE_NAV_ITEMS.iter().filter_map(|(id, route, label)| {
                         if module_ids.contains(*id) {
@@ -305,12 +307,11 @@ pub fn Sidebar() -> Element {
 
 
                 button { class: "nav-item logout", onclick: move |_| {
-                        if let Some(window) = web_sys::window() {
-                            if let Some(doc) = window.document() {
-                                let _ = js_sys::Reflect::set(&doc, &wasm_bindgen::JsValue::from_str("cookie"), &wasm_bindgen::JsValue::from_str("jwt_token=; Path=/; Max-Age=0"));
-                            }
-                            let _ = window.location().set_href("/login");
-                        }
+                        let nav = navigator();
+                        spawn(async move {
+                            let _ = client::logout().await;
+                            nav.replace("/login");
+                        });
                     },
                     span { class: "icon",
                         svg { role: "presentation", view_box: "0 0 24 24",

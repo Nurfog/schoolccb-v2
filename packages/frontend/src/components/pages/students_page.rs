@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::api::client;
+use crate::components::widgets::icon::Icon;
 use crate::components::inline_edit::InlineEdit;
 
 fn first_letter(s: &str) -> String {
@@ -30,10 +31,7 @@ pub fn StudentsPage() -> Element {
         }
         div { class: "page-toolbar",
             div { class: "search-input-wrapper",
-                svg { class: "search-icon", role: "presentation", view_box: "0 0 24 24", width: "18", height: "18",
-                    circle { cx: "11", cy: "11", r: "8" }
-                    line { x1: "21", y1: "21", x2: "16.65", y2: "16.65" }
-                }
+                Icon { name: "search", size: 18 }
                 input {
                     class: "search-input",
                     placeholder: "Buscar por nombre o RUT...",

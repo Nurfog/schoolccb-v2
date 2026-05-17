@@ -512,4 +512,26 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 | 3 — Portal Apoderados | ~10 archivos | 5-7 |
 | 4 — Portal Alumnos | ~6 archivos | 3-4 |
 | Remover Root + migración | ~8 archivos | 2-3 |
-| **Total** | **~75 archivos** | **40-50 días** |
+| **Total original** | **~75 archivos** | **40-50 días** |
+| **Total ejecutado** | **~172 archivos** | **✅ Completo** |
+
+---
+
+## 🧹 Refactorings y Mejoras (Agregadas durante implementación)
+
+| Mejora | Archivos | Impacto |
+|--------|----------|---------|
+| Auth compartido (`common::auth`) | 51 archivos | Eliminó ~280 líneas duplicadas de Claims/FromRequestParts |
+| SQL format!() → NULL-able params | 5 archivos | Eliminó risk de inyección SQL en queries dinámicos |
+| Closures en loops → for loops | 6 frontend | Rendimiento de renderizado en Dioxus |
+| Monolitos → submódulos | 11 archivos nuevos | reports/, finance/, admission/ separados |
+| SVGs inline → Icon component | 12 archivos | 34 SVGs → 1 componente con 26 variantes |
+| Loading/Error states | 4 componentes | Separados en 3 estados (data/error/loading) |
+| Clippy warnings | ~31 auto-fix | Código más idiomático |
+| Dead code eliminado | 1 archivo | routes.rs_new_onboarding.rs (~82 líneas) |
+| `.unwrap()` en producción | 2 → 0 | Reemplazados por if let Some |
+| setup.sh mejorado | 1 archivo | Instalador tipo Open edX con --status/--logs/--reset |
+
+## ⬜ Pendiente (Mejora Futura)
+
+- **OAuth2 para proveedores email**: Inicio de sesión con Google/Microsoft para SMTP (refresh tokens + XOAUTH2)

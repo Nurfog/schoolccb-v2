@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use serde_json::Value;
 
 use crate::api::client;
+use crate::components::widgets::icon::Icon;
 use crate::components::widgets::searchable_select::SearchableSelect;
 
 fn needs_plan(level: &str) -> bool {
@@ -257,22 +258,15 @@ fn CourseRow(
             td { class: "cell-actions",
                 button { class: "btn-icon", title: "Editar",
                     onclick: move |_| on_edit.call(course.clone()),
-                    svg { role: "presentation", view_box: "0 0 24 24", width: "16", height: "16",
-                        path { d: "M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" }
-                    }
+                    Icon { name: "edit", size: 16 }
                 }
                 button { class: "btn-icon", title: "Asignaturas",
                     onclick: move |_| on_manage_subjects.call(()),
-                    svg { role: "presentation", view_box: "0 0 24 24", width: "16", height: "16",
-                        path { d: "M4 6h16M4 12h16M4 18h16" }
-                    }
+                    Icon { name: "list", size: 16 }
                 }
                 button { class: "btn-icon btn-icon-danger", title: "Eliminar",
                     onclick: move |_| on_delete.call(id.clone()),
-                    svg { role: "presentation", view_box: "0 0 24 24", width: "16", height: "16",
-                        path { d: "M3 6h18" }
-                        path { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }
-                    }
+                    Icon { name: "trash", size: 16 }
                 }
             }
         }
@@ -367,9 +361,7 @@ fn CourseSubjectsModal(course: Value, on_close: EventHandler<()>) -> Element {
                 div { class: "modal-header",
                     h2 { "Asignaturas - {course_name}" }
                     button { class: "btn-icon", onclick: move |_| on_close.call(()),
-                        svg { role: "presentation", view_box: "0 0 24 24", width: "20", height: "20",
-                            path { d: "M18 6L6 18M6 6l12 12" }
-                        }
+                        Icon { name: "x", size: 20 }
                     }
                 }
                 div { class: "modal-body",
@@ -452,10 +444,7 @@ fn CourseSubjectsModal(course: Value, on_close: EventHandler<()>) -> Element {
                                                         });
                                                     }
                                                 },
-                                                svg { role: "presentation", view_box: "0 0 24 24", width: "16", height: "16",
-                                                    path { d: "M3 6h18" }
-                                                    path { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }
-                                                }
+                                                Icon { name: "trash", size: 16 }
                                             }
                                         }
                                     }

@@ -23,20 +23,15 @@ fn client() -> &'static reqwest::Client {
 }
 
 fn get_token() -> Option<String> {
-    let window = web_sys::window()?;
-    let document = window.document()?;
-    let cookie = js_sys::Reflect::get(&document, &wasm_bindgen::JsValue::from_str("cookie"))
-        .ok()
-        .and_then(|v| v.as_string())?;
-    cookie.split(';').find_map(|c| {
-        let c = c.trim();
-        c.strip_prefix("jwt_token=").map(|v| v.to_string())
-    })
-    .filter(|v| !v.is_empty())
+    None
+}
+
+pub fn remove_token() {
+    // HttpOnly cookie — can't clear from JS. Call logout API instead.
 }
 
 fn auth_header() -> Option<String> {
-    get_token().map(|t| format!("Bearer {}", t))
+    None
 }
 
 async fn request_inner(method: &str, endpoint: &str, body: Option<&Value>) -> Result<Value, String> {
@@ -104,16 +99,15 @@ pub async fn login(email: &str, password: &str) -> Result<Value, String> {
         .map_err(|e| format!("Error: {e}"))?;
 
     let result: Value = resp.json().await.map_err(|e| format!("Parse: {e}"))?;
-
-    if let Some(token) = result.get("token").and_then(|v| v.as_str()) {
-        if let Some(window) = web_sys::window() {
-            if let Some(document) = window.document() {
-                let cookie = format!("jwt_token={}; Path=/; SameSite=Lax; Max-Age=43200", token);
-                let _ = js_sys::Reflect::set(&document, &wasm_bindgen::JsValue::from_str("cookie"), &wasm_bindgen::JsValue::from_str(&cookie));
-            }
-        }
-    }
     Ok(result)
+}
+
+pub async fn logout() -> Result<Value, String> {
+    post_json("/api/auth/logout", &json!({})).await
+}
+
+pub async fn exchange_code(code: &str) -> Result<Value, String> {
+    post_json("/api/auth/exchange", &json!({"code": code})).await
 }
 
 // ─── Dashboard ───

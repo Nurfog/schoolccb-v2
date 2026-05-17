@@ -28,9 +28,8 @@ fn get_users(data: &Value) -> Vec<Value> {
 
 fn current_user_is_root() -> bool {
     let window = match web_sys::window() { Some(w) => w, None => return false };
-    let doc = match window.document() { Some(d) => d, None => return false };
-    let cookie = match js_sys::Reflect::get(&doc, &wasm_bindgen::JsValue::from_str("cookie")).ok().and_then(|v| v.as_string()) { Some(c) => c, None => return false };
-    let token = match cookie.split(';').find_map(|c| c.trim().strip_prefix("jwt_token=")) { Some(t) => t, None => return false };
+    let store = match window.local_storage() { Ok(Some(s)) => s, _ => return false };
+    let token = match store.get_item("jwt_token") { Ok(Some(t)) => t, _ => return false };
     let parts: Vec<&str> = token.split('.').collect();
     let payload_b64 = match parts.get(1) { Some(p) => p, None => return false };
     let decoded = match window.atob(payload_b64).ok() { Some(d) => d, None => return false };

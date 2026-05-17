@@ -176,8 +176,14 @@ pub fn hash_password(password: &str) -> String {
 }
 
 pub async fn seed_admin(pool: &PgPool) -> Result<(), sqlx::Error> {
+    let email = std::env::var("ADMIN_EMAIL").unwrap_or_else(|_| "admin@colegio.cl".to_string());
+    let password =
+        std::env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "admin123".to_string());
+    let name = std::env::var("ADMIN_NAME").unwrap_or_else(|_| "Administrador".to_string());
+    let rut = std::env::var("ADMIN_RUT").unwrap_or_else(|_| "11.111.111-1".to_string());
+
     let exists: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE email = $1")
-        .bind("admin@colegio.cl")
+        .bind(&email)
         .fetch_one(pool)
         .await?;
 
@@ -187,20 +193,23 @@ pub async fn seed_admin(pool: &PgPool) -> Result<(), sqlx::Error> {
 
     let salt = SaltString::generate(&mut OsRng);
     let hash = Argon2::default()
-        .hash_password(b"admin123", &salt)
+        .hash_password(password.as_bytes(), &salt)
         .expect("Failed to hash password")
         .to_string();
 
     sqlx::query(
         "INSERT INTO users (id, rut, name, email, password_hash, role, active)
-         VALUES ($1, '11.111.111-1', 'Administrador', 'admin@colegio.cl', $2, 'Administrador', true)",
+         VALUES ($1, $2, $3, $4, $5, 'Administrador', true)",
     )
     .bind(Uuid::new_v4())
+    .bind(&rut)
+    .bind(&name)
+    .bind(&email)
     .bind(&hash)
     .execute(pool)
     .await?;
 
-    tracing::info!("Admin user created: admin@colegio.cl");
+    tracing::info!("Admin user created: {email}");
     Ok(())
 }
 
@@ -486,6 +495,8 @@ pub async fn update_preferences(
 pub async fn seed_gerente_general(pool: &PgPool) {
     let email = std::env::var("GERENTE_EMAIL").unwrap_or_else(|_| "juan.allende@gmail.com".into());
     let password = std::env::var("GERENTE_PASSWORD").unwrap_or_else(|_| "admin123".into());
+    let name = std::env::var("GERENTE_NAME").unwrap_or_else(|_| "Juan Allende".into());
+    let rut = std::env::var("GERENTE_RUT").unwrap_or_else(|_| "22.222.222-2".into());
 
     let exists: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE email = $1")
         .bind(&email)
@@ -500,9 +511,11 @@ pub async fn seed_gerente_general(pool: &PgPool) {
     let hash = hash_password(&password);
     sqlx::query(
         "INSERT INTO users (id, rut, name, email, password_hash, role, active)
-         VALUES ($1, '22.222.222-2', 'Juan Allende', $2, $3, 'GerenteGeneral', true)",
+         VALUES ($1, $2, $3, $4, $5, 'GerenteGeneral', true)",
     )
     .bind(Uuid::new_v4())
+    .bind(&rut)
+    .bind(&name)
     .bind(&email)
     .bind(&hash)
     .execute(pool)

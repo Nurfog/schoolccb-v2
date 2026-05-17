@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::api::client;
+use crate::components::widgets::icon::Icon;
 
 fn format_date(date_str: &str) -> String {
     if date_str.len() >= 10 {
@@ -142,10 +143,7 @@ fn ComposeModal(is_open: Signal<bool>, on_sent: EventHandler) -> Element {
                 div { class: "quick-search-header",
                     h3 { "Nuevo Mensaje" }
                     button { class: "close-btn", onclick: move |_| is_open.set(false),
-                        svg { role: "presentation", view_box: "0 0 24 24", width: "20", height: "20",
-                            line { x1: "18", y1: "6", x2: "6", y2: "18" }
-                            line { x1: "6", y1: "6", x2: "18", y2: "18" }
-                        }
+                        Icon { name: "x", size: 20 }
                     }
                 }
                 div { class: "compose-body",

@@ -3,6 +3,7 @@ use wasm_bindgen::JsCast;
 
 use super::quick_search::QuickSearch;
 use crate::api::client;
+use crate::components::widgets::icon::Icon;
 use crate::route::has_token;
 
 #[component]
@@ -48,10 +49,7 @@ pub fn Topbar() -> Element {
         header { class: "topbar",
             div { class: "search-bar", onclick: open_search, role: "button", tabindex: "0", "aria-label": "Buscar alumnos y empleados", onkeydown: move |e| { if e.key() == Key::Enter || e.key() == Key::Character(" ".to_string()) { show_search.set(true); } },
                 span { class: "search-icon",
-                    svg { width: "16", height: "16", view_box: "0 0 24 24",
-                        circle { cx: "11", cy: "11", r: "8" }
-                        line { x1: "21", y1: "21", x2: "16.65", y2: "16.65" }
-                    }
+                    Icon { name: "search", size: 16 }
                 }
                 span { class: "search-placeholder", "Buscar alumnos, empleados... (Ctrl+K)" }
                 div { class: "search-shortcut",
@@ -61,10 +59,7 @@ pub fn Topbar() -> Element {
             }
             div { class: "topbar-actions",
                 button { class: "notif-btn", onclick: move |_| { let nav = navigator(); nav.push("/notifications"); },
-                    svg { role: "presentation", view_box: "0 0 24 24",
-                        path { d: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" }
-                        path { d: "M13.73 21a2 2 0 0 1-3.46 0" }
-                    }
+                    Icon { name: "bell" }
                     if unread_count > 0 {
                         div { class: "notif-badge", "{unread_count}" }
                     }

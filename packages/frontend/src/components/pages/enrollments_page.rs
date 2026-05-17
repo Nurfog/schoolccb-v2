@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use serde_json::Value;
 
 use crate::api::client;
+use crate::components::widgets::icon::Icon;
 use crate::components::widgets::searchable_select::SearchableSelect;
 
 #[component]
@@ -158,10 +159,7 @@ fn EnrollmentRow(enrollment: Value, on_delete: EventHandler<String>) -> Element 
             }
             td { class: "cell-actions",
                 button { class: "btn-icon btn-icon-danger", onclick: move |_| on_delete.call(id.clone()),
-                    svg { role: "presentation", view_box: "0 0 24 24", width: "16", height: "16",
-                        path { d: "M3 6h18" }
-                        path { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }
-                    }
+                    Icon { name: "trash", size: 16 }
                 }
             }
         }
