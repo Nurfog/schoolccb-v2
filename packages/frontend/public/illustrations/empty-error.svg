@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8EDF1"/>
+      <stop offset="100%" stop-color="#F8F9FA"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" rx="20" fill="url(#bg)"/>
+
+  <!-- Error/alert circle -->
+  <circle cx="200" cy="135" r="45" stroke="#dc2626" stroke-width="3" opacity="0.12"/>
+  <line x1="200" y1="118" x2="200" y2="145" stroke="#dc2626" stroke-width="3" stroke-linecap="round" opacity="0.2"/>
+  <circle cx="200" cy="160" r="3" fill="#dc2626" opacity="0.2"/>
+
+  <!-- Warning triangle -->
+  <polygon points="270,115 295,165 245,165" stroke="#f59e0b" stroke-width="2.5" opacity="0.15" stroke-linejoin="round"/>
+  <line x1="270" y1="132" x2="270" y2="148" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" opacity="0.2"/>
+  <circle cx="270" cy="158" r="2" fill="#f59e0b" opacity="0.2"/>
+
+  <!-- Gear -->
+  <circle cx="140" cy="150" r="22" stroke="#94A3B8" stroke-width="2.5" opacity="0.12"/>
+  <circle cx="140" cy="150" r="8" stroke="#94A3B8" stroke-width="2" opacity="0.12"/>
+
+  <!-- Dots -->
+  <circle cx="200" cy="215" r="3" fill="#94A3B8" opacity="0.2"/>
+  <circle cx="220" cy="215" r="3" fill="#94A3B8" opacity="0.2"/>
+  <circle cx="240" cy="215" r="3" fill="#94A3B8" opacity="0.2"/>
+  <circle cx="260" cy="215" r="3" fill="#94A3B8" opacity="0.2"/>
+</svg>

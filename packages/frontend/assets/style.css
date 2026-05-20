@@ -131,26 +131,21 @@ a:hover { text-decoration: underline; }
     flex-shrink: 0;
 }
 
-.sidebar-header .logo {
-    width: 32px;
+.icon-img {
+    display: inline-block;
+    vertical-align: middle;
+    pointer-events: none;
+    user-select: none;
+}
+
+.sidebar-header .logo-img {
     height: 32px;
-    background: var(--success);
-    border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 700;
-    font-size: 14px;
+    width: auto;
     flex-shrink: 0;
 }
 
 .sidebar-header .brand {
-    font-size: 15px;
-    font-weight: 600;
-    color: #f1f5f9;
-    white-space: nowrap;
-    overflow: hidden;
+    display: none;
 }
 
 .sidebar-nav {

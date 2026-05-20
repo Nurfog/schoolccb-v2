@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8EDF1"/>
+      <stop offset="100%" stop-color="#F8F9FA"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" rx="20" fill="url(#bg)"/>
+
+  <!-- Book stack -->
+  <rect x="100" y="140" width="80" height="12" rx="4" fill="#1A2B3C" opacity="0.1"/>
+  <rect x="95" y="128" width="90" height="12" rx="4" fill="#1A2B3C" opacity="0.15"/>
+  <rect x="90" y="116" width="100" height="12" rx="4" fill="#1A2B3C" opacity="0.2"/>
+
+  <!-- Graduation cap -->
+  <path d="M140 90l40 20-40 20-40-20 40-20z" fill="#4fc3f7" opacity="0.3"/>
+  <path d="M140 90l40 20" stroke="#4fc3f7" stroke-width="2" opacity="0.4"/>
+  <line x1="140" y1="110" x2="140" y2="130" stroke="#4fc3f7" stroke-width="2" opacity="0.4"/>
+  <line x1="180" y1="110" x2="180" y2="130" stroke="#4fc3f7" stroke-width="2" opacity="0.4"/>
+
+  <!-- Pencil -->
+  <line x1="260" y1="105" x2="300" y2="145" stroke="#1A2B3C" stroke-width="3" stroke-linecap="round" opacity="0.15"/>
+  <line x1="300" y1="145" x2="305" y2="140" stroke="#1A2B3C" stroke-width="3" stroke-linecap="round" opacity="0.15"/>
+
+  <!-- Clipboard -->
+  <rect x="240" y="120" width="50" height="60" rx="6" fill="white" stroke="#1A2B3C" stroke-width="2" opacity="0.15"/>
+  <line x1="250" y1="135" x2="280" y2="135" stroke="#1A2B3C" stroke-width="1.5" opacity="0.15"/>
+  <line x1="250" y1="145" x2="275" y2="145" stroke="#1A2B3C" stroke-width="1.5" opacity="0.15"/>
+  <line x1="250" y1="155" x2="270" y2="155" stroke="#1A2B3C" stroke-width="1.5" opacity="0.15"/>
+
+  <!-- Stars -->
+  <circle cx="310" cy="95" r="4" fill="#eab308" opacity="0.4"/>
+  <circle cx="325" cy="105" r="3" fill="#eab308" opacity="0.3"/>
+  <circle cx="95" cy="95" r="3" fill="#eab308" opacity="0.3"/>
+
+  <!-- Bottom dots -->
+  <circle cx="130" cy="200" r="3" fill="#94A3B8" opacity="0.3"/>
+  <circle cx="150" cy="200" r="3" fill="#94A3B8" opacity="0.3"/>
+  <circle cx="170" cy="200" r="3" fill="#94A3B8" opacity="0.3"/>
+  <circle cx="190" cy="200" r="3" fill="#94A3B8" opacity="0.3"/>
+  <circle cx="210" cy="200" r="3" fill="#94A3B8" opacity="0.3"/>
+  <circle cx="230" cy="200" r="3" fill="#94A3B8" opacity="0.3"/>
+  <circle cx="250" cy="200" r="3" fill="#94A3B8" opacity="0.3"/>
+  <circle cx="270" cy="200" r="3" fill="#94A3B8" opacity="0.3"/>
+</svg>

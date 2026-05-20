@@ -11,7 +11,9 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #1a2b3c 0%, #243b4f 50%, #1a2b3c 100%);
+      background: linear-gradient(135deg, rgba(26,43,60,0.85) 0%, rgba(36,59,79,0.85) 50%, rgba(26,43,60,0.85) 100%), url('/static/images/schoolcbb_login_bg_00001_.png');
+      background-size: cover;
+      background-position: center;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -75,7 +77,9 @@
 <body>
   <div class="login-card">
     <div class="login-header">
-      <div class="login-logo">SC</div>
+      <div class="login-logo">
+        <img src="/static/logo-symbol.svg" alt="SchoolCBB" width="64" height="64">
+      </div>
       <h1>SchoolCBB</h1>
       <p>Plataforma Escolar</p>
     </div>
