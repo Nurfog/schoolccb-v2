@@ -1,5 +1,5 @@
 use serde_json::{Value, json};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 
 fn base_url() -> String {
     web_sys::window()
@@ -22,16 +22,27 @@ fn client() -> &'static reqwest::Client {
     })
 }
 
+static TOKEN: Mutex<Option<String>> = Mutex::new(None);
+
 fn get_token() -> Option<String> {
-    None
+    TOKEN.lock().ok()?.clone()
+}
+
+fn set_token(token: &str) {
+    if let Ok(mut t) = TOKEN.lock() {
+        *t = Some(token.to_string());
+    }
 }
 
 pub fn remove_token() {
-    // HttpOnly cookie — can't clear from JS. Call logout API instead.
+    if let Ok(mut t) = TOKEN.lock() {
+        *t = None;
+    }
+    // Also clear server-side session via logout API
 }
 
 fn auth_header() -> Option<String> {
-    None
+    get_token().map(|t| format!("Bearer {}", t))
 }
 
 async fn request_inner(method: &str, endpoint: &str, body: Option<&Value>) -> Result<Value, String> {
@@ -99,6 +110,11 @@ pub async fn login(email: &str, password: &str) -> Result<Value, String> {
         .map_err(|e| format!("Error: {e}"))?;
 
     let result: Value = resp.json().await.map_err(|e| format!("Parse: {e}"))?;
+
+    if let Some(token) = result.get("token").and_then(|t| t.as_str()) {
+        set_token(token);
+    }
+
     Ok(result)
 }
 

@@ -110,8 +110,7 @@ pub fn Sidebar() -> Element {
         } else { rsx! {} }}
         nav { class: "{sidebar_class}", role: "navigation", aria_label: "Navegación principal",
             div { class: "sidebar-header",
-                div { class: "logo", "SC" }
-                span { class: "brand", "SchoolCBB" }
+                img { class: "logo-img", src: "/logo-white.svg", alt: "SchoolCBB", width: "140", height: "36" }
             }
 
             div { class: "sidebar-nav",
@@ -310,6 +309,7 @@ pub fn Sidebar() -> Element {
                         let nav = navigator();
                         spawn(async move {
                             let _ = client::logout().await;
+                            client::remove_token();
                             nav.replace("/login");
                         });
                     },
