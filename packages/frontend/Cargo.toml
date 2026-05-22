@@ -13,6 +13,6 @@ wasm-bindgen = "0.2"
 getrandom = { version = "0.2", features = ["js"] }
 getrandom_04 = { package = "getrandom", version = "0.4", features = ["wasm_js"], optional = true }
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["Window", "Document", "Storage", "Location", "Navigator", "ServiceWorkerRegistration", "ServiceWorkerContainer"] }
+web-sys = { version = "0.3", features = ["Window", "Document", "Storage", "Location", "Navigator", "ServiceWorkerRegistration", "ServiceWorkerContainer", "ReadableStream", "ReadableStreamDefaultReader"] }
 js-sys = "0.3"
 wee_alloc = { version = "0.4", features = [] }
