@@ -27,31 +27,6 @@ fn initials(name: &str) -> String {
         .to_uppercase()
 }
 
-const MODULE_NAV_ITEMS: &[(&str, &str, &str)] = &[
-    ("students", "/students", "Alumnos"),
-    ("courses", "/courses", "Cursos"),
-    ("attendance", "/attendance", "Asistencia"),
-    ("grades", "/grades", "Calificaciones"),
-    ("enrollments", "/enrollments", "Matrículas"),
-    ("subjects", "/subjects", "Asignaturas"),
-    ("grade-levels", "/grade-levels", "Niveles"),
-    ("academic-years", "/academic-years", "Años Académicos"),
-    ("classrooms", "/classrooms", "Salas"),
-    ("agenda", "/agenda", "Agenda Escolar"),
-    ("notifications", "/notifications", "Mensajería"),
-    ("finance", "/finance", "Finanzas"),
-    ("reports", "/reports", "Reportes"),
-    ("admission", "/admission", "Admisiones"),
-    ("hr", "/hr", "Recursos Humanos"),
-    ("payroll", "/payroll", "Remuneraciones"),
-    ("sige", "/sige", "SIGE"),
-    ("complaints", "/complaints", "Denuncias"),
-    ("users", "/users", "Usuarios"),
-    ("roles", "/roles", "Roles"),
-    ("audit", "/audit", "Auditoría"),
-    ("corporations", "/corporations", "Corporaciones"),
-];
-
 fn role_label(role: &str) -> &'static str {
     match role {
         "Root" => "Root Admin",
@@ -96,7 +71,6 @@ pub fn Sidebar() -> Element {
     let current_path = web_sys::window()
         .and_then(|w| w.location().pathname().ok())
         .unwrap_or_default();
-    let current_path_clone = current_path.clone();
     let is_active = move |path: &str| current_path == path;
 
     rsx! {
@@ -212,42 +186,7 @@ pub fn Sidebar() -> Element {
                         None => rsx! { p { class: "empty-hint", "Cargando..." } },
                     }
                 }
-                {if user_role != "Root" {
-                    let module_ids: std::collections::HashSet<String> = match modules() {
-                        Some(Ok(data)) => {
-                            data["modules"].as_array().map(|arr| {
-                                arr.iter().filter_map(|m| m["id"].as_str().map(String::from)).collect()
-                            }).unwrap_or_default()
-                        }
-                        Some(Err(_)) => std::collections::HashSet::new(),
-                        None => std::collections::HashSet::new(),
-                    };
-                    let rendered: Vec<_> = MODULE_NAV_ITEMS.iter().filter_map(|(id, route, label)| {
-                        if module_ids.contains(*id) {
-                            let active = current_path_clone.as_str() == *route;
-                            Some(rsx! {
-                                a { key: "{id}", class: "nav-item", href: "{route}", aria_current: active.then_some("page"),
-                                    span { class: "icon",
-                                        svg { role: "presentation", view_box: "0 0 24 24",
-                                            rect { x: "3", y: "3", width: "18", height: "18", rx: "2" }
-                                        }
-                                    }
-                                    span { class: "label", "{label}" }
-                                }
-                            })
-                        } else {
-                            None
-                        }
-                    }).collect();
-                    if !rendered.is_empty() {
-                        rsx! {
-                            div { class: "nav-section-label", "Módulos"}
-                            {rendered.into_iter()}
-                        }
-                    } else {
-                        rsx! {}
-                    }
-                } else { rsx! {} }}
+
             }
 
             div { class: "sidebar-footer",

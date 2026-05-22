@@ -1,7 +1,9 @@
 use dioxus::prelude::*;
+use dioxus::router::components::Outlet;
 
 use crate::api::client;
 use crate::seo::use_page_title;
+use crate::components::layout::{sidebar::Sidebar, topbar::Topbar};
 use crate::components::pages::academic_years_page::AcademicYearsPage;
 use crate::components::pages::admission_page::AdmissionPage;
 use crate::components::pages::admin_contracts_page::AdminContractsPage;
@@ -67,6 +69,29 @@ fn require_auth() {
     }
 }
 
+#[component]
+fn AppLayout() -> Element {
+    let fav_ver = use_signal(|| 0u32);
+    use_context_provider(|| fav_ver);
+
+    rsx! {
+        a { class: "skip-link", href: "#main-content", "Saltar al contenido" }
+        div { class: "app-layout",
+            Sidebar {}
+            div { class: "main-area",
+                Topbar {}
+                div { id: "main-content", class: "dashboard-content", role: "main",
+                    div { role: "alert", aria_live: "polite",
+                        ErrorBoundary {
+                            Outlet::<Route> {}
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[derive(Routable, Clone, PartialEq)]
 #[rustfmt::skip]
 pub enum Route {
@@ -74,82 +99,83 @@ pub enum Route {
     Login {},
     #[route("/session-login")]
     SessionLogin {},
-    #[route("/dashboard")]
-    Dashboard {},
-    #[route("/sostenedor")]
-    SostenedorPortal {},
-    #[route("/root")]
-    RootDashboard {},
-    #[route("/")]
-    ModuleManagerRoot {},
-    #[route("/students")]
-    Students {},
-    #[route("/students/{student_id}")]
-    StudentDetailPage { student_id: String },
-    #[route("/attendance")]
-    Attendance {},
-    #[route("/grades")]
-    Grades {},
-    #[route("/notifications")]
-    Notifications {},
-    #[route("/reports")]
-    Reports {},
-    #[route("/finance")]
-    Finance {},
-    #[route("/users")]
-    Users {},
-    #[route("/courses")]
-    Courses {},
-    #[route("/enrollments")]
-    Enrollments {},
-    #[route("/subjects")]
-    Subjects {},
-    #[route("/config")]
-    Config {},
-    #[route("/admission")]
-    Admission {},
-    #[route("/hr")]
-    Hr {},
-    #[route("/hr/{employee_id}")]
-    HrDetail { employee_id: String },
-    #[route("/import")]
-    Import {},
-    #[route("/corporations")]
-    Corporations {},
-    #[route("/agenda")]
-    Agenda {},
-    #[route("/academic-years")]
-    AcademicYears {},
-    #[route("/audit")]
-    Audit {},
-    #[route("/grade-levels")]
-    GradeLevels {},
-    #[route("/roles")]
-    Roles {},
-    #[route("/classrooms")]
-    Classrooms {},
-    #[route("/payroll")]
-    Payroll {},
-    #[route("/license-portal")]
-    ClientPortal {},
-    #[route("/my-portal")]
-    EmployeePortal {},
-    #[route("/sige")]
-    Sige {},
-    #[route("/complaints")]
-    Complaints {},
-    #[route("/curriculum")]
-    Curriculum {},
-    #[route("/sales")]
-    Sales {},
-    #[route("/admin/plans")]
-    AdminPlans {},
-    #[route("/admin/contracts")]
-    AdminContracts {},
-    #[route("/admin/payments")]
-    AdminPayments {},
-    #[route("/admin/system")]
-    AdminSystem {},
+    #[layout(AppLayout)]
+        #[route("/dashboard")]
+        Dashboard {},
+        #[route("/sostenedor")]
+        SostenedorPortal {},
+        #[route("/root")]
+        RootDashboard {},
+        #[route("/")]
+        ModuleManagerRoot {},
+        #[route("/students")]
+        Students {},
+        #[route("/students/{student_id}")]
+        StudentDetailPage { student_id: String },
+        #[route("/attendance")]
+        Attendance {},
+        #[route("/grades")]
+        Grades {},
+        #[route("/notifications")]
+        Notifications {},
+        #[route("/reports")]
+        Reports {},
+        #[route("/finance")]
+        Finance {},
+        #[route("/users")]
+        Users {},
+        #[route("/courses")]
+        Courses {},
+        #[route("/enrollments")]
+        Enrollments {},
+        #[route("/subjects")]
+        Subjects {},
+        #[route("/config")]
+        Config {},
+        #[route("/admission")]
+        Admission {},
+        #[route("/hr")]
+        Hr {},
+        #[route("/hr/{employee_id}")]
+        HrDetail { employee_id: String },
+        #[route("/import")]
+        Import {},
+        #[route("/corporations")]
+        Corporations {},
+        #[route("/agenda")]
+        Agenda {},
+        #[route("/academic-years")]
+        AcademicYears {},
+        #[route("/audit")]
+        Audit {},
+        #[route("/grade-levels")]
+        GradeLevels {},
+        #[route("/roles")]
+        Roles {},
+        #[route("/classrooms")]
+        Classrooms {},
+        #[route("/payroll")]
+        Payroll {},
+        #[route("/license-portal")]
+        ClientPortal {},
+        #[route("/my-portal")]
+        EmployeePortal {},
+        #[route("/sige")]
+        Sige {},
+        #[route("/complaints")]
+        Complaints {},
+        #[route("/curriculum")]
+        Curriculum {},
+        #[route("/sales")]
+        Sales {},
+        #[route("/admin/plans")]
+        AdminPlans {},
+        #[route("/admin/contracts")]
+        AdminContracts {},
+        #[route("/admin/payments")]
+        AdminPayments {},
+        #[route("/admin/system")]
+        AdminSystem {},
 }
 
 #[component]
