@@ -323,42 +323,23 @@ async fn stream_from_ollama(
 
     let mut full = String::new();
     let mut raw = String::new();
-    let mut buf = String::new();
+    let full_text = resp.text().await.map_err(|e| format!("Error de lectura: {e}"))?;
 
-    loop {
-        let next = resp.chunk().await;
-        match next {
-            Ok(Some(chunk)) => {
-                let text = String::from_utf8_lossy(&chunk);
-                buf.push_str(&text);
-
-                loop {
-                    match buf.find('\n') {
-                        Some(nl) => {
-                            let line = buf[..nl].to_string();
-                            buf.drain(..=nl);
-                            if line.is_empty() {
-                                continue;
-                            }
-                            if let Ok(data) = serde_json::from_str::<serde_json::Value>(&line) {
-                                if let Some(msg) = data["message"].as_object() {
-                                    if let Some(content) = msg.get("content").and_then(|c| c.as_str()) {
-                                        raw.push_str(content);
-                                        full.push_str(content);
-                                        on_token(content);
-                                    }
-                                }
-                                if data.get("done").and_then(|d| d.as_bool()).unwrap_or(false) {
-                                    break;
-                                }
-                            }
-                        }
-                        None => break,
-                    }
+    for line in full_text.lines() {
+        if line.is_empty() {
+            continue;
+        }
+        if let Ok(data) = serde_json::from_str::<serde_json::Value>(line) {
+            if let Some(msg) = data["message"].as_object() {
+                if let Some(content) = msg.get("content").and_then(|c| c.as_str()) {
+                    raw.push_str(content);
+                    full.push_str(content);
+                    on_token(content);
                 }
             }
-            Ok(None) => break,
-            Err(e) => return Err(format!("Error de lectura: {e}")),
+            if data.get("done").and_then(|d| d.as_bool()).unwrap_or(false) {
+                break;
+            }
         }
     }
 
