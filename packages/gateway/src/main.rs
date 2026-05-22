@@ -2,6 +2,8 @@ mod graphql;
 
 use std::env;
 
+
+
 use axum::{
     Router,
     extract::{
@@ -11,6 +13,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{any, get},
+    body::Body,
 };
 use futures_util::{SinkExt, StreamExt};
 use http_body_util::BodyExt;
@@ -34,6 +37,7 @@ struct AppState {
     curriculum_url: String,
     crm_url: String,
     frontend_url: String,
+    ollama_url: String,
 }
 
 #[tokio::main]
@@ -63,6 +67,7 @@ async fn main() {
         portal_url: env::var("PORTAL_URL").unwrap_or_else(|_| "http://localhost:3010".into()),
         curriculum_url: env::var("CURRICULUM_URL").unwrap_or_else(|_| "http://localhost:3011".into()),
         crm_url: env::var("CRM_URL").unwrap_or_else(|_| "http://localhost:3012".into()),
+        ollama_url: env::var("OLLAMA_URL").unwrap_or_else(|_| "http://localhost:11434".into()),
     };
     let frontend_origin = state
         .frontend_url
@@ -148,6 +153,7 @@ async fn main() {
         .route("/api/curriculum/{*path}", any(proxy_curriculum))
         .route("/api/sales", any(proxy_crm))
         .route("/api/sales/{*path}", any(proxy_crm))
+        .route("/api/ai/{*path}", any(proxy_ai))
         .route("/graphql", get(graphql_playground).post(graphql_handler))
         .layer(Extension(schema))
         .route("/ws", any(ws_proxy))
@@ -316,6 +322,52 @@ proxy_handler!(proxy_reporting, "reporting");
 proxy_handler!(proxy_portal, "portal");
 proxy_handler!(proxy_curriculum, "curriculum");
 proxy_handler!(proxy_crm, "crm");
+
+async fn proxy_ai(State(state): State<AppState>, req: Request) -> Response {
+    let base_url = &state.ollama_url;
+    let path = req.uri().path().strip_prefix("/api/ai").unwrap_or("");
+    let query = req
+        .uri()
+        .query()
+        .map(|q| format!("?{q}"))
+        .unwrap_or_default();
+    let upstream_url = format!("{base_url}{path}{query}");
+
+    let method = req.method().clone();
+
+    let body_bytes = req
+        .into_body()
+        .collect()
+        .await
+        .unwrap_or_default()
+        .to_bytes();
+
+    let upstream_req = state
+        .client
+        .request(method, &upstream_url)
+        .body(body_bytes);
+
+    match upstream_req.send().await {
+        Ok(resp) => {
+            let status = resp.status();
+            let resp_headers = resp.headers().clone();
+            let stream = resp.bytes_stream().map(|r| r.map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>));
+            let body = Body::from_stream(stream);
+            let mut response = Response::new(body);
+            *response.status_mut() = status;
+            for (key, value) in resp_headers.iter() {
+                if key != "host" && key != "transfer-encoding" {
+                    response.headers_mut().insert(key, value.clone());
+                }
+            }
+            response
+        }
+        Err(e) => {
+            tracing::error!("AI proxy error: {e}");
+            (StatusCode::BAD_GATEWAY, format!("AI service unavailable: {e}")).into_response()
+        }
+    }
+}
 
 async fn proxy_request(state: &AppState, service: &str, req: Request) -> Response {
     let base_url = match service {
