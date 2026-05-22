@@ -1,5 +1,5 @@
 ---
-name: cn-Educacion_Parvularia-nt_nivel_transicion-comunicacion_integral
+name: educacion-parvularia-nt-nivel-transicion-comunicacion-integral
 description: >
   Documentos curriculares de Comunicación Integral para Nivel Transición.
 license: MIT

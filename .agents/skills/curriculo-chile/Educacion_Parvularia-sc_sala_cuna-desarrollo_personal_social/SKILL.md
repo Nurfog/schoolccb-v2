@@ -1,5 +1,5 @@
 ---
-name: cn-Educacion_Parvularia-sc_sala_cuna-desarrollo_personal_social
+name: educacion-parvularia-sc-sala-cuna-desarrollo-personal-social
 description: >
   Documentos curriculares de Desarrollo Personal y Social para Sala Cuna.
 license: MIT

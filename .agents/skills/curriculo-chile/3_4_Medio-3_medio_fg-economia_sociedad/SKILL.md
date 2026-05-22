@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-economia_sociedad
+name: 3-4-medio-3-medio-fg-economia-sociedad
 description: >
   Documentos curriculares de Economía y Sociedad para 3° Medio FG.
 license: MIT

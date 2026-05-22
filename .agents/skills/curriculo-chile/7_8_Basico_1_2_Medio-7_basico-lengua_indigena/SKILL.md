@@ -1,5 +1,5 @@
 ---
-name: cn-7_8_Basico_1_2_Medio-7_basico-lengua_indigena
+name: 7-8-basico-1-2-medio-7-basico-lengua-indigena
 description: >
   Documentos curriculares de Lengua Indígena para 7° Básico.
 license: MIT

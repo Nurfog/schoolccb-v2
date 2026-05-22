@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-EPJA-general
+name: programas-estudio-epja-general
 description: >
   Documentos curriculares de General para EPJA.
 license: MIT

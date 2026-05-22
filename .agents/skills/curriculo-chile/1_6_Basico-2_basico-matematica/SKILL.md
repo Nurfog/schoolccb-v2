@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-2_basico-matematica
+name: 1-6-basico-2-basico-matematica
 description: >
   Documentos curriculares de Matemática para 2° Básico.
 license: MIT

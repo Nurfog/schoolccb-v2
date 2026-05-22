@@ -1,5 +1,5 @@
 ---
-name: cn-Educacion_Parvularia-nt_nivel_transicion-interaccion_comprension_entorno
+name: educacion-parvularia-nt-nivel-transicion-interaccion-comprension-entorno
 description: >
   Documentos curriculares de Interacción y Comprensión del Entorno para Nivel Transición.
 license: MIT

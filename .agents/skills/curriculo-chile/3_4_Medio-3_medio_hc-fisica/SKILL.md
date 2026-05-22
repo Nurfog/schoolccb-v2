@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_hc-fisica
+name: 3-4-medio-3-medio-hc-fisica
 description: >
   Documentos curriculares de Física para 3° Medio HC.
 license: MIT

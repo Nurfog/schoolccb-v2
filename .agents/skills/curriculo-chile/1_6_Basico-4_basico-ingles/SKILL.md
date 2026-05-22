@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-4_basico-ingles
+name: 1-6-basico-4-basico-ingles
 description: >
   Documentos curriculares de Inglés para 4° Básico.
 license: MIT

@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-limites_derivadas_integrales
+name: 3-4-medio-3-medio-fg-limites-derivadas-integrales
 description: >
   Documentos curriculares de Límites, Derivadas e Integrales para 3° Medio FG.
 license: MIT

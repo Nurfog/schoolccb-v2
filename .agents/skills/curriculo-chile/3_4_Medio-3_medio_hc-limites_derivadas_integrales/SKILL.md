@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_hc-limites_derivadas_integrales
+name: 3-4-medio-3-medio-hc-limites-derivadas-integrales
 description: >
   Documentos curriculares de Límites, Derivadas e Integrales para 3° Medio HC.
 license: MIT

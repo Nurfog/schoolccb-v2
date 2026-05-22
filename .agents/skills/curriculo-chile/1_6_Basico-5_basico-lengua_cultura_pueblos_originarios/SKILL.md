@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-5_basico-lengua_cultura_pueblos_originarios
+name: 1-6-basico-5-basico-lengua-cultura-pueblos-originarios
 description: >
   Documentos curriculares de Lengua y Cultura Pueblos Originarios para 5° Básico.
 license: MIT

@@ -1,5 +1,5 @@
 ---
-name: cn-7_8_Basico_1_2_Medio-8_basico-ingles_propuesta
+name: 7-8-basico-1-2-medio-8-basico-ingles-propuesta
 description: >
   Documentos curriculares de Inglés (Propuesta) para 8° Básico.
 license: MIT

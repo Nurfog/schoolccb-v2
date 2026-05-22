@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_hc-ciencias_salud
+name: 3-4-medio-3-medio-hc-ciencias-salud
 description: >
   Documentos curriculares de Ciencias de la Salud para 3° Medio HC.
 license: MIT

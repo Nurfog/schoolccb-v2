@@ -1,5 +1,5 @@
 ---
-name: cn-normativa
+name: normativa
 description: >
   Normativa educacional chilena: decretos, leyes y resoluciones del MINEDUC
   que regulan el sistema escolar. Incluye DFL 2 (LGE), Decreto 67 (evaluación),

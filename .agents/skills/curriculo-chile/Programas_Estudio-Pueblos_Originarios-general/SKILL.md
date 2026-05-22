@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Pueblos_Originarios-general
+name: programas-estudio-pueblos-originarios-general
 description: >
   Documentos curriculares de General para Pueblos_Originarios.
 license: MIT

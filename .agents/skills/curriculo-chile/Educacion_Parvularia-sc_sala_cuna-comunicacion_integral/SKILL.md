@@ -1,5 +1,5 @@
 ---
-name: cn-Educacion_Parvularia-sc_sala_cuna-comunicacion_integral
+name: educacion-parvularia-sc-sala-cuna-comunicacion-integral
 description: >
   Documentos curriculares de Comunicación Integral para Sala Cuna.
 license: MIT

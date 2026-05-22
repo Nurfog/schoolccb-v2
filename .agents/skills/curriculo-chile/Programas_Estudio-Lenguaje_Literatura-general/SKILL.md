@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Lenguaje_Literatura-general
+name: programas-estudio-lenguaje-literatura-general
 description: >
   Documentos curriculares de General para Lenguaje_Literatura.
 license: MIT

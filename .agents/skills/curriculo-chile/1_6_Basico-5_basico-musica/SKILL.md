@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-5_basico-musica
+name: 1-6-basico-5-basico-musica
 description: >
   Documentos curriculares de Música para 5° Básico.
 license: MIT

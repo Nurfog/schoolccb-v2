@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-3_basico-historia_geografia_csociales
+name: 1-6-basico-3-basico-historia-geografia-csociales
 description: >
   Documentos curriculares de Historia, Geografía y Cs. Sociales para 3° Básico.
 license: MIT

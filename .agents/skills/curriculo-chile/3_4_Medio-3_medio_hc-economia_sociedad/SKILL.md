@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_hc-economia_sociedad
+name: 3-4-medio-3-medio-hc-economia-sociedad
 description: >
   Documentos curriculares de Economía y Sociedad para 3° Medio HC.
 license: MIT

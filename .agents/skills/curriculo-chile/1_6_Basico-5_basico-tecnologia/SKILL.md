@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-5_basico-tecnologia
+name: 1-6-basico-5-basico-tecnologia
 description: >
   Documentos curriculares de Tecnología para 5° Básico.
 license: MIT

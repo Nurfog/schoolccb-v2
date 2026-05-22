@@ -1,5 +1,5 @@
 ---
-name: cn-7_8_Basico_1_2_Medio-1_medio-historia_geografia_csociales
+name: 7-8-basico-1-2-medio-1-medio-historia-geografia-csociales
 description: >
   Documentos curriculares de Historia, Geografía y Cs. Sociales para 1° Medio.
 license: MIT

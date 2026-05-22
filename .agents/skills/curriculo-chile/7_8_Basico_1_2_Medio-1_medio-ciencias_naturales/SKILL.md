@@ -1,5 +1,5 @@
 ---
-name: cn-7_8_Basico_1_2_Medio-1_medio-ciencias_naturales
+name: 7-8-basico-1-2-medio-1-medio-ciencias-naturales
 description: >
   Documentos curriculares de Ciencias Naturales para 1° Medio.
 license: MIT

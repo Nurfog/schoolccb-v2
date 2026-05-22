@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-artes_visuales
+name: 3-4-medio-3-medio-fg-artes-visuales
 description: >
   Documentos curriculares y recursos pedagógicos de Artes Visuales para 3° Medio FG.
 license: MIT

@@ -1,5 +1,5 @@
 ---
-name: cn-planes_estudio
+name: planes-estudio
 description: >
   Planes de Estudio oficiales del MINEDUC: distribución horaria,
   asignaturas obligatorias y electivas, planes de formación general

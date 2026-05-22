@@ -1,5 +1,5 @@
 ---
-name: cn-7_8_Basico_1_2_Medio-1_medio-artes_visuales
+name: 7-8-basico-1-2-medio-1-medio-artes-visuales
 description: >
   Documentos curriculares de Artes Visuales para 1° Medio.
 license: MIT

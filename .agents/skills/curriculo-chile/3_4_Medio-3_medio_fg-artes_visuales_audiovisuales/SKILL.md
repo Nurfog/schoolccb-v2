@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-artes_visuales_audiovisuales
+name: 3-4-medio-3-medio-fg-artes-visuales-audiovisuales
 description: >
   Documentos curriculares de Artes Visuales Audiovisuales para 3° Medio FG.
 license: MIT

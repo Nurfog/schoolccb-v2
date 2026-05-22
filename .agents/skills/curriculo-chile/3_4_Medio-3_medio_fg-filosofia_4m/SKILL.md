@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-filosofia_4m
+name: 3-4-medio-3-medio-fg-filosofia-4m
 description: >
   Documentos curriculares de Filosofía 4° Medio para 3° Medio FG.
 license: MIT

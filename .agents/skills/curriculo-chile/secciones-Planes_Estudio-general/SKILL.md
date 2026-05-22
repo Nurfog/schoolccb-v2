@@ -1,5 +1,5 @@
 ---
-name: cn-secciones-Planes_Estudio-general
+name: secciones-planes-estudio-general
 description: >
   Documentos curriculares de General para Planes_Estudio.
 license: MIT

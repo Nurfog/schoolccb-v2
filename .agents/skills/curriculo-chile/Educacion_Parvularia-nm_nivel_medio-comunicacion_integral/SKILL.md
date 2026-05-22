@@ -1,5 +1,5 @@
 ---
-name: cn-Educacion_Parvularia-nm_nivel_medio-comunicacion_integral
+name: educacion-parvularia-nm-nivel-medio-comunicacion-integral
 description: >
   Documentos curriculares de Comunicación Integral para Nivel Medio.
 license: MIT

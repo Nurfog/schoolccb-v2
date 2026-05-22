@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-educacion_ciudadana_3m
+name: 3-4-medio-3-medio-fg-educacion-ciudadana-3m
 description: >
   Documentos curriculares de Educación Ciudadana 3° Medio para 3° Medio FG.
 license: MIT

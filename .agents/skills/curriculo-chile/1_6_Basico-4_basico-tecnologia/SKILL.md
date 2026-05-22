@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-4_basico-tecnologia
+name: 1-6-basico-4-basico-tecnologia
 description: >
   Documentos curriculares de Tecnología para 4° Básico.
 license: MIT

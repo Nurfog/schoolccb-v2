@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-6_basico-orientacion
+name: 1-6-basico-6-basico-orientacion
 description: >
   Documentos curriculares de Orientación para 6° Básico.
 license: MIT

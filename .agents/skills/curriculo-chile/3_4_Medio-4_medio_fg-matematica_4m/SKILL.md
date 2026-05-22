@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-4_medio_fg-matematica_4m
+name: 3-4-medio-4-medio-fg-matematica-4m
 description: >
   Documentos curriculares de Matematica 4M para 4° Medio FG.
 license: MIT

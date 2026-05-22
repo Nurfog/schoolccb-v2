@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-4_basico-matematica
+name: 1-6-basico-4-basico-matematica
 description: >
   Documentos curriculares de Matemática para 4° Básico.
 license: MIT

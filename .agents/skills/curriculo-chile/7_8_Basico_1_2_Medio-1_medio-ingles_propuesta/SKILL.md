@@ -1,5 +1,5 @@
 ---
-name: cn-7_8_Basico_1_2_Medio-1_medio-ingles_propuesta
+name: 7-8-basico-1-2-medio-1-medio-ingles-propuesta
 description: >
   Documentos curriculares de Inglés (Propuesta) para 1° Medio.
 license: MIT

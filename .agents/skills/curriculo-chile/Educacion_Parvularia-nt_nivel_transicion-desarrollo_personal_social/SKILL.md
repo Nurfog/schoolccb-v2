@@ -1,5 +1,5 @@
 ---
-name: cn-Educacion_Parvularia-nt_nivel_transicion-desarrollo_personal_social
+name: educacion-parvularia-nt-nivel-transicion-desarrollo-personal-social
 description: >
   Documentos curriculares de Desarrollo Personal y Social para Nivel Transición.
 license: MIT

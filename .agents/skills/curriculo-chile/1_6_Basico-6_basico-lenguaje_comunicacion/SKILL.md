@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-6_basico-lenguaje_comunicacion
+name: 1-6-basico-6-basico-lenguaje-comunicacion
 description: >
   Documentos curriculares de Lenguaje y Comunicación para 6° Básico.
 license: MIT

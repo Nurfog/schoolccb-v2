@@ -1,5 +1,5 @@
 ---
-name: cn-7_8_Basico_1_2_Medio-2_medio-educacion_fisica_salud
+name: 7-8-basico-1-2-medio-2-medio-educacion-fisica-salud
 description: >
   Documentos curriculares de Educación Física y Salud para 2° Medio.
 license: MIT

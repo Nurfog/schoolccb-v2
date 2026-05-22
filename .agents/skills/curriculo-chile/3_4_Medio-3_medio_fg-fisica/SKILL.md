@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-fisica
+name: 3-4-medio-3-medio-fg-fisica
 description: >
   Documentos curriculares de Física para 3° Medio FG.
 license: MIT

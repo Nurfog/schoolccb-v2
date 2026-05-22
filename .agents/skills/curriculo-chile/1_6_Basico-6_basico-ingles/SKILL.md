@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-6_basico-ingles
+name: 1-6-basico-6-basico-ingles
 description: >
   Documentos curriculares de Inglés para 6° Básico.
 license: MIT

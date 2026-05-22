@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-2_basico-artes_visuales
+name: 1-6-basico-2-basico-artes-visuales
 description: >
   Documentos curriculares de Artes Visuales para 2° Básico.
 license: MIT

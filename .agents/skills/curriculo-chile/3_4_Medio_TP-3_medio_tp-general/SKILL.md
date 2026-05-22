@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio_TP-3_medio_tp-general
+name: 3-4-medio-tp-3-medio-tp-general
 description: >
   Documentos curriculares de General para 3° Medio TP.
 license: MIT

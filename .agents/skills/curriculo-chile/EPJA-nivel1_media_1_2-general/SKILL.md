@@ -1,5 +1,5 @@
 ---
-name: cn-EPJA-nivel1_media_1_2-general
+name: epja-nivel1-media-1-2-general
 description: >
   Documentos curriculares de General para Nivel 1 Media (1-2).
 license: MIT

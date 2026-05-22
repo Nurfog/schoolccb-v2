@@ -1,5 +1,5 @@
 ---
-name: cn-secciones-Normativa-general
+name: secciones-normativa-general
 description: >
   Documentos curriculares de General para Normativa.
 license: MIT

@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-3_basico-ingles
+name: 1-6-basico-3-basico-ingles
 description: >
   Documentos curriculares de Inglés para 3° Básico.
 license: MIT

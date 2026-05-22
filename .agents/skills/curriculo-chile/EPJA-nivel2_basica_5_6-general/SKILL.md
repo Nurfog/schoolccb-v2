@@ -1,5 +1,5 @@
 ---
-name: cn-EPJA-nivel2_basica_5_6-general
+name: epja-nivel2-basica-5-6-general
 description: >
   Documentos curriculares de General para Nivel 2 Básica (5-6).
 license: MIT

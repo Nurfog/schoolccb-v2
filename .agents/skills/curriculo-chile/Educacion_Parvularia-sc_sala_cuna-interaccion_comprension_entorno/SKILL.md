@@ -1,5 +1,5 @@
 ---
-name: cn-Educacion_Parvularia-sc_sala_cuna-interaccion_comprension_entorno
+name: educacion-parvularia-sc-sala-cuna-interaccion-comprension-entorno
 description: >
   Documentos curriculares de Interacción y Comprensión del Entorno para Sala Cuna.
 license: MIT

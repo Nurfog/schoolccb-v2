@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_hc-interpretacion_creacion_teatro
+name: 3-4-medio-3-medio-hc-interpretacion-creacion-teatro
 description: >
   Documentos curriculares de Interpretación y Creación en Teatro para 3° Medio HC.
 license: MIT

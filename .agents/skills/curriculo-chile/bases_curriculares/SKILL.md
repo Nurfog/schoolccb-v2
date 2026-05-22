@@ -1,5 +1,5 @@
 ---
-name: cn-bases_curriculares
+name: bases-curriculares
 description: >
   Bases Curriculares oficiales de todos los niveles educativos chilenos:
   Educación Parvularia, Básica (1° a 6°), 7° Básico a 2° Medio,

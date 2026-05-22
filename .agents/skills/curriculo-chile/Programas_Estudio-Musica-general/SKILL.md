@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Musica-general
+name: programas-estudio-musica-general
 description: >
   Documentos curriculares de General para Musica.
 license: MIT

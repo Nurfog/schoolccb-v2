@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Ciencias_Naturales-general
+name: programas-estudio-ciencias-naturales-general
 description: >
   Documentos curriculares de General para Ciencias_Naturales.
 license: MIT

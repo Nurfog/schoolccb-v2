@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-5_basico-ciencias_naturales
+name: 1-6-basico-5-basico-ciencias-naturales
 description: >
   Documentos curriculares de Ciencias Naturales para 5° Básico.
 license: MIT

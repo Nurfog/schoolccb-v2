@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-3_basico-matematica
+name: 1-6-basico-3-basico-matematica
 description: >
   Documentos curriculares de Matemática para 3° Básico.
 license: MIT

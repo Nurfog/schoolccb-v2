@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-3_basico-musica
+name: 1-6-basico-3-basico-musica
 description: >
   Documentos curriculares de Música para 3° Básico.
 license: MIT

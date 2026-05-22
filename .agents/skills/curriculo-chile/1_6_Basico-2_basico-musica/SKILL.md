@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-2_basico-musica
+name: 1-6-basico-2-basico-musica
 description: >
   Documentos curriculares de Música para 2° Básico.
 license: MIT

@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-5_basico-ingles_propuesta
+name: 1-6-basico-5-basico-ingles-propuesta
 description: >
   Documentos curriculares de Inglés (Propuesta) para 5° Básico.
 license: MIT

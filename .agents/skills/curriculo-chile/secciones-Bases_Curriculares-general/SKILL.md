@@ -1,5 +1,5 @@
 ---
-name: cn-secciones-Bases_Curriculares-general
+name: secciones-bases-curriculares-general
 description: >
   Documentos curriculares de General para Bases_Curriculares.
 license: MIT

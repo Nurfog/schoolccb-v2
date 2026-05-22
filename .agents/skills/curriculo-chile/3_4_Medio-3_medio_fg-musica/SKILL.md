@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-musica
+name: 3-4-medio-3-medio-fg-musica
 description: >
   Documentos curriculares de Música para 3° Medio FG.
 license: MIT

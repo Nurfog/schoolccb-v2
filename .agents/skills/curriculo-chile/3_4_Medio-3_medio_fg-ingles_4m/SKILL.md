@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-ingles_4m
+name: 3-4-medio-3-medio-fg-ingles-4m
 description: >
   Documentos curriculares y recursos pedagógicos de Ingles 4M para 3° Medio FG.
 license: MIT

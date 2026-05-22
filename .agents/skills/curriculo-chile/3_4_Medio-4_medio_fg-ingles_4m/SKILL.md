@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-4_medio_fg-ingles_4m
+name: 3-4-medio-4-medio-fg-ingles-4m
 description: >
   Documentos curriculares de Ingles 4M para 4° Medio FG.
 license: MIT

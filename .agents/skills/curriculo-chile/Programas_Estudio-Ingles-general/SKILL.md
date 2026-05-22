@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Ingles-general
+name: programas-estudio-ingles-general
 description: >
   Documentos curriculares de General para Ingles.
 license: MIT

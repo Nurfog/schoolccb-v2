@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Tecnologia-general
+name: programas-estudio-tecnologia-general
 description: >
   Documentos curriculares de General para Tecnologia.
 license: MIT

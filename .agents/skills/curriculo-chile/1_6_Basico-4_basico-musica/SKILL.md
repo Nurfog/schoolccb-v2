@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-4_basico-musica
+name: 1-6-basico-4-basico-musica
 description: >
   Documentos curriculares de Música para 4° Básico.
 license: MIT

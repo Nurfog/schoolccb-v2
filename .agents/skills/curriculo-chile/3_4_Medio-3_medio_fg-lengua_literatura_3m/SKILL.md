@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-lengua_literatura_3m
+name: 3-4-medio-3-medio-fg-lengua-literatura-3m
 description: >
   Documentos curriculares de Lengua Literatura 3M para 3° Medio FG.
 license: MIT

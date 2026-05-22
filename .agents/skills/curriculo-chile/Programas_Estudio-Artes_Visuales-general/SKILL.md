@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Artes_Visuales-general
+name: programas-estudio-artes-visuales-general
 description: >
   Documentos curriculares de General para Artes_Visuales.
 license: MIT

@@ -1,5 +1,5 @@
 ---
-name: cn-Educacion_Parvularia-nm_nivel_medio-desarrollo_personal_social
+name: educacion-parvularia-nm-nivel-medio-desarrollo-personal-social
 description: >
   Documentos curriculares de Desarrollo Personal y Social para Nivel Medio.
 license: MIT

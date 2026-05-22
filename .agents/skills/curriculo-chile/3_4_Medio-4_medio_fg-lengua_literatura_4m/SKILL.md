@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-4_medio_fg-lengua_literatura_4m
+name: 3-4-medio-4-medio-fg-lengua-literatura-4m
 description: >
   Documentos curriculares de Lengua Literatura 4M para 4° Medio FG.
 license: MIT

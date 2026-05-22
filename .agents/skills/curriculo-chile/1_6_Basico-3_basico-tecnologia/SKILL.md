@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-3_basico-tecnologia
+name: 1-6-basico-3-basico-tecnologia
 description: >
   Documentos curriculares de Tecnología para 3° Básico.
 license: MIT

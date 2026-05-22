@@ -1,5 +1,5 @@
 ---
-name: cn-Lengua_Indigena_7_8-7_basico-lengua_indigena
+name: lengua-indigena-7-8-7-basico-lengua-indigena
 description: >
   Documentos curriculares de Lengua Indígena para 7° Básico.
 license: MIT

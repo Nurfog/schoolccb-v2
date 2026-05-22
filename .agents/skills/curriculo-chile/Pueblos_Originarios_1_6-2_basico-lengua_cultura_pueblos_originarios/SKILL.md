@@ -1,5 +1,5 @@
 ---
-name: cn-Pueblos_Originarios_1_6-2_basico-lengua_cultura_pueblos_originarios
+name: pueblos-originarios-1-6-2-basico-lengua-cultura-pueblos-originarios
 description: >
   Documentos curriculares de Lengua y Cultura Pueblos Originarios para 2° Básico.
 license: MIT

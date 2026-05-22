@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-4_basico-orientacion
+name: 1-6-basico-4-basico-orientacion
 description: >
   Documentos curriculares de Orientación para 4° Básico.
 license: MIT

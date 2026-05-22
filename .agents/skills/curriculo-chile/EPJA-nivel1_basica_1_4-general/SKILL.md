@@ -1,5 +1,5 @@
 ---
-name: cn-EPJA-nivel1_basica_1_4-general
+name: epja-nivel1-basica-1-4-general
 description: >
   Documentos curriculares de General para Nivel 1 Básica (1-4).
 license: MIT

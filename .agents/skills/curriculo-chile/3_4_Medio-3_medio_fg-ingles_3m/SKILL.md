@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-ingles_3m
+name: 3-4-medio-3-medio-fg-ingles-3m
 description: >
   Documentos curriculares de Ingles 3M para 3° Medio FG.
 license: MIT

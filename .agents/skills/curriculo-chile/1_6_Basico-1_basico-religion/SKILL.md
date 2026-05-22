@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-1_basico-religion
+name: 1-6-basico-1-basico-religion
 description: >
   Documentos curriculares de Religión para 1° Básico.
 license: MIT

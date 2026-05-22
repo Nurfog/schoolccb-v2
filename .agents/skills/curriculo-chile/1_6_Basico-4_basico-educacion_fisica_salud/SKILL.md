@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-4_basico-educacion_fisica_salud
+name: 1-6-basico-4-basico-educacion-fisica-salud
 description: >
   Documentos curriculares de Educación Física y Salud para 4° Básico.
 license: MIT

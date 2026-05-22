@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Orientacion-general
+name: programas-estudio-orientacion-general
 description: >
   Documentos curriculares de General para Orientacion.
 license: MIT

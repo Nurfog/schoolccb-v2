@@ -1,5 +1,5 @@
 ---
-name: cn-7_8_Basico_1_2_Medio-7_basico-ingles_propuesta
+name: 7-8-basico-1-2-medio-7-basico-ingles-propuesta
 description: >
   Documentos curriculares de Inglés (Propuesta) para 7° Básico.
 license: MIT

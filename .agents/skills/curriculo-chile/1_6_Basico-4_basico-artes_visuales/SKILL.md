@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-4_basico-artes_visuales
+name: 1-6-basico-4-basico-artes-visuales
 description: >
   Documentos curriculares de Artes Visuales para 4° Básico.
 license: MIT

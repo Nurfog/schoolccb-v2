@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-4_basico-lenguaje_comunicacion
+name: 1-6-basico-4-basico-lenguaje-comunicacion
 description: >
   Documentos curriculares de Lenguaje y Comunicación para 4° Básico.
 license: MIT

@@ -1,5 +1,5 @@
 ---
-name: cn-7_8_Basico_1_2_Medio-7_basico-ciencias_naturales
+name: 7-8-basico-1-2-medio-7-basico-ciencias-naturales
 description: >
   Documentos curriculares y recursos pedagógicos de Ciencias Naturales para 7° Básico.
 license: MIT

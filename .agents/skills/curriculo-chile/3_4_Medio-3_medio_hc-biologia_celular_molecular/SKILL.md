@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_hc-biologia_celular_molecular
+name: 3-4-medio-3-medio-hc-biologia-celular-molecular
 description: >
   Documentos curriculares de Biología Celular y Molecular para 3° Medio HC.
 license: MIT

@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Educacion_Fisica_Salud-general
+name: programas-estudio-educacion-fisica-salud-general
 description: >
   Documentos curriculares de General para Educacion_Fisica_Salud.
 license: MIT

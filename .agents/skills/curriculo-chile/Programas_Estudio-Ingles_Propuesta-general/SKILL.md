@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Ingles_Propuesta-general
+name: programas-estudio-ingles-propuesta-general
 description: >
   Documentos curriculares de General para Ingles_Propuesta.
 license: MIT

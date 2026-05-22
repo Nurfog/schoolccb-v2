@@ -1,5 +1,5 @@
 ---
-name: cn-programas_estudio
+name: programas-estudio
 description: >
   Programas de Estudio oficiales del MINEDUC organizados por asignatura,
   con orientaciones pedagógicas, indicadores de evaluación y ejemplos

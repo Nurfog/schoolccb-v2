@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-3_basico-orientacion
+name: 1-6-basico-3-basico-orientacion
 description: >
   Documentos curriculares de Orientación para 3° Básico.
 license: MIT

@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-2_basico-ingles_propuesta
+name: 1-6-basico-2-basico-ingles-propuesta
 description: >
   Documentos curriculares de Inglés (Propuesta) para 2° Básico.
 license: MIT

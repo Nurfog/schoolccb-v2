@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-6_basico-matematica
+name: 1-6-basico-6-basico-matematica
 description: >
   Documentos curriculares de Matemática para 6° Básico.
 license: MIT

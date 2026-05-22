@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Historia_Geografia-general
+name: programas-estudio-historia-geografia-general
 description: >
   Documentos curriculares de General para Historia_Geografia.
 license: MIT

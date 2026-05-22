@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_hc-matematica_4m
+name: 3-4-medio-3-medio-hc-matematica-4m
 description: >
   Documentos curriculares de Matematica 4M para 3° Medio HC.
 license: MIT

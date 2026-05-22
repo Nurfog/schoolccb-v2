@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-quimica
+name: 3-4-medio-3-medio-fg-quimica
 description: >
   Documentos curriculares de Química para 3° Medio FG.
 license: MIT

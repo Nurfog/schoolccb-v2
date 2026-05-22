@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-Matematica-general
+name: programas-estudio-matematica-general
 description: >
   Documentos curriculares de General para Matematica.
 license: MIT

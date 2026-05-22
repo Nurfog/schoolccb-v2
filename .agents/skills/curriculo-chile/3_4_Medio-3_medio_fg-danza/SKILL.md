@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-danza
+name: 3-4-medio-3-medio-fg-danza
 description: >
   Documentos curriculares de Danza para 3° Medio FG.
 license: MIT

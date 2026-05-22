@@ -1,5 +1,5 @@
 ---
-name: cn-7_8_Basico_1_2_Medio-2_medio-tecnologia
+name: 7-8-basico-1-2-medio-2-medio-tecnologia
 description: >
   Documentos curriculares de Tecnología para 2° Medio.
 license: MIT

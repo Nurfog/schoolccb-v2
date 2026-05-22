@@ -1,5 +1,5 @@
 ---
-name: cn-3_4_Medio-3_medio_fg-teatro
+name: 3-4-medio-3-medio-fg-teatro
 description: >
   Documentos curriculares de Teatro para 3° Medio FG.
 license: MIT

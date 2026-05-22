@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-4_basico-lengua_cultura_pueblos_originarios
+name: 1-6-basico-4-basico-lengua-cultura-pueblos-originarios
 description: >
   Documentos curriculares de Lengua y Cultura Pueblos Originarios para 4° Básico.
 license: MIT

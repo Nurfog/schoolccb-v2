@@ -1,5 +1,5 @@
 ---
-name: cn-Programas_Estudio-TP-general
+name: programas-estudio-tp-general
 description: >
   Documentos curriculares de General para TP.
 license: MIT

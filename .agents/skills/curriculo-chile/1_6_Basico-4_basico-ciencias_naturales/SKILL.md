@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-4_basico-ciencias_naturales
+name: 1-6-basico-4-basico-ciencias-naturales
 description: >
   Documentos curriculares de Ciencias Naturales para 4° Básico.
 license: MIT

@@ -1,5 +1,5 @@
 ---
-name: cn-1_6_Basico-5_basico-matematica
+name: 1-6-basico-5-basico-matematica
 description: >
   Documentos curriculares de Matemática para 5° Básico.
 license: MIT
