@@ -130,8 +130,19 @@ fn load_kb(kb_dir: &str) -> Vec<KbEntry> {
             }
         };
 
-        let (_categoria, nivel, asignatura) = parse_dir_name(&dir_name);
-        let fuente = kb["source"].as_str().unwrap_or(&dir_name).to_string();
+        let fuente = kb["source"].as_str().unwrap_or("").to_string();
+        let (nivel, asignatura) = if fuente.contains('/') {
+            let parts: Vec<&str> = fuente.split('/').collect();
+            if parts.len() >= 4 {
+                (normalize_nivel(parts[2]), normalize_asignatura(parts[3]))
+            } else if parts.len() == 3 {
+                (normalize_nivel(parts[1]), normalize_asignatura(parts[2]))
+            } else {
+                (parse_dir_name(&dir_name).1, parse_dir_name(&dir_name).2)
+            }
+        } else {
+            (parse_dir_name(&dir_name).1, parse_dir_name(&dir_name).2)
+        };
 
         if let Some(chunks) = kb["chunks"].as_array() {
             for chunk in chunks {
