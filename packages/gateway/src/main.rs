@@ -335,6 +335,15 @@ async fn proxy_ai(State(state): State<AppState>, req: Request) -> Response {
 
     let method = req.method().clone();
 
+    let mut req_headers: Vec<(String, String)> = Vec::new();
+    for (k, v) in req.headers().iter() {
+        let key = k.to_string();
+        if key == "host" {
+            continue;
+        }
+        req_headers.push((key, v.to_str().unwrap_or("").to_string()));
+    }
+
     let body_bytes = req
         .into_body()
         .collect()
@@ -342,10 +351,14 @@ async fn proxy_ai(State(state): State<AppState>, req: Request) -> Response {
         .unwrap_or_default()
         .to_bytes();
 
-    let upstream_req = state
+    let mut upstream_req = state
         .client
         .request(method, &upstream_url)
         .body(body_bytes);
+
+    for (key, value) in &req_headers {
+        upstream_req = upstream_req.header(key.as_str(), value.as_str());
+    }
 
     match upstream_req.send().await {
         Ok(resp) => {
