@@ -3,11 +3,14 @@ use serde_json::json;
 
 use crate::api::client;
 
+const MONTHS: &[(&str, &str)] = &[
+    ("1", "Enero"), ("2", "Febrero"), ("3", "Marzo"), ("4", "Abril"),
+    ("5", "Mayo"), ("6", "Junio"), ("7", "Julio"), ("8", "Agosto"),
+    ("9", "Septiembre"), ("10", "Octubre"), ("11", "Noviembre"), ("12", "Diciembre"),
+];
+
 fn first_letter(s: &str) -> String {
-    s.chars()
-        .next()
-        .map(|c| c.to_string())
-        .unwrap_or_else(|| "?".to_string())
+    s.chars().next().map(|c| c.to_string()).unwrap_or_else(|| "?".to_string())
 }
 
 #[component]
@@ -33,9 +36,7 @@ pub fn PayrollPage() -> Element {
     let employees = use_resource(|| async move { client::fetch_json("/api/hr/employees").await });
 
     let do_calculate = move |_| {
-        if gen_employee_id().trim().is_empty() {
-            return;
-        }
+        if gen_employee_id().trim().is_empty() { return; }
         generating.set(true);
         let payload = json!({
             "employee_id": gen_employee_id(),
@@ -52,9 +53,7 @@ pub fn PayrollPage() -> Element {
     };
 
     let do_generate = move |_| {
-        if gen_employee_id().trim().is_empty() {
-            return;
-        }
+        if gen_employee_id().trim().is_empty() { return; }
         generating.set(true);
         let payload = json!({
             "employee_id": gen_employee_id(),
@@ -81,19 +80,12 @@ pub fn PayrollPage() -> Element {
         let m = selected_month();
         let y = selected_year();
         spawn(async move {
-            let result = client::fetch_json(&format!(
-                "/api/hr/payroll/export/lre?month={}&year={}",
-                m, y
-            ))
-            .await;
-            match result {
+            match client::fetch_json(&format!("/api/hr/payroll/export/lre?month={}&year={}", m, y)).await {
                 Ok(data) => {
                     exported.set(format!("LRE exportado - {} registros", data["count"]));
                     payrolls.restart();
                 }
-                Err(e) => {
-                    exported.set(format!("Error: {}", e));
-                }
+                Err(e) => exported.set(format!("Error: {}", e)),
             }
         });
     };
@@ -102,19 +94,12 @@ pub fn PayrollPage() -> Element {
         let m = selected_month();
         let y = selected_year();
         spawn(async move {
-            let result = client::fetch_json(&format!(
-                "/api/hr/payroll/export/previred?month={}&year={}",
-                m, y
-            ))
-            .await;
-            match result {
+            match client::fetch_json(&format!("/api/hr/payroll/export/previred?month={}&year={}", m, y)).await {
                 Ok(data) => {
                     exported.set(format!("Previred exportado - {} registros", data["count"]));
                     payrolls.restart();
                 }
-                Err(e) => {
-                    exported.set(format!("Error: {}", e));
-                }
+                Err(e) => exported.set(format!("Error: {}", e)),
             }
         });
     };
@@ -122,37 +107,24 @@ pub fn PayrollPage() -> Element {
     rsx! {
         div { class: "page-header",
             h1 { "Remuneraciones" }
-            p { "Liquidaciones de sueldo, LRE y exportacion Previred" }
+            p { "Liquidaciones de sueldo con descuentos legales (AFP, Salud, Impuesto), LRE y exportación Previred" }
         }
         div { class: "page-toolbar",
-            div { class: "form-row", style: "gap: 8px; align-items: end;",
-                div { class: "form-group",
-                    label { "Mes:" }
-                    select { class: "form-input", value: "{selected_month}", onchange: move |e| selected_month.set(e.value().parse().unwrap_or(now_month)),
-                        option { value: "1", "Enero" }
-                        option { value: "2", "Febrero" }
-                        option { value: "3", "Marzo" }
-                        option { value: "4", "Abril" }
-                        option { value: "5", "Mayo" }
-                        option { value: "6", "Junio" }
-                        option { value: "7", "Julio" }
-                        option { value: "8", "Agosto" }
-                        option { value: "9", "Septiembre" }
-                        option { value: "10", "Octubre" }
-                        option { value: "11", "Noviembre" }
-                        option { value: "12", "Diciembre" }
-                    }
+            div { class: "filter-group",
+                label { "Mes:" }
+                select { class: "form-input", value: "{selected_month}", onchange: move |e| selected_month.set(e.value().parse().unwrap_or(now_month)),
+                    {MONTHS.iter().map(|(v, l)| rsx! { option { value: "{v}", "{l}" } })}
                 }
-                div { class: "form-group",
-                    label { "Anio:" }
-                    input { class: "form-input", value: "{selected_year}", oninput: move |e| selected_year.set(e.value().parse().unwrap_or(now_year)), type: "number", style: "width: 100px;" }
-                }
-                button { class: "btn btn-primary", onclick: move |_| show_generate.set(!show_generate()),
-                    if show_generate() { "Cancelar" } else { "Nueva Liquidacion" }
-                }
-                button { class: "btn btn-secondary", onclick: do_export_lre, "Exportar LRE" }
-                button { class: "btn btn-secondary", onclick: do_export_previred, "Exportar Previred" }
             }
+            div { class: "filter-group",
+                label { "Año:" }
+                input { class: "form-input", value: "{selected_year}", oninput: move |e| selected_year.set(e.value().parse().unwrap_or(now_year)), r#type: "number", style: "width: 100px;" }
+            }
+            button { class: "btn btn-primary", onclick: move |_| show_generate.set(!show_generate()),
+                if show_generate() { "Cancelar" } else { "Nueva Liquidación" }
+            }
+            button { class: "btn btn-secondary", onclick: do_export_lre, "Exportar LRE" }
+            button { class: "btn btn-secondary", onclick: do_export_previred, "Exportar Previred" }
         }
         { if !exported().is_empty() {
             rsx! { div { class: "alert alert-success", "{exported}" } }
@@ -160,42 +132,49 @@ pub fn PayrollPage() -> Element {
         { if show_generate() {
             rsx! {
                 div { class: "form-card",
-                    div { class: "form-row",
-                        div { class: "form-group",
-                            label { "Empleado:" }
-                            select { class: "form-input", value: "{gen_employee_id}", onchange: move |e| gen_employee_id.set(e.value()),
-                                option { value: "", "Seleccionar empleado..." }
-                                { match employees() {
-                                    Some(Ok(data)) => {
-                                        let list = data["employees"].as_array().cloned().unwrap_or_default();
-                                        let opts: Vec<Element> = list.iter().map(|emp| {
-                                            let eid = emp["id"].as_str().unwrap_or("").to_string();
-                                            let name = format!("{} {} - {}",
-                                                emp["first_name"].as_str().unwrap_or(""),
-                                                emp["last_name"].as_str().unwrap_or(""),
-                                                emp["rut"].as_str().unwrap_or("")
-                                            );
-                                            rsx! { option { value: "{eid}", "{name}" } }
-                                        }).collect();
-                                        rsx! { { opts.into_iter() } }
-                                    }
-                                    _ => rsx! {}
-                                }}
+                    div { class: "form-card-header",
+                        h3 { "Generar Liquidación" }
+                        span { class: "form-card-badge", "{selected_month()}/{selected_year()}" }
+                    }
+                    div { class: "form-section",
+                        div { class: "form-section-title", "Datos del Cálculo" }
+                        div { class: "form-row",
+                            div { class: "form-group",
+                                label { "Empleado" }
+                                select { class: "form-input", value: "{gen_employee_id}", onchange: move |e| gen_employee_id.set(e.value()),
+                                    option { value: "", "Seleccionar empleado..." }
+                                    { match employees() {
+                                        Some(Ok(data)) => {
+                                            let list = data["employees"].as_array().cloned().unwrap_or_default();
+                                            let opts: Vec<Element> = list.iter().map(|emp| {
+                                                let eid = emp["id"].as_str().unwrap_or("").to_string();
+                                                let name = format!("{} {} - {}",
+                                                    emp["first_name"].as_str().unwrap_or(""),
+                                                    emp["last_name"].as_str().unwrap_or(""),
+                                                    emp["rut"].as_str().unwrap_or("")
+                                                );
+                                                rsx! { option { value: "{eid}", "{name}" } }
+                                            }).collect();
+                                            rsx! { { opts.into_iter() } }
+                                        }
+                                        _ => rsx! {}
+                                    }}
+                                }
                             }
-                        }
-                        div { class: "form-group",
-                            label { "Movilizacion/Colacion:" }
-                            input { class: "form-input", value: "{gen_non_taxable}", oninput: move |e| gen_non_taxable.set(e.value()), type: "number", min: "0" }
-                        }
-                        div { class: "form-group",
-                            label { "Otros Descuentos:" }
-                            input { class: "form-input", value: "{gen_other_deductions}", oninput: move |e| gen_other_deductions.set(e.value()), type: "number", min: "0" }
+                            div { class: "form-group",
+                                label { "Movilización / Colación" }
+                                input { class: "form-input", value: "{gen_non_taxable}", oninput: move |e| gen_non_taxable.set(e.value()), r#type: "number", min: "0", placeholder: "0" }
+                            }
+                            div { class: "form-group",
+                                label { "Otros Descuentos" }
+                                input { class: "form-input", value: "{gen_other_deductions}", oninput: move |e| gen_other_deductions.set(e.value()), r#type: "number", min: "0", placeholder: "0" }
+                            }
                         }
                     }
                     div { class: "form-actions",
                         button { class: "btn btn-secondary", disabled: generating(), onclick: do_calculate, "Calcular Vista Previa" }
-                        button { class: "btn btn-primary", disabled: generating(), onclick: do_generate,
-                            if generating() { "Procesando..." } else { "Generar Liquidacion" }
+                        button { class: "btn btn-primary", disabled: generating() || gen_employee_id().trim().is_empty(), onclick: do_generate,
+                            if generating() { "Procesando..." } else { "Generar Liquidación" }
                         }
                     }
                     { if let Some(ref calc) = calc_result() {
@@ -213,12 +192,12 @@ pub fn PayrollPage() -> Element {
                         }).collect();
                         rsx! {
                             div { class: "calc-result",
-                                h3 { "Vista Previa" }
+                                h3 { "Vista Previa de Liquidación" }
                                 table { class: "data-table",
-                                    thead { tr { th { "Concepto" } th { "Monto" } th { "Categoria" } } }
+                                    thead { tr { th { "Concepto" } th { "Monto" } th { "Categoría" } } }
                                     tbody { { breakdown_rows.into_iter() } }
                                     tfoot { tr {
-                                        td { strong { "Sueldo Liquido" } }
+                                        td { strong { "Sueldo Líquido" } }
                                         td { strong { "${net_salary:.0}" } }
                                         td { "" }
                                     }}
@@ -234,7 +213,7 @@ pub fn PayrollPage() -> Element {
                 Some(Ok(data)) => {
                     let list = data["payrolls"].as_array().cloned().unwrap_or_default();
                     if list.is_empty() {
-                        rsx! { div { class: "empty-state", "Sin liquidaciones para este periodo" } }
+                        rsx! { div { class: "empty-state", "Sin liquidaciones para este período" } }
                     } else {
                         let rows: Vec<Element> = list.iter().map(|p| {
                             let name = p["employee_name"].as_str().unwrap_or("").to_string();
@@ -253,16 +232,16 @@ pub fn PayrollPage() -> Element {
                                         div { class: "emp-avatar-small", "{avatar}" }
                                         span { "{name}" }
                                     }}
-                                    td { "{rut}" }
+                                    td { span { class: "rut-badge", "{rut}" } }
                                     td { "${sb:.0}" }
                                     td { "${taxable:.0}" }
                                     td { "${afp:.0}" }
                                     td { "${health:.0}" }
-                                    td { strong { "${net:.0}" } }
+                                    td { strong { style: "color: var(--success);", "${net:.0}" } }
                                     td {
-                                        if lre { span { class: "status-active", "LRE" } }
-                                        else { span { class: "status-inactive", "-" } }
-                                        if prev { span { class: "status-active", " PREV" } }
+                                        if lre { span { class: "badge badge-success", "LRE" } }
+                                        else { span { class: "badge badge-warning", "-" } }
+                                        if prev { span { class: "badge badge-success", "PREV" } }
                                     }
                                 }
                             }
@@ -276,7 +255,7 @@ pub fn PayrollPage() -> Element {
                                     th { "Imponible" }
                                     th { "AFP" }
                                     th { "Salud" }
-                                    th { "Liquido" }
+                                    th { "Líquido" }
                                     th { "Exportado" }
                                 }}
                                 tbody { { rows.into_iter() } }

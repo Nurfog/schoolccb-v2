@@ -3,7 +3,7 @@ use axum::{
     extract::{Path, Query, State},
     routing::{get, post, put},
 };
-use chrono::{Datelike, Utc};
+use chrono::{Datelike, NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sqlx::Row;
@@ -37,6 +37,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/hr/me/documents", get(my_documents).post(my_upload_document))
         .route("/api/hr/complaints", get(list_complaints))
         .route("/api/hr/complaints/submit", post(submit_complaint))
+        .route("/api/hr/contract/generate", post(generate_contract))
 }
 
 #[derive(Deserialize)]
@@ -1039,4 +1040,108 @@ async fn submit_complaint(
     .fetch_one(&state.pool).await?;
 
     Ok(Json(json!({ "complaint": result, "message": "Denuncia recibida. Será revisada por RRHH." })))
+}
+
+#[derive(Deserialize)]
+struct GenerateContractPayload {
+    employee_id: Uuid,
+    contract_type: String,
+    salary_base: f64,
+    weekly_hours: i32,
+    start_date: NaiveDate,
+    ley_karin_signed: bool,
+}
+
+async fn generate_contract(
+    claims: Claims,
+    State(state): State<AppState>,
+    Json(payload): Json<GenerateContractPayload>,
+) -> SisResult<Json<Value>> {
+    require_any_role(&claims, &["Administrador", "Sostenedor", "Director"])?;
+
+    let employee = sqlx::query_as::<_, schoolccb_common::hr::Employee>(
+        "SELECT id, school_id, rut, first_name, last_name, email, phone, position, category, hire_date, vacation_days_available, active, supervisor_id, user_id, created_at, updated_at FROM employees WHERE id = $1",
+    ).bind(payload.employee_id).fetch_optional(&state.pool).await?
+        .ok_or(SisError::NotFound("Empleado no encontrado".into()))?;
+
+    let school_name = sqlx::query_scalar::<_, String>(
+        "SELECT name FROM schools WHERE id = (SELECT school_id FROM employees WHERE id = $1)",
+    ).bind(payload.employee_id).fetch_optional(&state.pool).await?
+        .unwrap_or_else(|| "El Establecimiento".to_string());
+
+    let position = employee.position.as_deref().unwrap_or("El cargo");
+    let full_name = format!("{} {}", employee.first_name, employee.last_name);
+    let rut = &employee.rut;
+    let salary_str = format!("${:.0}", payload.salary_base);
+    let contract_type_str = match payload.contract_type.as_str() {
+        "Indefinido" => "plazo indefinido",
+        "PlazoFijo" => "plazo fijo",
+        "Honorarios" => "honorarios",
+        "PrestacionServicios" => "prestación de servicios",
+        _ => &payload.contract_type,
+    };
+    let karin_clause = if payload.ley_karin_signed {
+        "El empleador y el trabajador declaran haber tomado conocimiento de la Ley N\u{00b0} 21.643 (Ley Karin) sobre prevenci\u{00f3}n, investigaci\u{00f3}n y sanci\u{00f3}n del acoso laboral, sexual y violencia en el trabajo, y se comprometen a dar estricto cumplimiento a sus disposiciones durante toda la vigencia de la relaci\u{00f3}n laboral."
+    } else {
+        "Pendiente de firma de declaraci\u{00f3}n Ley Karin (Ley 21.643)."
+    };
+
+    let duration_clause = if payload.contract_type == "PlazoFijo" {
+        format!("El contrato se extiende hasta el [fecha de t\u{00e9}rmino].")
+    } else {
+        "El contrato es de plazo indefinido.".to_string()
+    };
+
+    let start_fmt = payload.start_date.format("%d/%m/%Y").to_string();
+
+    let contract_text = format!(
+        r#"CONTRATO DE TRABAJO
+
+En {school}, a {start}, comparecen:
+
+Por una parte, el empleador {school}, representado legalmente por quien corresponda, y
+
+Por la otra, don(ña) {name}, RUN {rut}, domiciliado en [Dirección del trabajador],
+
+Los comparecientes, mayores de edad, acuerdan celebrar el siguiente contrato de trabajo:
+
+PRIMERO: NATURALEZA DEL CONTRATO.- El empleador contrata y el trabajador se obliga a prestar servicios bajo subordinación y dependencia, en calidad de {ctype}.
+
+SEGUNDO: CARGO Y FUNCIONES.- El trabajador desempeñará el cargo de {pos}, debiendo cumplir las funciones propias del cargo y las que el empleador le encomiende dentro del giro del establecimiento educacional.
+
+TERCERO: REMUNERACIÓN.- El empleador pagará al trabajador una remuneración mensual de {salary} (pesos chilenos), la que será pagada por mensualidades vencidas.
+
+CUARTO: JORNADA DE TRABAJO.- La jornada ordinaria de trabajo será de {hours} horas semanales, distribuidas de lunes a viernes, en los horarios que determine el empleador.
+
+QUINTO: DURACIÓN DEL CONTRATO.- El presente contrato rige desde el {start}. {duration}
+
+SEXTO: LEY KARIN (Ley 21.643).- {karin}
+
+SÉPTIMO: DOMICILIO.- Las partes fijan su domicilio en la ciudad de [Ciudad], comuna de [Comuna], y se someten a la jurisdicción de sus tribunales ordinarios de justicia.
+
+FIRMAS:
+
+_____________________________
+{name}
+RUN: {rut}
+
+_____________________________
+El Empleador
+{school}
+
+LUGAR Y FECHA: {school}, {start}
+"#,
+        school = school_name,
+        start = start_fmt,
+        name = full_name,
+        rut = rut,
+        ctype = contract_type_str,
+        pos = position,
+        salary = salary_str,
+        hours = payload.weekly_hours,
+        duration = duration_clause,
+        karin = karin_clause,
+    );
+
+    Ok(Json(json!({ "contract_text": contract_text })))
 }
