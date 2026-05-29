@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use serde_json::{Value, json};
 use crate::api::client;
+use crate::components::widgets::kpi_card::KpiCard;
 
 #[component]
 pub fn SalesPage() -> Element {
@@ -15,7 +16,7 @@ pub fn SalesPage() -> Element {
             h1 { "CRM de Ventas" }
             p { "Pipeline comercial — gesti\u{00f3}n de prospectos, propuestas, contratos y equipo" }
         }
-        div { class: "tabs sales-tabs",
+        div { class: "tab-bar",
             button { class: "{tab_pipeline}", onclick: move |_| active_tab.set("pipeline".to_string()), "Pipeline" }
             button { class: "{tab_dashboard}", onclick: move |_| active_tab.set("dashboard".to_string()), "Dashboard" }
             button { class: "{tab_team}", onclick: move |_| active_tab.set("team".to_string()), "Equipo" }
@@ -64,8 +65,8 @@ fn SalesPipeline() -> Element {
     let mut notes = use_signal(String::new);
     let mut saving = use_signal(|| false);
 
-    let kanban_btn_class = if view_mode() == "kanban" { "btn btn-active" } else { "btn" };
-    let table_btn_class = if view_mode() == "table" { "btn btn-active" } else { "btn" };
+    let kanban_btn_class = if view_mode() == "kanban" { "btn btn-primary" } else { "btn btn-secondary" };
+    let table_btn_class = if view_mode() == "table" { "btn btn-primary" } else { "btn btn-secondary" };
 
     let do_create = move |_| {
         saving.set(true);
@@ -131,7 +132,7 @@ fn SalesPipeline() -> Element {
             match stages() {
                 Some(Ok(data)) => {
                     let sl: Vec<Value> = data["stages"].as_array().cloned().unwrap_or_default();
-                    rsx! { SalesKanbanBoard { stages: sl, prospects: prospects } }
+                    rsx! { SalesKanbanBoard { stages: sl, prospects: prospects, selected_id: selected_id } }
                 }
                 _ => rsx! { div { class: "loading-spinner", "Cargando pipeline..." } },
             }
@@ -161,7 +162,7 @@ fn SalesPipeline() -> Element {
 }
 
 #[component]
-fn SalesKanbanBoard(stages: Vec<Value>, prospects: Resource<Result<Value, String>>) -> Element {
+fn SalesKanbanBoard(stages: Vec<Value>, prospects: Resource<Result<Value, String>>, selected_id: Signal<Option<String>>) -> Element {
     let prospect_list: Vec<Value> = match prospects() {
         Some(Ok(d)) => d["prospects"].as_array().cloned().unwrap_or_default(),
         _ => vec![],
@@ -169,25 +170,19 @@ fn SalesKanbanBoard(stages: Vec<Value>, prospects: Resource<Result<Value, String
 
     let stage_infos: Vec<StageInfo> = stages.iter().map(|s| {
         let stage_id = s["id"].as_str().unwrap_or("").to_string();
-        let prospect_ids: Vec<String> = prospect_list.iter()
+        let items: Vec<ProspectInfo> = prospect_list.iter()
             .filter(|p| p["current_stage_id"].as_str().unwrap_or("") == stage_id)
-            .map(|p| p["id"].as_str().unwrap_or("").to_string())
-            .collect();
-        let names: Vec<String> = prospect_list.iter()
-            .filter(|p| p["current_stage_id"].as_str().unwrap_or("") == stage_id)
-            .map(|p| format!("{} {}", p["first_name"].as_str().unwrap_or(""), p["last_name"].as_str().unwrap_or("")))
-            .collect();
-        let companies: Vec<String> = prospect_list.iter()
-            .filter(|p| p["current_stage_id"].as_str().unwrap_or("") == stage_id)
-            .map(|p| p["company"].as_str().unwrap_or("").to_string())
+            .map(|p| {
+                let pid = p["id"].as_str().unwrap_or("").to_string();
+                let name = format!("{} {}", p["first_name"].as_str().unwrap_or(""), p["last_name"].as_str().unwrap_or(""));
+                let company = p["company"].as_str().unwrap_or("").to_string();
+                ProspectInfo { id: pid, name, company }
+            })
             .collect();
         StageInfo {
-            _id: stage_id,
             name: s["name"].as_str().unwrap_or("").to_string(),
             color: s["color"].as_str().unwrap_or("#6B7280").to_string(),
-            prospect_ids,
-            names,
-            companies,
+            items,
         }
     }).collect();
 
@@ -197,14 +192,14 @@ fn SalesKanbanBoard(stages: Vec<Value>, prospects: Resource<Result<Value, String
                 div { class: "kanban-column",
                     div { class: "kanban-column-header", style: "border-top-color: {si.color}",
                         div { class: "kanban-column-title", "{si.name}" }
-                        div { class: "kanban-column-count", "{si.prospect_ids.len()}" }
+                        div { class: "kanban-column-count", "{si.items.len()}" }
                     }
                     div { class: "kanban-column-body",
-                        for i in 0..si.prospect_ids.len() {
+                        for item in &si.items {
                             SalesKanbanCard {
-                                prospect_id: si.prospect_ids[i].clone(),
-                                name: si.names[i].clone(),
-                                company: si.companies[i].clone(),
+                                name: item.name.clone(),
+                                company: item.company.clone(),
+                                onclick: { let pid = item.id.clone(); move |_| selected_id.set(Some(pid.clone())) },
                             }
                         }
                     }
@@ -215,18 +210,21 @@ fn SalesKanbanBoard(stages: Vec<Value>, prospects: Resource<Result<Value, String
 }
 
 struct StageInfo {
-    _id: String,
     name: String,
     color: String,
-    prospect_ids: Vec<String>,
-    names: Vec<String>,
-    companies: Vec<String>,
+    items: Vec<ProspectInfo>,
+}
+
+struct ProspectInfo {
+    id: String,
+    name: String,
+    company: String,
 }
 
 #[component]
-fn SalesKanbanCard(prospect_id: String, name: String, company: String) -> Element {
+fn SalesKanbanCard(name: String, company: String, onclick: EventHandler<MouseEvent>) -> Element {
     rsx! {
-        div { class: "kanban-card",
+        div { class: "kanban-card", onclick: move |e| onclick.call(e),
             div { class: "kanban-card-name", "{name}" }
             if !company.is_empty() {
                 div { class: "kanban-card-company", "{company}" }
@@ -439,11 +437,11 @@ fn ContactTimeline(prospect_id: String) -> Element {
                 let desc = act["description"].as_str().unwrap_or("").to_string();
                 let created = act["created_at"].as_str().unwrap_or("").to_string();
                 let icon = match atype.as_str() {
-                    "call" => "\u{260E}", "email" => "\u{2709}", "whatsapp" => "\u{1F4AC}",
-                    "meeting" => "\u{1F91D}", "proposal" => "\u{1F4C4}",
-                    "contract" => "\u{1F4C3}", "activation" => "\u{2705}",
-                    "stage_change" => "\u{1F500}", "assign" => "\u{1F464}",
-                    _ => "\u{1F4CB}",
+                    "call" => "📞", "email" => "✉️", "whatsapp" => "💬",
+                    "meeting" => "🤝", "proposal" => "📄",
+                    "contract" => "📃", "activation" => "✅",
+                    "stage_change" => "🔄", "assign" => "👤",
+                    _ => "📋",
                 };
                 rsx! {
                     div { class: "timeline-item",
@@ -504,28 +502,13 @@ fn SalesDashboard() -> Element {
     let has_pipeline = !pipeline.is_empty();
 
     rsx! {
-        div { class: "dashboard-grid",
+        div { class: "sales-dashboard",
             div { class: "kpi-grid",
-                div { class: "kpi-card",
-                    div { class: "kpi-value", "{total_prospects}" }
-                    div { class: "kpi-label", "Total Prospectos" }
-                }
-                div { class: "kpi-card",
-                    div { class: "kpi-value", "{my_prospects}" }
-                    div { class: "kpi-label", "Mis Prospectos" }
-                }
-                div { class: "kpi-card",
-                    div { class: "kpi-value", "{total_contracts}" }
-                    div { class: "kpi-label", "Contratos Activos" }
-                }
-                div { class: "kpi-card",
-                    div { class: "kpi-value", "${total_value}" }
-                    div { class: "kpi-label", "Valor Total" }
-                }
-                div { class: "kpi-card",
-                    div { class: "kpi-value", "{total_agents}" }
-                    div { class: "kpi-label", "Agentes" }
-                }
+                KpiCard { label: "Total Prospectos".to_string(), value: total_prospects.to_string() }
+                KpiCard { label: "Mis Prospectos".to_string(), value: my_prospects.to_string() }
+                KpiCard { label: "Contratos Activos".to_string(), value: total_contracts.to_string() }
+                KpiCard { label: "Valor Total".to_string(), value: format!("${:.0}", total_value), color: Some("#16a34a".to_string()) }
+                KpiCard { label: "Agentes".to_string(), value: total_agents.to_string() }
             }
             div { class: "dashboard-section",
                 h3 { "Pipeline (embudo de ventas)" }
@@ -538,10 +521,7 @@ fn SalesDashboard() -> Element {
             if has_pipeline {
                 div { class: "dashboard-section",
                     h3 { "Proyecci\u{00f3}n de Ingresos" }
-                    div { class: "kpi-card kpi-lg",
-                        div { class: "kpi-value", "${projected_revenue}" }
-                        div { class: "kpi-label", "Ingresos Proyectados (basado en pipeline actual)" }
-                    }
+                    KpiCard { label: "Ingresos Proyectados (basado en pipeline actual)".to_string(), value: format!("${:.0}", projected_revenue), large: Some(true) }
                 }
             }
         }
@@ -603,10 +583,7 @@ fn SalesTeam() -> Element {
         }
         div { class: "dashboard-section",
             h3 { "Asignaci\u{00f3}n Autom\u{00e1}tica (Round-Robin)" }
-            div { class: "kpi-card",
-                div { class: "kpi-value", if rr_active { "Activado" } else { "Desactivado" } }
-                div { class: "kpi-label", "Round-Robin" }
-            }
+            KpiCard { label: "Round-Robin".to_string(), value: (if rr_active { "Activado" } else { "Desactivado" }).to_string() }
         }
         div { class: "data-table-container",
             table { class: "data-table",
