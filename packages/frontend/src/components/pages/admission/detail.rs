@@ -19,7 +19,7 @@ pub fn ProspectDetailModal(
     edit_notes: Signal<String>,
     saving: Signal<bool>,
 ) -> Element {
-    let close = move |_| selected_id.set(None);
+    let close = move |_: Event<MouseData>| selected_id.set(None);
 
     rsx! {
         {
@@ -110,7 +110,7 @@ pub fn ProspectDetailModal(
                     }).collect();
 
                     rsx! {
-                        div { class: "modal-overlay", role: "dialog", "aria-modal": "true", "aria-label": "Detalle del postulante", tabindex: "-1", onclick: close, onkeydown: move |e| { if e.key() == Key::Escape { selected_id.set(None); } },
+                        div { class: "modal-overlay", role: "dialog", "aria-modal": "true", "aria-label": "Detalle del postulante", tabindex: "-1", onclick: close, onkeydown: move |e| if e.key() == Key::Escape { selected_id.set(None); },
                             div { class: "modal-content", onclick: move |e| e.stop_propagation(),
                                 div { class: "modal-header",
                                     h2 { "{pname}" }

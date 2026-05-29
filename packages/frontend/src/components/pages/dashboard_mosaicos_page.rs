@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 
 use crate::api::client;
 use crate::seo::use_page_title;
+use crate::components::widgets::icon::Icon;
 
 #[component]
 pub fn DashboardMosaicosPage() -> Element {
@@ -23,9 +24,9 @@ pub fn DashboardMosaicosPage() -> Element {
                     let enrolled = data["total_enrolled"].as_i64().unwrap_or(0);
                     let teachers = data["total_teachers"].as_i64().unwrap_or(0);
                     rsx! {
-                        Mosaico { title: "Alumnos", value: "{total}", icon: "users", color: "#1a2b3c" }
-                        Mosaico { title: "Matriculados", value: "{enrolled}", icon: "check", color: "#22c55e" }
-                        Mosaico { title: "Docentes", value: "{teachers}", icon: "book", color: "#3b82f6" }
+                        Mosaico { title: "Alumnos", value: "{total}", icon_name: "users", color: "#1a2b3c" }
+                        Mosaico { title: "Matriculados", value: "{enrolled}", icon_name: "check", color: "#22c55e" }
+                        Mosaico { title: "Docentes", value: "{teachers}", icon_name: "book", color: "#3b82f6" }
                     }
                 }
                 Some(Err(e)) => rsx! { div { class: "alert alert-error", "Error: {e}" } },
@@ -35,7 +36,7 @@ pub fn DashboardMosaicosPage() -> Element {
                 Some(Ok(data)) => {
                     let pct = data["percentage"].as_f64().unwrap_or(0.0);
                     rsx! {
-                        Mosaico { title: "Asistencia Hoy", value: "{pct:.1}%", icon: "📊", color: "#f59e0b" }
+                        Mosaico { title: "Asistencia Hoy", value: "{pct:.1}%", icon_name: "chart", color: "#f59e0b" }
                     }
                 }
                 Some(Err(e)) => rsx! { div { class: "alert alert-error", "Error: {e}" } },
@@ -45,7 +46,7 @@ pub fn DashboardMosaicosPage() -> Element {
                 Some(Ok(data)) => {
                     let count = data["alerts"].as_array().map(|a| a.len()).unwrap_or(0);
                     rsx! {
-                        Mosaico { title: "Alertas", value: "{count}", icon: "⚠️", color: "#ef4444" }
+                        Mosaico { title: "Alertas", value: "{count}", icon_name: "bell", color: "#ef4444" }
                     }
                 }
                 Some(Err(e)) => rsx! { div { class: "alert alert-error", "Error: {e}" } },
@@ -55,7 +56,7 @@ pub fn DashboardMosaicosPage() -> Element {
                 Some(Ok(data)) => {
                     let items = data["agenda"].as_array().map(|a| a.len()).unwrap_or(0);
                     rsx! {
-                        Mosaico { title: "Proximos Eventos", value: "{items}", icon: "📅", color: "#8b5cf6" }
+                        Mosaico { title: "Proximos Eventos", value: "{items}", icon_name: "calendar", color: "#8b5cf6" }
                     }
                 }
                 Some(Err(e)) => rsx! { div { class: "alert alert-error", "Error: {e}" } },
@@ -66,10 +67,12 @@ pub fn DashboardMosaicosPage() -> Element {
 }
 
 #[component]
-fn Mosaico(title: String, value: String, icon: String, color: String) -> Element {
+fn Mosaico(title: String, value: String, icon_name: String, color: String) -> Element {
     rsx! {
         div { class: "mosaico-card", style: "border-top: 4px solid {color};",
-            div { class: "mosaico-icon", "{icon}" }
+            div { class: "mosaico-icon",
+                Icon { name: "{icon_name}", size: 24 }
+            }
             div { class: "mosaico-content",
                 div { class: "mosaico-value", "{value}" }
                 div { class: "mosaico-title", "{title}" }

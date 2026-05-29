@@ -1,31 +1,22 @@
 use dioxus::prelude::*;
 
 use crate::api::client;
+use crate::components::widgets::student_search::StudentSearchSelect;
 
 #[component]
 pub fn FeesTab() -> Element {
     let mut fees = use_resource(|| client::fetch_all_fees());
     let mut show_form = use_signal(|| false);
-    let mut student_search = use_signal(String::new);
-    let mut selected_student = use_signal(|| None::<serde_json::Value>);
+    let mut student_id = use_signal(|| String::new());
+    let mut form_key = use_signal(|| 0u32);
     let mut description = use_signal(|| String::new());
     let mut amount = use_signal(|| String::new());
     let mut due_date = use_signal(|| String::new());
     let mut saving = use_signal(|| false);
-    let search_results = use_resource(move || {
-        let q = student_search();
-        async move {
-            if q.len() < 2 {
-                Ok(serde_json::json!({"students": []}))
-            } else {
-                client::search_students(&q).await
-            }
-        }
-    });
 
     let mut reset_form = move || {
-        student_search.set(String::new());
-        selected_student.set(None);
+        form_key += 1;
+        student_id.set(String::new());
         description.set(String::new());
         amount.set(String::new());
         due_date.set(String::new());
@@ -33,12 +24,12 @@ pub fn FeesTab() -> Element {
     };
 
     let do_save = move |_| {
-        if selected_student().is_none() || description().is_empty() || amount().is_empty() {
+        if student_id().is_empty() || description().is_empty() || amount().is_empty() {
             return;
         }
         saving.set(true);
         let payload = serde_json::json!({
-            "student_id": selected_student().unwrap()["id"].as_str().unwrap_or(""),
+            "student_id": student_id(),
             "description": description(),
             "amount": amount().parse::<f64>().unwrap_or(0.0),
             "due_date": due_date(),
@@ -93,62 +84,18 @@ pub fn FeesTab() -> Element {
                 rsx! {
                     div { class: "form-card",
                         div { class: "form-row",
-                            div { class: "student-selector", style: "width: 100%;",
+                            div { class: "form-group",
                                 label { "Estudiante:" }
-                                {
-                                    match selected_student() {
-                                        Some(ref s) => {
-                                            let sname = format!("{} {}",
-                                                s["first_name"].as_str().unwrap_or(""),
-                                                s["last_name"].as_str().unwrap_or("")
-                                            );
-                                            rsx! {
-                                                div { class: "selected-student",
-                                                    span { "{sname}" }
-                                                    button { class: "btn-icon", "aria-label": "Cerrar", onclick: move |_| selected_student.set(None), "✕" }
-                                                }
-                                            }
-                                        }
-                                        None => rsx! {
-                                            input { class: "search-input", value: "{student_search}", oninput: move |evt| student_search.set(evt.value()), placeholder: "Buscar estudiante..." }
-                                        }
-                                    }
-                                }
-                                {
-                                    match search_results() {
-                                        Some(Ok(j)) => {
-                                            let list = j["students"].as_array().cloned().unwrap_or_default();
-                                            if !list.is_empty() && student_search().len() >= 2 && selected_student().is_none() {
-                                                rsx! { div { class: "search-results",
-                                                    for s in &list {
-                                                        let sid = s["id"].as_str().unwrap_or("").to_string();
-                                                        let sname = format!("{} {}",
-                                                            s["first_name"].as_str().unwrap_or(""),
-                                                            s["last_name"].as_str().unwrap_or("")
-                                                        );
-                                                        rsx! {
-                                                            div {
-                                                                class: "search-result-item",
-                                                                onclick: move |_| {
-                                                                    selected_student.set(Some(serde_json::json!({"id": sid.clone(), "first_name": sname.clone()})));
-                                                                    student_search.set(String::new());
-                                                                },
-                                                                span { "{sname}" }
-                                                            }
-                                                        }
-                                                    }
-                                                } }
-                                            } else { rsx! {} }
-                                        }
-                                        _ => rsx! {},
-                                    }
+                                StudentSearchSelect {
+                                    on_select: move |id| student_id.set(id),
+                                    reset_key: Some(form_key().to_string()),
                                 }
                             }
                         }
                         div { class: "form-row",
                             div { class: "form-group",
                                 label { "Descripción:" }
-                                input { class: "form-input", value: "{description}", oninput: move |evt| description.set(evt.value()), placeholder: "Ej: Matrícula 2025" }
+                                input { class: "form-input", value: "{description}", oninput: move |evt| description.set(evt.value()), placeholder: "Ej: Matrícula 2025", "aria-required": "true", autocomplete: "off" }
                             }
                             div { class: "form-group",
                                 label { "Monto:" }

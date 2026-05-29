@@ -49,6 +49,7 @@ pub fn AdminPlansPage() -> Element {
     let mut sub_mods = use_signal(|| {
         MODULE_DEFS.iter().map(|(_, _, subs)| vec![false; subs.len()]).collect::<Vec<_>>()
     });
+    let expanded = use_signal(|| vec![false; MODULE_DEFS.len()]);
 
     let mut open_edit = move |p: Value| {
         edit_id.set(p["id"].as_str().map(|s| s.to_string()));
@@ -155,26 +156,6 @@ pub fn AdminPlansPage() -> Element {
         });
     };
 
-    let mut toggle_mod = move |idx: usize| {
-        let new_val = !mods()[idx];
-        mods.with_mut(|m| m[idx] = new_val);
-        if !new_val {
-            sub_mods.with_mut(|sm| {
-                if idx < sm.len() {
-                    sm[idx].iter_mut().for_each(|s| *s = false);
-                }
-            });
-        }
-    };
-
-    let mut toggle_sub_mod = move |mod_idx: usize, sub_idx: usize| {
-        sub_mods.with_mut(|sm| {
-            if mod_idx < sm.len() && sub_idx < sm[mod_idx].len() {
-                sm[mod_idx][sub_idx] = !sm[mod_idx][sub_idx];
-            }
-        });
-    };
-
     rsx! {
         div { class: "page-header",
             h1 { "Planes y Licencias" }
@@ -203,82 +184,63 @@ pub fn AdminPlansPage() -> Element {
                     {if show_form() {
                         rsx! {
                             div { class: "form-card",
-                                div { class: "form-row",
-                                    div { class: "form-group",
-                                        label { "Nombre:" }
-                                        input { class: "form-input", value: "{name}", oninput: move |e| name.set(e.value()), placeholder: "Ej: Básico" }
-                                    }
-                                    div { class: "form-group",
-                                        label { "Descripción:" }
-                                        input { class: "form-input", value: "{desc}", oninput: move |e| desc.set(e.value()) }
-                                    }
+                                div { class: "form-card-header",
+                                    h3 { if edit_id().is_some() { "Editar Plan" } else { "Nuevo Plan" } }
+                                    span { class: "form-card-badge", if edit_id().is_some() { "Editando" } else { "Creación" } }
                                 }
-                                div { class: "form-row",
-                                    div { class: "form-group",
-                                        label { "Precio mensual:" }
-                                        input { class: "form-input", r#type: "number", step: "any", value: "{price_m}", oninput: move |e| price_m.set(e.value()) }
-                                    }
-                                    div { class: "form-group",
-                                        label { "Precio anual:" }
-                                        input { class: "form-input", r#type: "number", step: "any", value: "{price_y}", oninput: move |e| price_y.set(e.value()) }
-                                    }
-                                }
-                                div { class: "form-row",
-                                    div { class: "form-group",
-                                        label { class: "checkbox-label",
-                                            input { r#type: "checkbox", checked: featured, oninput: move |_| featured.set(!featured()) }
-                                            " Plan destacado"
+                                div { class: "form-section",
+                                    div { class: "form-section-title", "Información Básica" }
+                                    div { class: "form-row",
+                                        div { class: "form-group",
+                                            label { "Nombre del plan" }
+                                            input { class: "form-input", value: "{name}", oninput: move |e| name.set(e.value()), placeholder: "Ej: Básico, Profesional..." }
+                                        }
+                                        div { class: "form-group",
+                                            label { "Descripción" }
+                                            input { class: "form-input", value: "{desc}", oninput: move |e| desc.set(e.value()), placeholder: "Breve descripción del plan" }
                                         }
                                     }
-                                    div { class: "form-group",
+                                }
+                                div { class: "form-section",
+                                    div { class: "form-section-title", "Precios" }
+                                    div { class: "form-row",
+                                        div { class: "form-group",
+                                            label { "Precio mensual" }
+                                            input { class: "form-input", r#type: "number", step: "any", value: "{price_m}", oninput: move |e| price_m.set(e.value()), placeholder: "0" }
+                                        }
+                                        div { class: "form-group",
+                                            label { "Precio anual" }
+                                            input { class: "form-input", r#type: "number", step: "any", value: "{price_y}", oninput: move |e| price_y.set(e.value()), placeholder: "0" }
+                                        }
+                                    }
+                                }
+                                div { class: "form-section",
+                                    div { class: "form-section-title", "Visibilidad" }
+                                    div { class: "checkbox-row",
+                                        label { class: "checkbox-label",
+                                            input { r#type: "checkbox", checked: featured, oninput: move |_| featured.set(!featured()) }
+                                            " Destacado"
+                                        }
                                         label { class: "checkbox-label",
                                             input { r#type: "checkbox", checked: is_custom, oninput: move |_| {
                                                 let new_val = !is_custom();
                                                 is_custom.set(new_val);
                                                 if new_val { show_in_portal.set(false); }
                                             }}
-                                            " Plan Custom"
+                                            " Personalizado"
                                         }
-                                    }
-                                    div { class: "form-group",
                                         label { class: "checkbox-label",
                                             input { r#type: "checkbox", checked: show_in_portal, oninput: move |_| show_in_portal.set(!show_in_portal()) }
-                                            " Mostrar en Portal"
+                                            " Mostrar en portal"
                                         }
                                     }
                                 }
-                                div { class: "form-group",
-                                    label { "Módulos incluidos:" }
-                                    div { class: "checkbox-grid",
-                                        {{let enabled = mods();
-                                        let sm = sub_mods();
-                                        let items: Vec<Element> = MODULE_DEFS.iter().enumerate().flat_map(|(i, (key, label, subs))| {
-                                            let checked = enabled[i];
-                                            let mut elements: Vec<Element> = Vec::new();
-                                            elements.push(rsx! {
-                                                label { key: "{key}", class: "checkbox-label",
-                                                    input { r#type: "checkbox", checked: checked, oninput: move |_| toggle_mod(i) }
-                                                    " {label}"
-                                                }
-                                            });
-                                            if checked && !subs.is_empty() {
-                                                for (j, sub) in subs.iter().enumerate() {
-                                                    let j = j;
-                                                    let sub_checked = sm[i].get(j).copied().unwrap_or(false);
-                                                    elements.push(rsx! {
-                                                        label { key: "{key}-{sub}", class: "checkbox-label sub-module",
-                                                            input { r#type: "checkbox", checked: sub_checked, oninput: move |_| toggle_sub_mod(i, j) }
-                                                            " {sub}"
-                                                        }
-                                                    });
-                                                }
-                                            }
-                                            elements.into_iter()
-                                        }).collect();
-                                        items.into_iter()}}
-                                    }
+                                div { class: "form-section",
+                                    div { class: "form-section-title", "Módulos incluidos" }
+                                    {plan_modules_section(mods, sub_mods, expanded)}
                                 }
                                 div { class: "form-actions",
+                                    button { class: "btn btn-secondary", onclick: move |_| show_form.set(false), "Cancelar" }
                                     button { class: "btn btn-primary", disabled: saving(), onclick: do_save,
                                         if saving() { "Guardando..." } else { "Guardar Plan" }
                                     }
@@ -332,13 +294,83 @@ pub fn AdminPlansPage() -> Element {
                                     }
                                 }
                             }
-                            Some(Err(e)) => rsx! { p { class: "error-state", "Error: {e}" } },
+                            Some(Err(e)) => rsx! { p { class: "state-error", "Error: {e}" } },
                             None => rsx! { div { class: "loading-spinner", "Cargando..." } },
                         }
                     }
                 },
                 "licenses" => rsx! { LicenseManager {} },
                 _ => rsx! {},
+            }
+        }
+    }
+}
+
+fn plan_modules_section(
+    mods: Signal<Vec<bool>>,
+    sub_mods: Signal<Vec<Vec<bool>>>,
+    expanded: Signal<Vec<bool>>,
+) -> Element {
+    let tree_items: Vec<Element> = MODULE_DEFS.iter().enumerate().map(|(i, (key, label, subs))| {
+        let has_subs = !subs.is_empty();
+        let child_items: Vec<Element> = if has_subs {
+            subs.iter().enumerate().map(|(j, sub)| {
+                rsx! {
+                    label { key: "{key}-{sub}", class: "tree-checkbox sub-module",
+                        input { r#type: "checkbox", checked: sub_mods()[i][j], oninput: move |_| { let mut sm = sub_mods; sm.with_mut(|s| s[i][j] = !s[i][j]); } }
+                        span { "{sub}" }
+                    }
+                }
+            }).collect()
+        } else {
+            vec![]
+        };
+        let show_children = has_subs && expanded()[i];
+        rsx! {
+            div { key: "{key}", class: "module-tree-item",
+                div { class: "module-tree-row",
+                    if has_subs {
+                        button { class: "tree-toggle", onclick: move |_| { let mut e = expanded; e.with_mut(|e| e[i] = !e[i]); }, "aria-label": if expanded()[i] { "Contraer" } else { "Expandir" },
+                            svg { role: "presentation", view_box: "0 0 24 24", width: "16", height: "16",
+                                if expanded()[i] {
+                                    path { d: "M6 9l6 6 6-6", fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" }
+                                } else {
+                                    path { d: "M9 18l6-6-6-6", fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" }
+                                }
+                            }
+                        }
+                    } else {
+                        div { class: "tree-spacer" }
+                    }
+                    label { class: "tree-checkbox",
+                        input { r#type: "checkbox", checked: mods()[i], oninput: move |_| {
+                            let mut m = mods;
+                            let mut sm = sub_mods;
+                            let current = m()[i];
+                            m.with_mut(|m| m[i] = !current);
+                            if current {
+                                sm.with_mut(|s| { if i < s.len() { s[i].iter_mut().for_each(|x| *x = false); } });
+                            } else {
+                                sm.with_mut(|s| { if i < s.len() { s[i].iter_mut().for_each(|x| *x = true); } });
+                            }
+                        } }
+                        span { "{label}" }
+                    }
+                }
+                if show_children {
+                    div { class: "module-tree-children",
+                        {child_items.into_iter()}
+                    }
+                }
+            }
+        }
+    }).collect();
+
+    rsx! {
+        div { class: "form-group",
+            label { "Módulos incluidos:" }
+            div { class: "module-tree",
+                {tree_items.into_iter()}
             }
         }
     }
@@ -427,7 +459,7 @@ fn LicenseManager() -> Element {
                         }
                     }
                 }
-                Some(Err(e)) => rsx! { p { class: "error-state", "Error: {e}" } },
+                Some(Err(e)) => rsx! { p { class: "state-error", "Error: {e}" } },
                 None => rsx! { div { class: "loading-spinner", "Cargando..." } },
             }
         }

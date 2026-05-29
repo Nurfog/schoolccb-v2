@@ -1,7 +1,4 @@
 use dioxus::prelude::*;
-
-use crate::api::client;
-
 #[component]
 pub fn KanbanBoard(
     stages: Resource<Result<serde_json::Value, String>>,
@@ -12,23 +9,31 @@ pub fn KanbanBoard(
         (Some(Ok(sj)), Some(Ok(pj))) => {
             let stage_list = sj["stages"].as_array().cloned().unwrap_or_default();
             let prospect_list = pj["prospects"].as_array().cloned().unwrap_or_default();
+            let sel = selected_id();
             stage_list.iter().map(|stage| {
                 let stage_id = stage["id"].as_str().unwrap_or("").to_string();
                 let stage_name = stage["name"].as_str().unwrap_or("").to_string();
-                let cards: Vec<(&str, String, String)> = prospect_list.iter()
-                    .filter(|p| p["current_stage_id"].as_str().unwrap_or("") == stage_id)
-                    .map(|p| {
-                        let pid = p["id"].as_str().unwrap_or("");
-                        let pname = format!("{} {}",
-                            p["first_name"].as_str().unwrap_or(""),
-                            p["last_name"].as_str().unwrap_or(""),
-                        );
-                        let prut = p["rut"].as_str().unwrap_or("").to_string();
-                        (pid, pname, prut)
-                    })
-                    .collect();
-                let card_count = cards.len();
-                let sel = selected_id();
+                let mut card_elements = Vec::new();
+                for p in &prospect_list {
+                    if p["current_stage_id"].as_str().unwrap_or("") != stage_id { continue; }
+                    let pid = p["id"].as_str().unwrap_or("").to_string();
+                    let pname = format!("{} {}",
+                        p["first_name"].as_str().unwrap_or(""),
+                        p["last_name"].as_str().unwrap_or(""),
+                    );
+                    let prut = p["rut"].as_str().unwrap_or("").to_string();
+                    let is_sel = sel.as_deref() == Some(&pid);
+                    let pid_clone = pid.clone();
+                    card_elements.push(rsx! {
+                        div {
+                            class: if is_sel { "kanban-card selected" } else { "kanban-card" },
+                            onclick: move |_| { selected_id.set(Some(pid_clone.clone())); },
+                            div { class: "card-name", "{pname}" }
+                            div { class: "card-rut", "{prut}" }
+                        }
+                    });
+                }
+                let card_count = card_elements.len();
                 rsx! {
                     div { class: "kanban-column", key: "{stage_id}",
                         div { class: "kanban-column-header",
@@ -36,19 +41,7 @@ pub fn KanbanBoard(
                             span { class: "kanban-count", "{card_count}" }
                         }
                         div { class: "kanban-cards",
-                            for (pid, pname, prut) in &cards {
-                                let pid_s = pid.to_string();
-                                let is_sel = sel.as_deref() == Some(pid);
-                                rsx! {
-                                    div {
-                                        class: "kanban-card",
-                                        class: if is_sel { "selected" } else { "" },
-                                        onclick: move |_| { selected_id.set(Some(pid_s.clone())); },
-                                        div { class: "card-name", "{pname}" }
-                                        div { class: "card-rut", "{prut}" }
-                                    }
-                                }
-                            }
+                            {card_elements.into_iter()}
                         }
                     }
                 }
@@ -80,6 +73,19 @@ pub fn ProspectTable(prospects: Resource<Result<serde_json::Value, String>>) -> 
                     if list.is_empty() {
                         rsx! { div { class: "empty-state", "No hay postulantes" } }
                     } else {
+                        let rows: Vec<(String, String, String, String, String)> = list.iter().map(|p| {
+                            let name = format!("{} {}",
+                                p["first_name"].as_str().unwrap_or(""),
+                                p["last_name"].as_str().unwrap_or("")
+                            );
+                            (
+                                p["id"].as_str().unwrap_or("").to_string(),
+                                name,
+                                p["rut"].as_str().unwrap_or("-").to_string(),
+                                p["current_stage_name"].as_str().unwrap_or("-").to_string(),
+                                p["source"].as_str().unwrap_or("-").to_string(),
+                            )
+                        }).collect();
                         rsx! {
                             table { class: "data-table",
                                 thead { tr {
@@ -90,25 +96,13 @@ pub fn ProspectTable(prospects: Resource<Result<serde_json::Value, String>>) -> 
                                     th { "Creado" }
                                 }}
                                 tbody {
-                                    for p in &list {
-                                        let _pid = p["id"].as_str().unwrap_or("").to_string();
-                                        let name = format!("{} {}",
-                                            p["first_name"].as_str().unwrap_or(""),
-                                            p["last_name"].as_str().unwrap_or("")
-                                        );
-                                        let rut = p["rut"].as_str().unwrap_or("-").to_string();
-                                        let stage = p["current_stage_name"].as_str().unwrap_or("-").to_string();
-                                        let source = p["source"].as_str().unwrap_or("-").to_string();
-                                        let date = p["created_at"].as_str().unwrap_or("").to_string();
-                                        rsx! {
-                                            tr { class: "clickable-row", onclick: move |_| {
-                                            },
-                                                td { "{name}" }
-                                                td { "{rut}" }
-                                                td { span { class: "role-badge", "{stage}" } }
-                                                td { "{source}" }
-                                                td { "{date}" }
-                                            }
+                                    for (_, name, rut, stage, source) in &rows {
+                                        tr {
+                                            td { "{name}" }
+                                            td { span { class: "rut-badge", "{rut}" } }
+                                            td { "{stage}" }
+                                            td { "{source}" }
+                                            td { "-" }
                                         }
                                     }
                                 }
@@ -116,7 +110,8 @@ pub fn ProspectTable(prospects: Resource<Result<serde_json::Value, String>>) -> 
                         }
                     }
                 }
-                _ => rsx! { div { class: "empty-state", "Cargando..." } },
+                Some(Err(e)) => rsx! { div { class: "state-error", "Error: {e}" } },
+                None => rsx! { div { class: "empty-state", div { class: "loading-spinner", "Cargando..." } } },
             }
         }
     }

@@ -4,12 +4,8 @@ mod course;
 mod individual;
 mod sige;
 
-fn current_year() -> i32 {
+pub(super) fn current_year() -> i32 {
     js_sys::Date::new_0().get_full_year() as i32
-}
-
-fn current_month() -> u32 {
-    js_sys::Date::new_0().get_month() + 1
 }
 
 #[derive(PartialEq, Clone)]

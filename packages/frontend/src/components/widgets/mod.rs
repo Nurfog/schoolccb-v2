@@ -9,3 +9,4 @@ pub mod icon;
 pub mod searchable_select;
 pub mod simple_chart;
 pub mod student_alerts;
+pub mod student_search;

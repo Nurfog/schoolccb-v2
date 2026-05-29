@@ -179,7 +179,7 @@ pub fn AdminContractsPage() -> Element {
                         }
                     }
                 }
-                Some(Err(e)) => rsx! { p { class: "error-state", "Error: {e}" } },
+                Some(Err(e)) => rsx! { p { class: "state-error", "Error: {e}" } },
                 None => rsx! { div { class: "loading-spinner", "Cargando..." } },
             }
         }

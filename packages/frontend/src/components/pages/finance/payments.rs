@@ -1,33 +1,24 @@
 use dioxus::prelude::*;
 
 use crate::api::client;
+use crate::components::widgets::student_search::StudentSearchSelect;
 
 #[component]
 pub fn PaymentsTab() -> Element {
     let mut payments = use_resource(|| client::fetch_all_payments());
     let mut show_form = use_signal(|| false);
     let mut fee_id = use_signal(|| String::new());
-    let mut student_search = use_signal(String::new);
-    let mut selected_student = use_signal(|| None::<serde_json::Value>);
+    let mut student_id = use_signal(|| String::new());
+    let mut form_key = use_signal(|| 0u32);
     let mut amount = use_signal(|| String::new());
     let mut payment_method = use_signal(|| "Efectivo".to_string());
     let mut reference = use_signal(|| String::new());
     let mut saving = use_signal(|| false);
-    let search_results = use_resource(move || {
-        let q = student_search();
-        async move {
-            if q.len() < 2 {
-                Ok(serde_json::json!({"students": []}))
-            } else {
-                client::search_students(&q).await
-            }
-        }
-    });
 
     let mut reset_form = move || {
+        form_key += 1;
         fee_id.set(String::new());
-        student_search.set(String::new());
-        selected_student.set(None);
+        student_id.set(String::new());
         amount.set(String::new());
         payment_method.set("Efectivo".to_string());
         reference.set(String::new());
@@ -35,13 +26,13 @@ pub fn PaymentsTab() -> Element {
     };
 
     let do_save = move |_| {
-        if selected_student().is_none() || amount().is_empty() {
+        if student_id().is_empty() || amount().is_empty() {
             return;
         }
         saving.set(true);
         let payload = serde_json::json!({
             "fee_id": fee_id(),
-            "student_id": selected_student().unwrap()["id"].as_str().unwrap_or(""),
+            "student_id": student_id(),
             "amount": amount().parse::<f64>().unwrap_or(0.0),
             "payment_method": payment_method(),
             "reference": reference(),
@@ -63,55 +54,11 @@ pub fn PaymentsTab() -> Element {
                 rsx! {
                     div { class: "form-card",
                         div { class: "form-row",
-                            div { class: "student-selector", style: "width: 100%;",
+                            div { class: "form-group",
                                 label { "Estudiante:" }
-                                {
-                                    match selected_student() {
-                                        Some(ref s) => {
-                                            let sname = format!("{} {}",
-                                                s["first_name"].as_str().unwrap_or(""),
-                                                s["last_name"].as_str().unwrap_or("")
-                                            );
-                                            rsx! {
-                                                div { class: "selected-student",
-                                                    span { "{sname}" }
-                                                    button { class: "btn-icon", "aria-label": "Cerrar", onclick: move |_| selected_student.set(None), "✕" }
-                                                }
-                                            }
-                                        }
-                                        None => rsx! {
-                                            input { class: "search-input", value: "{student_search}", oninput: move |evt| student_search.set(evt.value()), placeholder: "Buscar estudiante..." }
-                                        }
-                                    }
-                                }
-                                {
-                                    match search_results() {
-                                        Some(Ok(j)) => {
-                                            let list = j["students"].as_array().cloned().unwrap_or_default();
-                                            if !list.is_empty() && student_search().len() >= 2 && selected_student().is_none() {
-                                                rsx! { div { class: "search-results",
-                                                    for s in &list {
-                                                        let sid = s["id"].as_str().unwrap_or("").to_string();
-                                                        let sname = format!("{} {}",
-                                                            s["first_name"].as_str().unwrap_or(""),
-                                                            s["last_name"].as_str().unwrap_or("")
-                                                        );
-                                                        rsx! {
-                                                            div {
-                                                                class: "search-result-item",
-                                                                onclick: move |_| {
-                                                                    selected_student.set(Some(serde_json::json!({"id": sid.clone(), "first_name": sname.clone()})));
-                                                                    student_search.set(String::new());
-                                                                },
-                                                                span { "{sname}" }
-                                                            }
-                                                        }
-                                                    }
-                                                } }
-                                            } else { rsx! {} }
-                                        }
-                                        _ => rsx! {},
-                                    }
+                                StudentSearchSelect {
+                                    on_select: move |id| student_id.set(id),
+                                    reset_key: Some(form_key().to_string()),
                                 }
                             }
                         }
@@ -122,7 +69,7 @@ pub fn PaymentsTab() -> Element {
                             }
                             div { class: "form-group",
                                 label { "Monto:" }
-                                input { class: "form-input", value: "{amount}", oninput: move |evt| amount.set(evt.value()), type: "number", step: "1000", placeholder: "0" }
+                                input { class: "form-input", value: "{amount}", oninput: move |evt| amount.set(evt.value()), type: "number", step: "1000", placeholder: "0", "aria-required": "true", autocomplete: "off" }
                             }
                         }
                         div { class: "form-row",

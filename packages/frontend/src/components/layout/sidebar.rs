@@ -29,7 +29,7 @@ fn initials(name: &str) -> String {
 
 fn role_label(role: &str) -> &'static str {
     match role {
-        "Root" => "Root Admin",
+        "GerenteGeneral" => "Gerente General",
         "Sostenedor" => "Sostenedor",
         "Administrador" => "Admin",
         "Director" => "Director",
@@ -37,6 +37,9 @@ fn role_label(role: &str) -> &'static str {
         "Profesor" => "Profesor",
         "Apoderado" => "Apoderado",
         "Alumno" => "Alumno",
+        "JefeVentas" => "Jefe de Ventas",
+        "AgenteVentas" => "Agente de Ventas",
+        "Admision" => "Admisión",
         _ => "Usuario",
     }
 }
@@ -63,10 +66,17 @@ pub fn Sidebar() -> Element {
     });
 
     let mut sidebar_open = use_signal(|| false);
+    let mut sidebar_collapsed = use_signal(|| false);
     let toggle_sidebar = move |_| sidebar_open.set(!sidebar_open());
     let close_sidebar = move |_| sidebar_open.set(false);
+    let toggle_collapse = move |_| sidebar_collapsed.set(!sidebar_collapsed());
 
-    let sidebar_class = if sidebar_open() { "sidebar open" } else { "sidebar" };
+    let sidebar_class = {
+        let mut cls = "sidebar".to_string();
+        if sidebar_open() { cls.push_str(" open"); }
+        if sidebar_collapsed() { cls.push_str(" collapsed"); }
+        cls
+    };
 
     let current_path = web_sys::window()
         .and_then(|w| w.location().pathname().ok())
@@ -85,6 +95,15 @@ pub fn Sidebar() -> Element {
         nav { class: "{sidebar_class}", role: "navigation", aria_label: "Navegación principal",
             div { class: "sidebar-header",
                 img { class: "logo-img", src: "/logo-white.svg", alt: "SchoolCBB", width: "140", height: "36" }
+                button { class: "collapse-btn", onclick: toggle_collapse, "aria-label": if sidebar_collapsed() { "Expandir menú" } else { "Colapsar menú" },
+                    svg { role: "presentation", view_box: "0 0 24 24", width: "18", height: "18",
+                        if sidebar_collapsed() {
+                            path { d: "M9 18l6-6-6-6" }
+                        } else {
+                            path { d: "M15 18l-6-6 6-6" }
+                        }
+                    }
+                }
             }
 
             div { class: "sidebar-nav",
@@ -96,27 +115,31 @@ pub fn Sidebar() -> Element {
                     }
                 }
 
-                a { class: "nav-item", href: "/dashboard", aria_current: is_active("/dashboard").then_some("page"),
-                    span { class: "icon",
-                        svg { role: "presentation", view_box: "0 0 24 24",
-                            rect { x: "3", y: "3", width: "7", height: "7", rx: "1" }
-                            rect { x: "14", y: "3", width: "7", height: "7", rx: "1" }
-                            rect { x: "3", y: "14", width: "7", height: "7", rx: "1" }
-                            rect { x: "14", y: "14", width: "7", height: "7", rx: "1" }
-                        }
-                    }
-                    span { class: "label", "Dashboard" }
-                }
-
-                {if user_role == "Root" {
+                {if user_role == "GerenteGeneral" {
                     rsx! {
-                        a { class: "nav-item", href: "/root", aria_current: is_active("/root").then_some("page"),
+                        a { class: "nav-item", href: "/sales", aria_current: is_active("/sales").then_some("page"),
                             span { class: "icon",
                                 svg { role: "presentation", view_box: "0 0 24 24",
                                     path { d: "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" }
                                 }
                             }
-                            span { class: "label", "Panel Root" }
+                            span { class: "label", "Panel Gestión" }
+                        }
+                    }
+                } else { rsx! {} }}
+
+                {if user_role != "GerenteGeneral" {
+                    rsx! {
+                        a { class: "nav-item", href: "/dashboard", aria_current: is_active("/dashboard").then_some("page"),
+                            span { class: "icon",
+                                svg { role: "presentation", view_box: "0 0 24 24",
+                                    rect { x: "3", y: "3", width: "7", height: "7", rx: "1" }
+                                    rect { x: "14", y: "3", width: "7", height: "7", rx: "1" }
+                                    rect { x: "3", y: "14", width: "7", height: "7", rx: "1" }
+                                    rect { x: "14", y: "14", width: "7", height: "7", rx: "1" }
+                                }
+                            }
+                            span { class: "label", "Dashboard" }
                         }
                     }
                 } else { rsx! {} }}
@@ -206,7 +229,7 @@ pub fn Sidebar() -> Element {
                     }
                 } else { rsx! {} }}
 
-                {if user_role != "Root" {
+                {if user_role != "GerenteGeneral" {
                     rsx! {
                         a { class: "nav-item config-item", href: "/curriculum", aria_current: is_active("/curriculum").then_some("page"),
                             span { class: "icon",

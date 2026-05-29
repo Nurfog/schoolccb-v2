@@ -2,9 +2,7 @@ use dioxus::prelude::*;
 
 use crate::api::client;
 
-fn current_year() -> i32 {
-    js_sys::Date::new_0().get_full_year() as i32
-}
+use super::current_year;
 
 #[component]
 pub fn CourseReports() -> Element {
@@ -56,31 +54,32 @@ pub fn CourseReports() -> Element {
             if list.is_empty() {
                 None
             } else {
-                Some(rsx! {
-                    for c in &list {
-                        let cid = c["id"].as_str().unwrap_or("").to_string();
-                        let cname = c["name"].as_str().unwrap_or("").to_string();
-                        let level = c["grade_level"].as_str().unwrap_or("").to_string();
-                        let section = c["section"].as_str().unwrap_or("").to_string();
-                        let cinfo = format!("{} - {}", level, section);
-                        let mut selected = selected_course.clone();
-                        let mut search = search_course.clone();
-                        rsx! {
-                            div {
-                                class: "search-result-item",
-                                onclick: move |_| {
-                                    selected.set(Some(serde_json::json!({
-                                        "id": cid.clone(),
-                                        "name": cname.clone(),
-                                    })));
-                                    search.set(String::new());
-                                },
-                                span { "{cname}" }
-                                span { class: "result-rut", "{cinfo}" }
-                            }
+                let mut selected = selected_course.clone();
+                let mut search = search_course.clone();
+                let course_items: Vec<Element> = list.iter().map(|c| {
+                    let cid = c["id"].as_str().unwrap_or("").to_string();
+                    let cname = c["name"].as_str().unwrap_or("").to_string();
+                    let level = c["grade_level"].as_str().unwrap_or("").to_string();
+                    let section = c["section"].as_str().unwrap_or("").to_string();
+                    let cinfo = format!("{} - {}", level, section);
+                    let cid_clone = cid.clone();
+                    let cname_clone = cname.clone();
+                    rsx! {
+                        div {
+                            class: "search-result-item",
+                            onclick: move |_| {
+                                selected.set(Some(serde_json::json!({
+                                    "id": cid_clone.clone(),
+                                    "name": cname_clone.clone(),
+                                })));
+                                search.set(String::new());
+                            },
+                            span { "{cname}" }
+                            span { class: "result-rut", "{cinfo}" }
                         }
                     }
-                })
+                }).collect();
+                Some(rsx! { {course_items.into_iter()} })
             }
         }
         _ => None,
@@ -124,7 +123,7 @@ pub fn CourseReports() -> Element {
                 {
                     if let Some(elements) = course_elements {
                         rsx! { div { class: "search-results", { elements } } }
-                    }
+                    } else { rsx! {} }
                 }
             }
             div { class: "form-actions",

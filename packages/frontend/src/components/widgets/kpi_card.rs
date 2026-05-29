@@ -6,19 +6,21 @@ pub fn KpiCard(
     value: String,
     color: Option<String>,
     icon: Option<String>,
+    large: Option<bool>,
 ) -> Element {
-    let css_class = match color.as_deref() {
-        Some("#66bb6a") => "kpi-value success",
-        Some("#ff7043" | "#ffa726") => "kpi-value warning",
-        Some("#ab47bc" | "#26c6da") => "kpi-value info",
+    let color_class = match color.as_deref() {
+        Some("#66bb6a" | "#16a34a" | "#22c55e") => "kpi-value success",
+        Some("#ff7043" | "#ffa726" | "#f59e0b") => "kpi-value warning",
+        Some("#ab47bc" | "#26c6da" | "#06b6d4" | "#3b82f6") => "kpi-value info",
         _ => "kpi-value primary",
     };
+    let size_class = if large.unwrap_or(false) { " kpi-lg" } else { "" };
     rsx! {
-        div { class: "kpi-item",
+        div { class: "kpi-card{size_class}",
             if let Some(ic) = icon {
-                div { style: "font-size: 1.5rem; margin-bottom: 4px;", "{ic}" }
+                div { class: "kpi-icon", "{ic}" }
             }
-            div { class: "{css_class}", "{value}" }
+            div { class: "{color_class}", "{value}" }
             div { class: "kpi-label", "{label}" }
         }
     }

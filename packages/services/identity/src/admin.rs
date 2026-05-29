@@ -14,7 +14,7 @@ use crate::models::{self, Claims};
 use crate::routes::require_role;
 
 fn require_root(claims: &Claims) -> Result<(), AuthError> {
-    require_role(claims, "Root")
+    require_role(claims, "GerenteGeneral")
 }
 
 pub fn admin_router() -> Router<AppState> {

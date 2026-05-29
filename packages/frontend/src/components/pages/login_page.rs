@@ -8,6 +8,7 @@ pub fn LoginPage() -> Element {
     let mut password = use_signal(|| String::new());
     let mut error = use_signal(|| None::<String>);
     let mut loading = use_signal(|| false);
+    let error_id = "login-error";
 
     let mut do_login = move |_| {
         if email().is_empty() || password().is_empty() {
@@ -51,7 +52,7 @@ pub fn LoginPage() -> Element {
                 }
                 form { class: "login-form", onsubmit: move |e| { e.prevent_default(); do_login(e); },
                     if let Some(ref msg) = error() {
-                        div { class: "login-error", role: "alert", aria_live: "assertive", "{msg}" }
+                        div { id: "{error_id}", class: "login-error", role: "alert", aria_live: "assertive", "{msg}" }
                     }
                     div { class: "field",
                         label { r#for: "login-email", "Email" }
@@ -62,6 +63,9 @@ pub fn LoginPage() -> Element {
                             placeholder: "email@colegio.cl",
                             value: "{email}",
                             oninput: move |evt| email.set(evt.value()),
+                            "aria-required": "true",
+                            autocomplete: "email",
+                            "aria-describedby": error().is_some().then_some(error_id),
                         }
                     }
                     div { class: "field",
@@ -73,12 +77,16 @@ pub fn LoginPage() -> Element {
                             placeholder: "contraseña",
                             value: "{password}",
                             oninput: move |evt| password.set(evt.value()),
+                            "aria-required": "true",
+                            autocomplete: "current-password",
+                            "aria-describedby": error().is_some().then_some(error_id),
                         }
                     }
                     button {
                         class: "login-btn",
                         r#type: "submit",
                         disabled: loading(),
+                        "aria-busy": "{loading}",
                         if loading() { "Ingresando..." } else { "Iniciar Sesión" }
                     }
                 }

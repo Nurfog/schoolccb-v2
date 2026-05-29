@@ -313,7 +313,7 @@ async fn stream_from_ollama(
     });
 
     let client = reqwest::Client::new();
-    let mut resp = client.post(&url).json(&body).send().await.map_err(|e| format!("Error de conexión: {e}"))?;
+    let resp = client.post(&url).json(&body).send().await.map_err(|e| format!("Error de conexión: {e}"))?;
 
     if !resp.status().is_success() {
         let status = resp.status().as_u16();

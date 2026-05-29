@@ -1,3 +1,4 @@
+mod admin;
 mod client;
 mod config;
 mod error;
@@ -89,6 +90,7 @@ async fn main() {
         .route("/health", get(|| async { "ok" }))
         .merge(routes::router())
         .merge(client::client_router())
+        .merge(admin::admin_router())
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 

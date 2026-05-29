@@ -2,9 +2,7 @@ use dioxus::prelude::*;
 
 use crate::api::client;
 
-fn current_year() -> i32 {
-    js_sys::Date::new_0().get_full_year() as i32
-}
+use super::current_year;
 
 fn current_month() -> u32 {
     js_sys::Date::new_0().get_month() + 1

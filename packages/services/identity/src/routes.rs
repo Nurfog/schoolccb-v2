@@ -1093,44 +1093,62 @@ async fn list_modules(
     let fav_set: std::collections::HashSet<String> = favs.into_iter().map(|r| r.0).collect();
 
     let all_modules = if claims.role == "GerenteGeneral" {
-        let mut modules = builtin_modules();
-        modules.push(schoolccb_common::modules::Module {
-            id: "sales".into(),
-            name: "CRM de Ventas".into(),
-            icon: "trending-up".into(),
-            category: "Gestión".into(),
-            route: "/sales".into(),
-            parent: None,
-            is_favorite: false,
-        });
-        modules.push(schoolccb_common::modules::Module {
-            id: "corporations".into(),
-            name: "Corporaciones".into(),
-            icon: "home".into(),
-            category: "Configuración".into(),
-            route: "/corporations".into(),
-            parent: None,
-            is_favorite: false,
-        });
-        modules.push(schoolccb_common::modules::Module {
-            id: "plans".into(),
-            name: "Planes".into(),
-            icon: "key".into(),
-            category: "Configuración".into(),
-            route: "/admin/plans".into(),
-            parent: None,
-            is_favorite: false,
-        });
-        modules.push(schoolccb_common::modules::Module {
-            id: "licenses".into(),
-            name: "Contratos".into(),
-            icon: "file-text".into(),
-            category: "Configuración".into(),
-            route: "/admin/contracts".into(),
-            parent: None,
-            is_favorite: false,
-        });
-        modules
+        vec![
+            schoolccb_common::modules::Module {
+                id: "sales".into(),
+                name: "CRM de Ventas".into(),
+                icon: "trending-up".into(),
+                category: "Gestión".into(),
+                route: "/sales".into(),
+                parent: None,
+                is_favorite: false,
+            },
+            schoolccb_common::modules::Module {
+                id: "corporations".into(),
+                name: "Corporaciones".into(),
+                icon: "home".into(),
+                category: "Configuración".into(),
+                route: "/corporations".into(),
+                parent: None,
+                is_favorite: false,
+            },
+            schoolccb_common::modules::Module {
+                id: "plans".into(),
+                name: "Planes".into(),
+                icon: "key".into(),
+                category: "Configuración".into(),
+                route: "/admin/plans".into(),
+                parent: None,
+                is_favorite: false,
+            },
+            schoolccb_common::modules::Module {
+                id: "licenses".into(),
+                name: "Contratos".into(),
+                icon: "file-text".into(),
+                category: "Configuración".into(),
+                route: "/admin/contracts".into(),
+                parent: None,
+                is_favorite: false,
+            },
+            schoolccb_common::modules::Module {
+                id: "payments".into(),
+                name: "Pagos".into(),
+                icon: "dollar".into(),
+                category: "Configuración".into(),
+                route: "/admin/payments".into(),
+                parent: None,
+                is_favorite: false,
+            },
+            schoolccb_common::modules::Module {
+                id: "system".into(),
+                name: "Sistema".into(),
+                icon: "settings".into(),
+                category: "Configuración".into(),
+                route: "/admin/system".into(),
+                parent: None,
+                is_favorite: false,
+            },
+        ]
     } else {
         let filter = q.filter_by_license.unwrap_or(true);
         let bm = builtin_modules();

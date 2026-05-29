@@ -9,8 +9,8 @@ mod pipeline;
 pub fn AdmissionPage() -> Element {
     let stages = use_resource(|| client::fetch_pipeline_stages());
     let mut prospects = use_resource(|| client::fetch_prospects());
-    let mut selected_id = use_signal(|| None::<String>);
-    let mut prospect_detail = use_resource(move || {
+    let selected_id = use_signal(|| None::<String>);
+    let prospect_detail = use_resource(move || {
         let sid = selected_id();
         async move {
             match sid {
@@ -28,15 +28,15 @@ pub fn AdmissionPage() -> Element {
     let mut source = use_signal(String::new);
     let mut notes = use_signal(String::new);
     let mut saving = use_signal(|| false);
-    let mut editing_prospect = use_signal(|| false);
+    let editing_prospect = use_signal(|| false);
     let mut view_mode = use_signal(|| "table".to_string());
-    let mut edit_first_name = use_signal(String::new);
-    let mut edit_last_name = use_signal(String::new);
-    let mut edit_rut = use_signal(String::new);
-    let mut edit_email = use_signal(String::new);
-    let mut edit_phone = use_signal(String::new);
-    let mut edit_source = use_signal(String::new);
-    let mut edit_notes = use_signal(String::new);
+    let edit_first_name = use_signal(String::new);
+    let edit_last_name = use_signal(String::new);
+    let edit_rut = use_signal(String::new);
+    let edit_email = use_signal(String::new);
+    let edit_phone = use_signal(String::new);
+    let edit_source = use_signal(String::new);
+    let edit_notes = use_signal(String::new);
     let vacancies = use_resource(|| client::check_vacancies());
 
     let do_create = move |_| {
