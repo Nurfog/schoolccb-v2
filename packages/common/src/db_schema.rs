@@ -1,6 +1,15 @@
 use sqlx::PgPool;
 
 pub async fn run(pool: &PgPool) {
+    // Set search_path to include both public (CRM/sales) and colegios (school data) schemas
+    sqlx::query("SET search_path TO public, colegios")
+        .execute(pool)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::warn!("Could not set search_path: {e}");
+            Default::default()
+        });
+
     let statements = vec![
         "CREATE TABLE IF NOT EXISTS users (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
