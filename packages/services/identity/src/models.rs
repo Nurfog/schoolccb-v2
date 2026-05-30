@@ -414,6 +414,31 @@ pub async fn seed_roles(pool: &PgPool) {
             "Agente de ventas comercial",
             true,
         ),
+        (
+            "RepresentanteLegal",
+            "Representante legal de la corporación",
+            true,
+        ),
+        (
+            "DirectorRRHH",
+            "Director de Recursos Humanos",
+            true,
+        ),
+        (
+            "ProfesorHonorario",
+            "Profesor honorario sin contrato formal",
+            true,
+        ),
+        (
+            "Administrativo",
+            "Personal administrativo del establecimiento",
+            true,
+        ),
+        (
+            "AdminGlobal",
+            "Administrador global con acceso a toda la corporación",
+            true,
+        ),
     ];
 
     for (name, description, is_system) in &default_roles {

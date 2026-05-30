@@ -49,12 +49,22 @@ pub enum UserRole {
     Administrador,
     /// Profesor o docente.
     Profesor,
+    /// Profesor honorario (sin contrato formal).
+    ProfesorHonorario,
     /// Apoderado o tutor de un estudiante.
     Apoderado,
     /// Alumno o estudiante.
     Alumno,
     /// Usuario del módulo de admisión.
     Admision,
+    /// Representante legal de la corporación.
+    RepresentanteLegal,
+    /// Director de Recursos Humanos.
+    DirectorRRHH,
+    /// Administrativo del establecimiento.
+    Administrativo,
+    /// Administrador global con acceso a toda la corporación.
+    AdminGlobal,
 }
 
 impl UserRole {
@@ -62,7 +72,12 @@ impl UserRole {
     pub fn es_admin(&self) -> bool {
         matches!(
             self,
-            UserRole::Administrador | UserRole::Sostenedor | UserRole::Director
+            UserRole::Administrador
+                | UserRole::Sostenedor
+                | UserRole::Director
+                | UserRole::AdminGlobal
+                | UserRole::RepresentanteLegal
+                | UserRole::DirectorRRHH
         )
     }
 
@@ -76,9 +91,14 @@ impl UserRole {
             UserRole::UTP => "UTP",
             UserRole::Administrador => "Administrador",
             UserRole::Profesor => "Profesor",
+            UserRole::ProfesorHonorario => "ProfesorHonorario",
             UserRole::Apoderado => "Apoderado",
             UserRole::Alumno => "Alumno",
             UserRole::Admision => "Admision",
+            UserRole::RepresentanteLegal => "RepresentanteLegal",
+            UserRole::DirectorRRHH => "DirectorRRHH",
+            UserRole::Administrativo => "Administrativo",
+            UserRole::AdminGlobal => "AdminGlobal",
         }
     }
 
@@ -93,9 +113,14 @@ impl UserRole {
             "UTP" => Some(UserRole::UTP),
             "Administrador" => Some(UserRole::Administrador),
             "Profesor" => Some(UserRole::Profesor),
+            "ProfesorHonorario" => Some(UserRole::ProfesorHonorario),
             "Apoderado" => Some(UserRole::Apoderado),
             "Alumno" => Some(UserRole::Alumno),
             "Admision" => Some(UserRole::Admision),
+            "RepresentanteLegal" => Some(UserRole::RepresentanteLegal),
+            "DirectorRRHH" => Some(UserRole::DirectorRRHH),
+            "Administrativo" => Some(UserRole::Administrativo),
+            "AdminGlobal" => Some(UserRole::AdminGlobal),
             _ => None,
         }
     }
