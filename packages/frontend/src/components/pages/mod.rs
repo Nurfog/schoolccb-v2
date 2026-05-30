@@ -1,8 +1,5 @@
 pub mod academic_years_page;
-pub mod admin_contracts_page;
-pub mod admin_payments_page;
-pub mod admin_plans_page;
-pub mod admin_system_page;
+
 pub mod agenda_page;
 pub mod attendance_page;
 pub mod audit_page;
@@ -28,7 +25,7 @@ pub mod module_manager;
 pub mod notifications_page;
 pub mod payroll_page;
 pub mod reports;
-pub mod root_page;
+
 pub mod roles_page;
 pub mod sales_page;
 pub mod sige_page;

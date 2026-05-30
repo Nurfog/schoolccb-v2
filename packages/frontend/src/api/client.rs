@@ -133,6 +133,7 @@ pub async fn fetch_dashboard_summary() -> Result<Value, String> {
 pub async fn fetch_attendance_today() -> Result<Value, String> {
     fetch_json("/api/dashboard/attendance-today").await
 }
+#[allow(dead_code)]
 pub async fn fetch_student_alerts() -> Result<Value, String> {
     fetch_json("/api/dashboard/student-alerts").await
 }
@@ -490,74 +491,6 @@ pub async fn save_custom_field_values(entity_id: &str, payload: &Value) -> Resul
 pub async fn init_online_payment(fee_id: &str) -> Result<Value, String> {
     fetch_json(&format!("/api/finance/payment/init/{}", fee_id)).await
 }
-// ─── Admin / Root ───
-pub async fn admin_list_plans() -> Result<Value, String> {
-    fetch_json("/api/admin/license-plans").await
-}
-pub async fn admin_create_plan(payload: &Value) -> Result<Value, String> {
-    post_json("/api/admin/license-plans", payload).await
-}
-pub async fn admin_update_plan(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/admin/license-plans/{}", id), payload).await
-}
-pub async fn admin_delete_plan(id: &str) -> Result<Value, String> {
-    delete_json(&format!("/api/admin/license-plans/{}", id)).await
-}
-pub async fn admin_set_plan_modules(id: &str, payload: &Value) -> Result<Value, String> {
-    post_json(&format!("/api/admin/license-plans/{}/modules", id), payload).await
-}
-pub async fn admin_list_licenses() -> Result<Value, String> {
-    fetch_json("/api/admin/licenses").await
-}
-pub async fn admin_assign_license(payload: &Value) -> Result<Value, String> {
-    post_json("/api/admin/licenses", payload).await
-}
-pub async fn admin_extend_license(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/admin/licenses/{}/extend", id), payload).await
-}
-pub async fn admin_change_plan(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/admin/licenses/{}/change-plan", id), payload).await
-}
-pub async fn admin_update_license_status(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/admin/licenses/{}/status", id), payload).await
-}
-pub async fn admin_list_payments() -> Result<Value, String> {
-    fetch_json("/api/admin/payments").await
-}
-pub async fn admin_register_payment(payload: &Value) -> Result<Value, String> {
-    post_json("/api/admin/payments", payload).await
-}
-pub async fn admin_activity_log() -> Result<Value, String> {
-    fetch_json("/api/admin/activity-log").await
-}
-pub async fn admin_system_health() -> Result<Value, String> {
-    fetch_json("/api/admin/system/health").await
-}
-pub async fn admin_list_corporations() -> Result<Value, String> {
-    fetch_json("/api/admin/corporations").await
-}
-pub async fn admin_create_corporation(payload: &Value) -> Result<Value, String> {
-    post_json("/api/admin/corporations", payload).await
-}
-pub async fn admin_update_corporation(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/admin/corporations/{}", id), payload).await
-}
-pub async fn admin_toggle_corporation(id: &str) -> Result<Value, String> {
-    put_json(&format!("/api/admin/corporations/{}/toggle", id), &json!({})).await
-}
-pub async fn admin_fetch_legal_reps(corporation_id: &str) -> Result<Value, String> {
-    fetch_json(&format!("/api/admin/legal-representatives?corporation_id={}", corporation_id)).await
-}
-pub async fn admin_create_legal_rep(payload: &Value) -> Result<Value, String> {
-    post_json("/api/admin/legal-representatives", payload).await
-}
-pub async fn admin_update_legal_rep(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/admin/legal-representatives/{}", id), payload).await
-}
-pub async fn admin_delete_legal_rep(id: &str) -> Result<Value, String> {
-    delete_json(&format!("/api/admin/legal-representatives/{}", id)).await
-}
-
 // ─── Parent Portal (Apoderado) ───
 pub async fn fetch_parent_children() -> Result<Value, String> {
     fetch_json("/api/portal/parent/children").await
@@ -647,14 +580,18 @@ pub async fn get_sales_contract(id: &str) -> Result<Value, String> {
 pub async fn verify_contract_signatures(id: &str) -> Result<Value, String> {
     put_json(&format!("/api/sales/contracts/{}/verify-signatures", id), &json!({})).await
 }
-pub async fn activate_contract_license(id: &str) -> Result<Value, String> {
-    post_json(&format!("/api/sales/contracts/{}/activate", id), &json!({})).await
-}
+
 pub async fn generate_contract_invoice(id: &str) -> Result<Value, String> {
     post_json(&format!("/api/sales/contracts/{}/invoice", id), &json!({})).await
 }
 pub async fn fetch_sales_plans() -> Result<Value, String> {
     fetch_json("/api/sales/plans").await
+}
+pub async fn fetch_contract_documents(contract_id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/sales/contracts/{}/documents", contract_id)).await
+}
+pub async fn upload_contract_document(contract_id: &str, payload: &Value) -> Result<Value, String> {
+    post_json(&format!("/api/sales/contracts/{}/documents", contract_id), payload).await
 }
 
 // ─── Complementary Subjects ───

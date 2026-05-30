@@ -6,10 +6,7 @@ use crate::seo::use_page_title;
 use crate::components::layout::{sidebar::Sidebar, topbar::Topbar};
 use crate::components::pages::academic_years_page::AcademicYearsPage;
 use crate::components::pages::admission::AdmissionPage;
-use crate::components::pages::admin_contracts_page::AdminContractsPage;
-use crate::components::pages::admin_payments_page::AdminPaymentsPage;
-use crate::components::pages::admin_plans_page::AdminPlansPage;
-use crate::components::pages::admin_system_page::AdminSystemPage;
+
 use crate::components::pages::agenda_page::AgendaPage;
 use crate::components::pages::attendance_page::AttendancePage;
 use crate::components::pages::audit_page::AuditPage;
@@ -41,7 +38,7 @@ use crate::components::pages::students_page::StudentsPage;
 use crate::components::pages::subjects_page::SubjectsPage;
 use crate::components::pages::curriculum_agent::CurriculumAgent;
 use crate::components::pages::dashboard_mosaicos_page::DashboardMosaicosPage;
-use crate::components::pages::root_page::RootDashboard as RootDashboardPage;
+
 use crate::components::pages::sostenedor_page::SostenedorPage;
 use crate::components::pages::parent_meetings_page::ParentMeetingsPage;
 use crate::components::pages::parent_portal_page::ParentPortalPage;
@@ -110,8 +107,6 @@ pub enum Route {
         Dashboard {},
         #[route("/sostenedor")]
         SostenedorPortal {},
-        #[route("/root")]
-        RootDashboard {},
         #[route("/")]
         ModuleManagerRoot {},
         #[route("/students")]
@@ -186,14 +181,6 @@ pub enum Route {
         Curriculum {},
         #[route("/sales")]
         Sales {},
-        #[route("/admin/plans")]
-        AdminPlans {},
-        #[route("/admin/contracts")]
-        AdminContracts {},
-        #[route("/admin/payments")]
-        AdminPayments {},
-        #[route("/admin/system")]
-        AdminSystem {},
 }
 
 #[component]
@@ -270,9 +257,6 @@ pub fn Dashboard() -> Element { require_auth(); use_page_title("Dashboard"); rsx
 
 #[component]
 pub fn SostenedorPortal() -> Element { require_auth(); use_page_title("Portal Sostenedor"); rsx! { SostenedorPage {} } }
-
-#[component]
-pub fn RootDashboard() -> Element { require_auth(); use_page_title("Panel Root"); rsx! { RootDashboardPage {} } }
 
 #[component]
 pub fn ModuleManagerRoot() -> Element { require_auth(); use_page_title("SchoolCBB v2"); rsx! { ModuleManager {} } }
@@ -382,14 +366,4 @@ pub fn Curriculum() -> Element { use_page_title("Currículum Nacional"); rsx! { 
 #[component]
 pub fn Sales() -> Element { require_auth(); use_page_title("CRM Ventas"); rsx! { SalesPage {} } }
 
-#[component]
-pub fn AdminPlans() -> Element { require_auth(); use_page_title("Planes - Root"); rsx! { AdminPlansPage {} } }
 
-#[component]
-pub fn AdminContracts() -> Element { require_auth(); use_page_title("Contratos - Root"); rsx! { AdminContractsPage {} } }
-
-#[component]
-pub fn AdminPayments() -> Element { require_auth(); use_page_title("Pagos - Root"); rsx! { AdminPaymentsPage {} } }
-
-#[component]
-pub fn AdminSystem() -> Element { require_auth(); use_page_title("Sistema - Root"); rsx! { AdminSystemPage {} } }

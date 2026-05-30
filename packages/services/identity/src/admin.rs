@@ -13,43 +13,43 @@ use crate::error::{AuthError, AuthResult};
 use crate::models::{self, Claims};
 use crate::routes::require_role;
 
-fn require_root(claims: &Claims) -> Result<(), AuthError> {
+fn require_management(claims: &Claims) -> Result<(), AuthError> {
     require_role(claims, "GerenteGeneral")
 }
 
 pub fn admin_router() -> Router<AppState> {
     Router::new()
         // Stats
-        .route("/api/admin/stats/summary", get(stats_summary))
-        .route("/api/admin/stats/monthly", get(stats_monthly))
-        .route("/api/admin/stats/license-distribution", get(stats_license_distribution))
+        .route("/api/management/stats/summary", get(stats_summary))
+        .route("/api/management/stats/monthly", get(stats_monthly))
+        .route("/api/management/stats/license-distribution", get(stats_license_distribution))
         // Corporations
-        .route("/api/admin/corporations", get(admin_list_corporations).post(admin_create_corporation))
-        .route("/api/admin/corporations/{id}/toggle", put(admin_toggle_corporation))
-        .route("/api/admin/corporations/{id}", get(admin_get_corporation).put(admin_update_corporation).delete(admin_delete_corporation))
-        .route("/api/admin/corporations/{id}/modules", get(admin_get_corporation_modules).put(admin_set_corporation_modules))
+        .route("/api/management/corporations", get(admin_list_corporations).post(admin_create_corporation))
+        .route("/api/management/corporations/{id}/toggle", put(admin_toggle_corporation))
+        .route("/api/management/corporations/{id}", get(admin_get_corporation).put(admin_update_corporation).delete(admin_delete_corporation))
+        .route("/api/management/corporations/{id}/modules", get(admin_get_corporation_modules).put(admin_set_corporation_modules))
         // Schools
-        .route("/api/admin/schools/{id}", put(admin_update_school).delete(admin_delete_school))
+        .route("/api/management/schools/{id}", put(admin_update_school).delete(admin_delete_school))
         // Legal Representatives
-        .route("/api/admin/legal-representatives", get(admin_list_legal_reps).post(admin_create_legal_rep))
-        .route("/api/admin/legal-representatives/{id}", put(admin_update_legal_rep).delete(admin_delete_legal_rep))
+        .route("/api/management/legal-representatives", get(admin_list_legal_reps).post(admin_create_legal_rep))
+        .route("/api/management/legal-representatives/{id}", put(admin_update_legal_rep).delete(admin_delete_legal_rep))
         // Plans
-        .route("/api/admin/license-plans", get(admin_list_plans).post(admin_create_plan))
-        .route("/api/admin/license-plans/{id}", put(admin_update_plan).delete(admin_delete_plan))
-        .route("/api/admin/license-plans/{id}/modules", post(admin_set_plan_modules))
+        .route("/api/management/license-plans", get(admin_list_plans).post(admin_create_plan))
+        .route("/api/management/license-plans/{id}", put(admin_update_plan).delete(admin_delete_plan))
+        .route("/api/management/license-plans/{id}/modules", post(admin_set_plan_modules))
         // Licenses
-        .route("/api/admin/licenses", get(admin_list_licenses).post(admin_assign_license))
-        .route("/api/admin/licenses/{id}/extend", put(admin_extend_license))
-        .route("/api/admin/licenses/{id}/change-plan", put(admin_change_plan))
-        .route("/api/admin/licenses/{id}/status", put(admin_update_license_status))
+        .route("/api/management/licenses", get(admin_list_licenses).post(admin_assign_license))
+        .route("/api/management/licenses/{id}/extend", put(admin_extend_license))
+        .route("/api/management/licenses/{id}/change-plan", put(admin_change_plan))
+        .route("/api/management/licenses/{id}/status", put(admin_update_license_status))
         // Payments
-        .route("/api/admin/payments", get(admin_list_payments).post(admin_register_payment))
+        .route("/api/management/payments", get(admin_list_payments).post(admin_register_payment))
         // Activity log
-        .route("/api/admin/activity-log", get(admin_activity_log))
+        .route("/api/management/activity-log", get(admin_activity_log))
         // Health
-        .route("/api/admin/system/health", get(admin_system_health))
+        .route("/api/management/system/health", get(admin_system_health))
         // Branding
-        .route("/api/admin/branding", get(admin_get_branding).put(admin_upsert_branding))
+        .route("/api/management/branding", get(admin_get_branding).put(admin_upsert_branding))
         // Public endpoints (no auth)
         .route("/api/public/plans", get(public_plans))
         .route("/api/public/features", get(public_features))
@@ -62,7 +62,7 @@ async fn stats_summary(
     claims: Claims,
     State(state): State<AppState>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let total_corporations: (i64,) =
         sqlx::query_as("SELECT COUNT(*) FROM corporations").fetch_one(&state.pool).await?;
@@ -107,7 +107,7 @@ async fn stats_summary(
 }
 
 async fn stats_monthly(claims: Claims, State(state): State<AppState>) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let rows: Vec<(String, Option<f64>,)> = sqlx::query_as(
         "SELECT to_char(paid_at, 'YYYY-MM') as month, SUM(amount) FROM license_payments
@@ -128,7 +128,7 @@ async fn stats_license_distribution(
     claims: Claims,
     State(state): State<AppState>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let rows: Vec<(String, i64,)> = sqlx::query_as(
         "SELECT lp.name, COUNT(cl.id) FROM corporation_licenses cl
@@ -155,7 +155,7 @@ async fn admin_list_corporations(
     claims: Claims,
     State(state): State<AppState>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let rows: Vec<Value> = sqlx::query_as::<_, (Uuid, String, Option<String>, bool, Option<String>, Option<String>, i64, i64)>(
         "SELECT c.id, c.name, c.rut, c.active, lp.name as plan_name, cl.status as license_status,
@@ -190,7 +190,7 @@ async fn admin_create_corporation(
     State(state): State<AppState>,
     Json(payload): Json<AdminCreateCorpPayload>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let corp_id = Uuid::new_v4();
     sqlx::query(
@@ -233,7 +233,7 @@ async fn admin_get_corporation(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let corp = sqlx::query_as::<_, (Uuid, String, Option<String>, Option<String>, bool)>(
         "SELECT id, name, rut, logo_url, active FROM corporations WHERE id = $1",
@@ -275,7 +275,7 @@ async fn admin_toggle_corporation(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     sqlx::query("UPDATE corporations SET active = NOT active WHERE id = $1")
         .bind(id)
@@ -295,7 +295,7 @@ async fn admin_update_corporation(
     Path(id): Path<Uuid>,
     Json(payload): Json<schoolccb_common::school::UpdateCorporationPayload>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     sqlx::query(
         "UPDATE corporations SET
@@ -330,7 +330,7 @@ async fn admin_delete_corporation(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     sqlx::query("DELETE FROM corporations WHERE id = $1")
         .bind(id)
@@ -349,7 +349,7 @@ async fn admin_get_corporation_modules(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let overrides: Vec<Value> = sqlx::query_as::<_, (String, bool, Option<String>)>(
         "SELECT module_key, enabled, reason FROM corporation_module_overrides WHERE corporation_id = $1 ORDER BY module_key",
@@ -369,7 +369,7 @@ async fn admin_set_corporation_modules(
     Path(id): Path<Uuid>,
     Json(payload): Json<Vec<schoolccb_common::licensing::CorporationModuleOverrideInput>>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     sqlx::query("DELETE FROM corporation_module_overrides WHERE corporation_id = $1")
         .bind(id)
@@ -403,7 +403,7 @@ async fn admin_update_school(
     Path(id): Path<Uuid>,
     Json(payload): Json<schoolccb_common::school::UpdateSchoolPayload>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     sqlx::query(
         "UPDATE schools SET
@@ -433,7 +433,7 @@ async fn admin_delete_school(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     sqlx::query("DELETE FROM schools WHERE id = $1")
         .bind(id)
@@ -453,7 +453,7 @@ async fn admin_list_plans(
     claims: Claims,
     State(state): State<AppState>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let plans: Vec<Value> = sqlx::query_as::<_, (Uuid, String, Option<String>, f64, f64, bool, i32, bool, bool, bool)>(
         "SELECT id, name, description, price_monthly, price_yearly, featured, sort_order, active, is_custom, show_in_portal
@@ -474,7 +474,7 @@ async fn admin_create_plan(
     State(state): State<AppState>,
     Json(payload): Json<schoolccb_common::licensing::CreateLicensePlanPayload>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let plan_id = Uuid::new_v4();
     sqlx::query(
@@ -519,7 +519,7 @@ async fn admin_update_plan(
     Path(id): Path<Uuid>,
     Json(payload): Json<Value>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     sqlx::query(
         "UPDATE license_plans SET name = COALESCE($1, name), description = COALESCE($2, description),
@@ -545,7 +545,7 @@ async fn admin_delete_plan(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     sqlx::query("DELETE FROM license_plans WHERE id = $1 AND active = false")
         .bind(id)
@@ -561,7 +561,7 @@ async fn admin_set_plan_modules(
     Path(id): Path<Uuid>,
     Json(payload): Json<schoolccb_common::licensing::CreateLicensePlanPayload>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     sqlx::query("DELETE FROM plan_modules WHERE plan_id = $1")
         .bind(id)
@@ -598,7 +598,7 @@ async fn admin_list_licenses(
     State(state): State<AppState>,
     Query(q): Query<LicenseQuery>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let rows: Vec<Value> = sqlx::query_as::<_, (Uuid, String, String, Option<chrono::NaiveDate>, String, Option<chrono::NaiveDate>, String, i64)>(
         "SELECT cl.id, c.name as corporation_name, lp.name as plan_name,
@@ -628,7 +628,7 @@ async fn admin_assign_license(
     State(state): State<AppState>,
     Json(payload): Json<schoolccb_common::licensing::AssignLicensePayload>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let id = Uuid::new_v4();
     sqlx::query(
@@ -659,7 +659,7 @@ async fn admin_extend_license(
     Path(id): Path<Uuid>,
     Json(payload): Json<schoolccb_common::licensing::ExtendLicensePayload>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let admin_id = Uuid::parse_str(&claims.sub)
         .map_err(|_| AuthError::TokenInvalid("Invalid user ID".into()))?;
@@ -698,7 +698,7 @@ async fn admin_change_plan(
     Path(id): Path<Uuid>,
     Json(payload): Json<Value>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let new_plan_id = payload
         .get("plan_id")
@@ -728,7 +728,7 @@ async fn admin_update_license_status(
     Path(id): Path<Uuid>,
     Json(payload): Json<Value>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let status = payload
         .get("status")
@@ -755,7 +755,7 @@ async fn admin_list_payments(
     claims: Claims,
     State(state): State<AppState>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let rows: Vec<Value> = sqlx::query_as::<_, (Uuid, String, f64, String, String, Option<String>, Option<chrono::DateTime<chrono::Utc>>)>(
         "SELECT lp.id, c.name as corporation_name, lp.amount, lp.payment_method, lp.status, lp.transaction_id, lp.paid_at
@@ -779,7 +779,7 @@ async fn admin_register_payment(
     State(state): State<AppState>,
     Json(payload): Json<schoolccb_common::licensing::RegisterPaymentPayload>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let id = Uuid::new_v4();
     let year = chrono::Utc::now().format("%Y");
@@ -826,7 +826,7 @@ async fn admin_activity_log(
     State(state): State<AppState>,
     Query(q): Query<ActivityLogQuery>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let limit = q.limit.unwrap_or(100);
 
@@ -855,7 +855,7 @@ async fn admin_system_health(
     claims: Claims,
     State(_state): State<AppState>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
     Ok(Json(json!({
         "status": "ok",
         "services": [
@@ -949,7 +949,7 @@ async fn admin_get_branding(
     State(state): State<AppState>,
     Query(q): Query<AdminBrandingQuery>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
     let config = models::get_branding(&state.pool, q.corporation_id).await?;
     if let Some(c) = config {
         Ok(Json(json!({
@@ -975,7 +975,7 @@ async fn admin_upsert_branding(
     State(state): State<AppState>,
     Json(payload): Json<AdminBrandingPayload>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
     let config = models::upsert_branding(
         &state.pool,
         Some(payload.corporation_id),
@@ -1005,7 +1005,7 @@ async fn admin_list_legal_reps(
     State(state): State<AppState>,
     Query(q): Query<LegalRepQuery>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let reps = match (q.corporation_id, q.school_id) {
         (Some(cid), _) => sqlx::query_as::<_, schoolccb_common::school::LegalRepresentative>(
@@ -1037,7 +1037,7 @@ async fn admin_create_legal_rep(
     State(state): State<AppState>,
     Json(payload): Json<schoolccb_common::school::CreateLegalRepPayload>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     let id = Uuid::new_v4();
     sqlx::query(
@@ -1069,7 +1069,7 @@ async fn admin_update_legal_rep(
     Path(id): Path<Uuid>,
     Json(payload): Json<schoolccb_common::school::UpdateLegalRepPayload>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     sqlx::query(
         "UPDATE legal_representatives SET
@@ -1106,7 +1106,7 @@ async fn admin_delete_legal_rep(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AuthResult<Json<Value>> {
-    require_root(&claims)?;
+    require_management(&claims)?;
 
     sqlx::query("UPDATE legal_representatives SET active = false, updated_at = NOW() WHERE id = $1")
         .bind(id)

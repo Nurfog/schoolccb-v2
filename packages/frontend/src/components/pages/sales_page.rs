@@ -12,16 +12,18 @@ pub fn SalesPage() -> Element {
     let tab_team = if active_tab() == "team" { "tab active" } else { "tab" };
     let tab_proposals = if active_tab() == "proposals" { "tab active" } else { "tab" };
     let tab_contracts = if active_tab() == "contracts" { "tab active" } else { "tab" };
+    let tab_documents = if active_tab() == "documents" { "tab active" } else { "tab" };
 
     rsx! {
         div { class: "page-header",
             h1 { "CRM de Ventas" }
-            p { "Pipeline comercial — gesti\u{00f3}n de prospectos, propuestas, contratos y equipo" }
+            p { "Pipeline comercial — gesti\u{00f3}n de prospectos, propuestas, contratos, documentos y equipo" }
         }
         div { class: "tab-bar",
             button { class: "{tab_pipeline}", onclick: move |_| active_tab.set("pipeline".to_string()), "Pipeline" }
             button { class: "{tab_proposals}", onclick: move |_| active_tab.set("proposals".to_string()), "Cotizaciones" }
             button { class: "{tab_contracts}", onclick: move |_| active_tab.set("contracts".to_string()), "Contratos" }
+            button { class: "{tab_documents}", onclick: move |_| active_tab.set("documents".to_string()), "Documentos" }
             button { class: "{tab_dashboard}", onclick: move |_| active_tab.set("dashboard".to_string()), "Dashboard" }
             button { class: "{tab_team}", onclick: move |_| active_tab.set("team".to_string()), "Equipo" }
         }
@@ -32,6 +34,8 @@ pub fn SalesPage() -> Element {
                 SalesProposals {}
             } else if active_tab() == "contracts" {
                 SalesContracts {}
+            } else if active_tab() == "documents" {
+                SalesDocuments {}
             } else if active_tab() == "dashboard" {
                 SalesDashboard {}
             } else {
@@ -286,7 +290,9 @@ fn ProspectDetailModal(
 ) -> Element {
     let mut show_timeline = use_signal(|| true);
     let mut activation_result = use_signal(|| None::<Value>);
-    let mut is_activating = use_signal(|| false);
+    let is_activating = use_signal(|| false);
+    let mut show_activate_wizard = use_signal(|| false);
+    let mut wizard_step = use_signal(|| 0u32);
 
     let detail_data = match detail() {
         Some(Ok(ref data)) => Some(data.clone()),
@@ -328,9 +334,8 @@ fn ProspectDetailModal(
             let cs = c["status"].as_str().unwrap_or("draft").to_string();
             let cv = c["total_value"].as_f64().unwrap_or(0.0);
             let cid = c["id"].as_str().unwrap_or("").to_string();
-            let cid_clone = cid.clone();
             let is_verified = cs == "verified";
-            let act_label = if is_activating() { "Activando..." } else { "Activar Licencia" };
+            let act_label = if is_activating() { "Activando..." } else { "Iniciar Activación" };
             rsx! {
                 div { key: "{cid}", class: "contract-card",
                     div { class: "contract-status-{cs}", "{cs}" }
@@ -340,14 +345,8 @@ fn ProspectDetailModal(
                             class: "btn btn-sm btn-success",
                             disabled: is_activating(),
                             onclick: move |_| {
-                                let id = cid_clone.clone();
-                                spawn(async move {
-                                    is_activating.set(true);
-                                    if let Ok(resp) = client::post_json(&format!("/api/sales/contracts/{}/activate", id), &json!({})).await {
-                                        activation_result.set(Some(resp));
-                                    }
-                                    is_activating.set(false);
-                                });
+                                show_activate_wizard.set(true);
+                                wizard_step.set(0);
                             },
                             "{act_label}"
                         }
@@ -416,6 +415,15 @@ fn ProspectDetailModal(
                                 }
                             }
                         }
+                        {build_activation_wizard(
+                            show_activate_wizard,
+                            wizard_step,
+                            activation_result,
+                            is_activating,
+                            company_val.clone(),
+                            email_val.clone(),
+                            prospect_id.clone(),
+                        )}
                         if !contract_cards.is_empty() {
                             div { class: "detail-section",
                                 h3 { "Contratos" }
@@ -689,24 +697,6 @@ fn SalesProposals() -> Element {
         match proposals() {
             Some(Ok(data)) => {
                 let list = data["proposals"].as_array().cloned().unwrap_or_default();
-                let rows: Vec<Element> = list.iter().map(|p| {
-                    let prospect_name = format!("{} {}", p["first_name"].as_str().unwrap_or(""), p["last_name"].as_str().unwrap_or(""));
-                    let plan_name = p["plan_name"].as_str().unwrap_or("-").to_string();
-                    let val = p["total_value"].as_f64().unwrap_or(0.0);
-                    let discount = p["discount"].as_f64().unwrap_or(0.0);
-                    let status = p["status"].as_str().unwrap_or("draft").to_string();
-                    let version = p["version"].as_i64().unwrap_or(1);
-                    let net = val - discount;
-                    rsx! {
-                        div { class: "contract-card",
-                            div { class: "contract-status-{status}", "{status}" }
-                            div { style: "flex: 1;",
-                                div { class: "alert-name", "{prospect_name} — {plan_name}" }
-                                div { class: "alert-detail", "Valor: ${val:.0} | Desc: ${discount:.0} | Neto: ${net:.0} | v{version}" }
-                            }
-                        }
-                    }
-                }).collect();
                 rsx! {
                     div { class: "widget-card",
                         div { class: "widget-card-header",
@@ -714,10 +704,10 @@ fn SalesProposals() -> Element {
                             span { "{list.len()} cotizaciones" }
                         }
                         div { class: "widget-card-body",
-                            if rows.is_empty() {
+                            if list.is_empty() {
                                 div { class: "empty-state", "Sin cotizaciones" }
                             } else {
-                                {rows.into_iter()}
+                                {list.into_iter().map(|p| rsx! { SalesProposalRow { p: p } })}
                             }
                         }
                     }
@@ -733,6 +723,7 @@ fn SalesProposals() -> Element {
 #[component]
 fn SalesContracts() -> Element {
     let proposals = use_resource(client::fetch_sales_proposals);
+    let contracts = use_resource(|| client::fetch_json("/api/sales/contracts"));
     let mut sel_proposal_id = use_signal(String::new);
     let mut tax_rate = use_signal(|| 19.0);
     let mut notes = use_signal(String::new);
@@ -791,7 +782,7 @@ fn SalesContracts() -> Element {
                             "tax_rate": tax_rate() / 100.0,
                             "notes": notes(),
                         });
-                        let pid = sel_proposal_id();
+                        let _pid = sel_proposal_id();
                         spawn(async move {
                             let result = client::create_sales_contract(&payload).await;
                             saving.set(false);
@@ -809,6 +800,420 @@ fn SalesContracts() -> Element {
             }
             if let Some(ref m) = msg() {
                 div { class: "alert alert-success", style: "margin-top: 12px;", "{m}" }
+            }
+        }
+        match contracts() {
+            Some(Ok(data)) => {
+                let list = data["contracts"].as_array().cloned().unwrap_or_default();
+                rsx! {
+                    div { class: "widget-card", style: "margin-top: 16px;",
+                        div { class: "widget-card-header",
+                            h3 { "Contratos" }
+                            span { "{list.len()} contratos" }
+                        }
+                        div { class: "widget-card-body",
+                            if list.is_empty() {
+                                div { class: "empty-state", "Sin contratos" }
+                            } else {
+                                {list.into_iter().map(|c| rsx! { SalesContractRow { c: c } })}
+                            }
+                        }
+                    }
+                }
+            }
+            _ => rsx! { div { class: "loading-spinner", "Cargando contratos..." } }
+        }
+    }
+}
+
+#[component]
+fn SalesProposalRow(p: Value) -> Element {
+    let mut show_detail = use_signal(|| false);
+    let mut detail_result = use_signal(|| None::<Result<Value, String>>);
+    let mut show_discount = use_signal(|| false);
+    let mut discount_pct = use_signal(|| 0.0);
+    let mut discount_msg = use_signal(|| None::<String>);
+    let mut applying = use_signal(|| false);
+    let mut generating = use_signal(|| false);
+    let mut pdf_msg = use_signal(|| None::<String>);
+
+    let pid = p["id"].as_str().unwrap_or("").to_string();
+    let prospect_name = format!("{} {}", p["first_name"].as_str().unwrap_or(""), p["last_name"].as_str().unwrap_or(""));
+    let plan_name = p["plan_name"].as_str().unwrap_or("-").to_string();
+    let val = p["total_value"].as_f64().unwrap_or(0.0);
+    let discount = p["discount"].as_f64().unwrap_or(0.0);
+    let status = p["status"].as_str().unwrap_or("draft").to_string();
+    let version = p["version"].as_i64().unwrap_or(1);
+    let net = val - discount;
+
+    rsx! {
+        div { class: "contract-card",
+            div { class: "contract-status-{status}", "{status}" }
+            div { style: "flex: 1;",
+                div { class: "alert-name", "{prospect_name} — {plan_name}" }
+                div { class: "alert-detail", "Valor: ${val:.0} | Desc: ${discount:.0} | Neto: ${net:.0} | v{version}" }
+            }
+            div { class: "contract-actions",
+                button {
+                    class: "btn btn-sm",
+                    onclick: {
+                        let pid = pid.clone();
+                        move |_| {
+                            show_detail.set(!show_detail());
+                            if !show_detail() {
+                                detail_result.set(None);
+                            } else {
+                                let pid = pid.clone();
+                                spawn(async move {
+                                    detail_result.set(Some(client::get_sales_proposal(&pid).await));
+                                });
+                            }
+                        }
+                    },
+                    if show_detail() { "Ocultar Detalle" } else { "Detalle" }
+                }
+                button { class: "btn btn-sm", onclick: move |_| show_discount.set(!show_discount()), "Aplicar Descuento" }
+                button {
+                    class: "btn btn-sm",
+                    disabled: generating(),
+                    onclick: {
+                        let pid = pid.clone();
+                        move |_| {
+                            generating.set(true);
+                            let pid = pid.clone();
+                            spawn(async move {
+                                match client::generate_proposal_pdf(&pid).await {
+                                    Ok(resp) => pdf_msg.set(Some(resp["url"].as_str().unwrap_or("PDF generado").to_string())),
+                                    Err(e) => pdf_msg.set(Some(format!("Error: {e}"))),
+                                }
+                                generating.set(false);
+                            });
+                        }
+                    },
+                    if generating() { "Generando..." } else { "Generar PDF" }
+                }
+            }
+            if show_discount() {
+                div { class: "discount-form", style: "margin-top: 8px; display: flex; gap: 8px; align-items: center;",
+                    input {
+                        class: "form-input",
+                        r#type: "number",
+                        style: "width: 100px;",
+                        placeholder: "%",
+                        value: "{discount_pct}",
+                        oninput: move |e| {
+                            if let Ok(v) = e.value().parse::<f64>() { discount_pct.set(v); }
+                        }
+                    }
+                    button {
+                        class: "btn btn-sm btn-primary",
+                        disabled: applying(),
+                        onclick: {
+                            let pid = pid.clone();
+                            move |_| {
+                                applying.set(true);
+                                let pid = pid.clone();
+                                let payload = json!({"discount_pct": discount_pct()});
+                                spawn(async move {
+                                    match client::apply_proposal_discount(&pid, &payload).await {
+                                        Ok(_) => discount_msg.set(Some("Descuento aplicado".to_string())),
+                                        Err(e) => discount_msg.set(Some(format!("Error: {e}"))),
+                                    }
+                                    applying.set(false);
+                                });
+                            }
+                        },
+                        if applying() { "Aplicando..." } else { "Aplicar" }
+                    }
+                    if let Some(ref msg) = discount_msg() {
+                        span { class: "text-success", style: "font-size: 12px;", "{msg}" }
+                    }
+                }
+            }
+            if show_detail() {
+                match detail_result() {
+                    Some(Ok(ref data)) => {
+                        let d_plan = data["plan_name"].as_str().unwrap_or("-").to_string();
+                        let d_val = data["total_value"].as_f64().unwrap_or(0.0);
+                        let d_disc = data["discount"].as_f64().unwrap_or(0.0);
+                        let d_notes = data["notes"].as_str().unwrap_or("-").to_string();
+                        let d_status = data["status"].as_str().unwrap_or("-").to_string();
+                        rsx! {
+                            div { class: "detail-section", style: "margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 6px;",
+                                div { class: "detail-row", label { "Plan:" } span { "{d_plan}" } }
+                                div { class: "detail-row", label { "Valor:" } span { "${d_val:.0}" } }
+                                div { class: "detail-row", label { "Descuento:" } span { "${d_disc:.0}" } }
+                                div { class: "detail-row", label { "Notas:" } span { "{d_notes}" } }
+                                div { class: "detail-row", label { "Estado:" } span { "{d_status}" } }
+                            }
+                        }
+                    }
+                    Some(Err(e)) => rsx! { div { class: "text-error", style: "font-size: 12px; margin-top: 8px;", "Error: {e}" } },
+                    None => rsx! { div { class: "loading-spinner", style: "margin-top: 8px;", "Cargando..." } },
+                }
+            }
+            if let Some(ref msg) = pdf_msg() {
+                div { class: "text-success", style: "font-size: 12px; margin-top: 4px;", "{msg}" }
+            }
+        }
+    }
+}
+
+#[component]
+fn SalesContractRow(c: Value) -> Element {
+    let mut show_detail = use_signal(|| false);
+    let mut detail_result = use_signal(|| None::<Result<Value, String>>);
+    let mut verifying = use_signal(|| false);
+    let mut verify_msg = use_signal(|| None::<String>);
+    let mut invoicing = use_signal(|| false);
+    let mut invoice_msg = use_signal(|| None::<String>);
+
+    let cid = c["id"].as_str().unwrap_or("").to_string();
+    let status = c["status"].as_str().unwrap_or("draft").to_string();
+    let total = c["total_value"].as_f64().unwrap_or(0.0);
+    let prospect_name = c["prospect_name"].as_str().unwrap_or("-").to_string();
+
+    rsx! {
+        div { class: "contract-card",
+            div { class: "contract-status-{status}", "{status}" }
+            div { style: "flex: 1;",
+                div { class: "alert-name", "{prospect_name}" }
+                div { class: "alert-detail", "Valor: ${total:.0} | ID: {cid}" }
+            }
+            div { class: "contract-actions",
+                button {
+                    class: "btn btn-sm",
+                    onclick: {
+                        let cid = cid.clone();
+                        move |_| {
+                            show_detail.set(!show_detail());
+                            if !show_detail() {
+                                detail_result.set(None);
+                            } else {
+                                let cid = cid.clone();
+                                spawn(async move {
+                                    detail_result.set(Some(client::get_sales_contract(&cid).await));
+                                });
+                            }
+                        }
+                    },
+                    if show_detail() { "Ocultar Detalle" } else { "Detalle" }
+                }
+                button {
+                    class: "btn btn-sm",
+                    disabled: verifying(),
+                    onclick: {
+                        let cid = cid.clone();
+                        move |_| {
+                            verifying.set(true);
+                            let cid = cid.clone();
+                            spawn(async move {
+                                match client::verify_contract_signatures(&cid).await {
+                                    Ok(resp) => verify_msg.set(Some(resp["status"].as_str().unwrap_or("Verificado").to_string())),
+                                    Err(e) => verify_msg.set(Some(format!("Error: {e}"))),
+                                }
+                                verifying.set(false);
+                            });
+                        }
+                    },
+                    if verifying() { "Verificando..." } else { "Verificar Firmas" }
+                }
+                button {
+                    class: "btn btn-sm",
+                    disabled: invoicing(),
+                    onclick: {
+                        let cid = cid.clone();
+                        move |_| {
+                            invoicing.set(true);
+                            let cid = cid.clone();
+                            spawn(async move {
+                                match client::generate_contract_invoice(&cid).await {
+                                    Ok(resp) => invoice_msg.set(Some(resp["url"].as_str().unwrap_or("Factura generada").to_string())),
+                                    Err(e) => invoice_msg.set(Some(format!("Error: {e}"))),
+                                }
+                                invoicing.set(false);
+                            });
+                        }
+                    },
+                    if invoicing() { "Generando..." } else { "Generar Factura" }
+                }
+            }
+            if show_detail() {
+                match detail_result() {
+                    Some(Ok(ref data)) => {
+                        let d_status = data["status"].as_str().unwrap_or("-").to_string();
+                        let d_val = data["total_value"].as_f64().unwrap_or(0.0);
+                        let d_tax = data["tax_rate"].as_f64().unwrap_or(0.0) * 100.0;
+                        let d_notes = data["notes"].as_str().unwrap_or("-").to_string();
+                        rsx! {
+                            div { class: "detail-section", style: "margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 6px;",
+                                div { class: "detail-row", label { "Estado:" } span { "{d_status}" } }
+                                div { class: "detail-row", label { "Valor Total:" } span { "${d_val:.0}" } }
+                                div { class: "detail-row", label { "Impuesto:" } span { "{d_tax:.0}%" } }
+                                div { class: "detail-row", label { "Notas:" } span { "{d_notes}" } }
+                            }
+                        }
+                    }
+                    Some(Err(e)) => rsx! { div { class: "text-error", style: "font-size: 12px; margin-top: 8px;", "Error: {e}" } },
+                    None => rsx! { div { class: "loading-spinner", style: "margin-top: 8px;", "Cargando..." } },
+                }
+            }
+            if let Some(ref msg) = verify_msg() {
+                div { class: "text-success", style: "font-size: 12px; margin-top: 4px;", "{msg}" }
+            }
+            if let Some(ref msg) = invoice_msg() {
+                div { class: "text-success", style: "font-size: 12px; margin-top: 4px;", "{msg}" }
+            }
+        }
+    }
+}
+
+// ─── Documents Tab ───
+
+#[component]
+fn SalesDocuments() -> Element {
+    let contracts = use_resource(client::fetch_sales_proposals);
+    let mut sel_contract_id = use_signal(String::new);
+    let mut doc_type = use_signal(|| "contract".to_string());
+    let mut file_name = use_signal(String::new);
+    let mut file_url = use_signal(String::new);
+    let mut saving = use_signal(|| false);
+
+    let documents = use_resource(move || {
+        let cid = sel_contract_id();
+        async move {
+            if cid.is_empty() {
+                return Ok(serde_json::json!({"documents": []}));
+            }
+            client::fetch_contract_documents(&cid).await
+        }
+    });
+
+    rsx! {
+        div { class: "page-toolbar",
+            h3 { "Visor de Documentos" }
+            p { class: "text-muted", style: "font-size: 13px;", "Gestión de documentos de contratos: subir, listar y verificar" }
+        }
+        div { class: "form-card",
+            div { class: "form-row",
+                div { class: "form-group",
+                    label { "Seleccionar Contrato:" }
+                    match contracts() {
+                        Some(Ok(data)) => {
+                            let list = data["proposals"].as_array().cloned().unwrap_or_default();
+                            let opts: Vec<Element> = list.iter().map(|p| {
+                                let pid = p["prospect_id"].as_str().unwrap_or("").to_string();
+                                let pname = format!("{} {} — ${:.0}", p["first_name"].as_str().unwrap_or(""), p["last_name"].as_str().unwrap_or(""), p["total_value"].as_f64().unwrap_or(0.0));
+                                rsx! { option { value: "{pid}", "{pname}" } }
+                            }).collect();
+                            rsx! {
+                                select { class: "form-input", value: "{sel_contract_id}", oninput: move |e| sel_contract_id.set(e.value()),
+                                    option { value: "", "Seleccionar..." }
+                                    {opts.into_iter()}
+                                }
+                            }
+                        }
+                        _ => rsx! { div { class: "loading-spinner", "Cargando..." } }
+                    }
+                }
+            }
+        }
+        div { class: "form-card",
+            h3 { "Subir Documento" }
+            div { class: "form-row",
+                div { class: "form-group",
+                    label { "Tipo:" }
+                    select { class: "form-input", value: "{doc_type}", oninput: move |e| doc_type.set(e.value()),
+                        option { value: "contract", "Contrato firmado" }
+                        option { value: "identification", "Identificación" }
+                        option { value: "tax", "Documento tributario" }
+                        option { value: "annex", "Anexo" }
+                        option { value: "other", "Otro" }
+                    }
+                }
+                div { class: "form-group",
+                    label { "Nombre del archivo:" }
+                    input { class: "form-input", value: "{file_name}", placeholder: "ej. contrato_firmado.pdf", oninput: move |e| file_name.set(e.value()) }
+                }
+            }
+            div { class: "form-group",
+                label { "URL del archivo:" }
+                input { class: "form-input", value: "{file_url}", placeholder: "https://storage.example.com/documento.pdf", oninput: move |e| file_url.set(e.value()) }
+            }
+            div { class: "form-actions",
+                button {
+                    class: "btn btn-primary",
+                    disabled: saving() || sel_contract_id().trim().is_empty() || file_name().trim().is_empty(),
+                    onclick: move |_| {
+                        saving.set(true);
+                        let cid = sel_contract_id();
+                        let payload = serde_json::json!({
+                            "file_name": file_name(),
+                            "file_url": file_url(),
+                            "doc_type": doc_type(),
+                        });
+                        spawn(async move {
+                            let _ = client::upload_contract_document(&cid, &payload).await;
+                            saving.set(false);
+                            file_name.set(String::new());
+                            file_url.set(String::new());
+                        });
+                    },
+                    if saving() { "Subiendo..." } else { "Subir Documento" }
+                }
+            }
+        }
+        div { class: "widget-card",
+            div { class: "widget-card-header",
+                h3 { "Documentos del Contrato" }
+                span { }
+            }
+            div { class: "widget-card-body",
+                match documents() {
+                    Some(Ok(data)) => {
+                        let docs = data["documents"].as_array().cloned().unwrap_or_default();
+                        if docs.is_empty() {
+                            rsx! { div { class: "empty-state", "Seleccione un contrato para ver sus documentos" } }
+                        } else {
+                            rsx! {
+                                div { class: "data-table-container",
+                                    table { class: "data-table",
+                                        thead {
+                                            tr { th { "Nombre" } th { "Tipo" } th { "Verificado" } th { "Subido por" } th { "Fecha" } th { "Acción" } }
+                                        }
+                                        tbody {
+                                            {docs.iter().map(|doc| {
+                                                let doc_id = doc["id"].as_str().unwrap_or("");
+                                                let name = doc["file_name"].as_str().unwrap_or("");
+                                                let dtype = doc["doc_type"].as_str().unwrap_or("");
+                                                let verified = doc["is_verified"].as_bool().unwrap_or(false);
+                                                let uploader = doc["uploaded_by"].as_str().unwrap_or("-");
+                                                let created = doc["created_at"].as_str().unwrap_or("");
+                                                let url = doc["file_url"].as_str().unwrap_or("");
+                                                rsx! {
+                                                    tr {
+                                                        key: "{doc_id}",
+                                                        td { "{name}" }
+                                                        td { span { class: "badge", "{dtype}" } }
+                                                        td { if verified { span { class: "badge badge-success", "✅ Verificado" } } else { span { class: "badge badge-warning", "⏳ Pendiente" } } }
+                                                        td { "{uploader}" }
+                                                        td { "{created}" }
+                                                        td {
+                                                            if !url.is_empty() {
+                                                                a { class: "btn btn-sm", href: "{url}", target: "_blank", "Ver" }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            })}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    _ => rsx! { div { class: "loading-spinner", "Cargando..." } }
+                }
             }
         }
     }
@@ -866,6 +1271,95 @@ fn SalesTeam() -> Element {
                             }
                         }
                     })}
+                }
+            }
+        }
+    }
+}
+
+fn build_activation_wizard(
+    mut show_activate_wizard: Signal<bool>,
+    mut wizard_step: Signal<u32>,
+    mut activation_result: Signal<Option<Value>>,
+    mut is_activating: Signal<bool>,
+    company_val: String,
+    email_val: String,
+    prospect_id: String,
+) -> Element {
+    if !show_activate_wizard() {
+        return rsx! {};
+    }
+    let ws = wizard_step();
+    let ws_label = format!("Paso {} de 3", ws + 1);
+    rsx! {
+        div { class: "widget-card card-accent-green",
+            div { class: "widget-card-header",
+                h3 { "Wizard de Activación" }
+                span { class: "badge", "{ws_label}" }
+            }
+            div { class: "widget-card-body",
+                if ws == 0 {
+                    div { class: "detail-section",
+                        h3 { "Resumen de Activación" }
+                        p { "Se crearán los siguientes recursos:" }
+                        ul { style: "list-style: disc; padding-left: 20px; margin: 12px 0;",
+                            li { "Corporación: {company_val}" }
+                            li { "Colegio: Colegio {company_val}" }
+                            li { "Usuario Administrador: {email_val}" }
+                            li { "Licencia activa vinculada al plan" }
+                        }
+                        div { class: "form-actions",
+                            button { class: "btn btn-primary", onclick: move |_| wizard_step.set(1), "Continuar" }
+                            button { class: "btn btn-secondary", style: "margin-left: 8px;", onclick: move |_| show_activate_wizard.set(false), "Cancelar" }
+                        }
+                    }
+                } else if ws == 1 {
+                    div { class: "detail-section",
+                        h3 { "Confirmar Activación" }
+                        p { "¿Estás seguro de activar la licencia para {company_val}?" }
+                        p { class: "text-muted", style: "font-size: 13px;", "Esta acción creará la corporación, el colegio y el usuario administrador." }
+                        div { class: "form-actions",
+                            button {
+                                class: "btn btn-success",
+                                disabled: is_activating(),
+                                onclick: move |_| {
+                                    let id = prospect_id.clone();
+                                    spawn(async move {
+                                        is_activating.set(true);
+                                        if let Ok(resp) = client::post_json(&format!("/api/sales/contracts/{}/activate", id), &json!({})).await {
+                                            activation_result.set(Some(resp));
+                                            wizard_step.set(2);
+                                        }
+                                        is_activating.set(false);
+                                    });
+                                },
+                                if is_activating() { "Activando..." } else { "Confirmar y Activar" }
+                            }
+                            button { class: "btn btn-secondary", style: "margin-left: 8px;", onclick: move |_| wizard_step.set(0), "Atrás" }
+                        }
+                    }
+                } else if ws == 2 {
+                    match activation_result() {
+                        Some(ref data) => {
+                            let admin_email = data["admin_email"].as_str().unwrap_or("").to_string();
+                            let temp_password = data["temp_password"].as_str().unwrap_or("").to_string();
+                            rsx! {
+                                div { class: "detail-section",
+                                    h3 { "Licencia Activada" }
+                                    p { "La corporación, colegio y usuario administrador han sido creados." }
+                                    div { class: "info-card", style: "margin: 16px 0;",
+                                        div { class: "detail-row", label { "Email:" } span { "{admin_email}" } }
+                                        div { class: "detail-row", label { "Contraseña Temporal:" } span { class: "font-mono", "{temp_password}" } }
+                                    }
+                                    p { class: "text-muted", style: "font-size: 12px;", "Comparte estas credenciales con el sostenedor." }
+                                    div { class: "form-actions",
+                                        button { class: "btn btn-primary", onclick: move |_| { show_activate_wizard.set(false); activation_result.set(None); }, "Finalizar" }
+                                    }
+                                }
+                            }
+                        }
+                        None => rsx! { div { class: "loading-spinner", "Procesando..." } },
+                    }
                 }
             }
         }
