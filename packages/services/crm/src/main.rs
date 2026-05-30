@@ -1,7 +1,9 @@
 mod config;
 mod error;
 mod models;
+mod pdf;
 mod routes;
+mod signature;
 
 use std::sync::Arc;
 
@@ -18,6 +20,7 @@ pub struct AppState {
     pub pool: PgPool,
     pub config: Arc<Config>,
     pub client: reqwest::Client,
+    pub signature_config: Arc<signature::SignatureConfig>,
 }
 
 #[tokio::main]
@@ -42,10 +45,13 @@ async fn main() {
         tracing::warn!("SQLx migrations skipped: {e}");
     }
 
+    let signature_config = Arc::new(signature::SignatureConfig::from_env());
+
     let state = AppState {
         pool: pool.clone(),
         config: config.clone(),
         client,
+        signature_config,
     };
 
     let cors = if std::env::var("CORS_ENABLED").as_deref() == Ok("true") {

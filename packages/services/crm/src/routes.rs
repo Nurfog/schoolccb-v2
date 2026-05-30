@@ -772,14 +772,89 @@ async fn verify_signatures(
 ) -> CrmResult<Json<Value>> {
     require_sales_manager(&claims)?;
 
-    sqlx::query(
-        "UPDATE crm_sales_contracts SET verified_at = NOW(), status = 'verified', updated_at = NOW() WHERE id = $1",
+    let contract = sqlx::query_as::<_, models::SalesContract>(
+        "SELECT id, prospect_id, tax_id, plan_id, modules, total_value, discount, status,
+         signed_at, verified_at, activated_at, notes, created_at, updated_at
+         FROM crm_sales_contracts WHERE id = $1",
     )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or(CrmError::NotFound("Contrato no encontrado".into()))?;
+
+    let prospect = sqlx::query_as::<_, models::SalesProspect>(
+        "SELECT id, first_name, last_name, rut, email, phone, company, position, source,
+         requirements, current_stage_id, assigned_to, estimated_value, notes, created_at, updated_at
+         FROM crm_sales_prospects WHERE id = $1",
+    )
+    .bind(contract.prospect_id)
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or(CrmError::NotFound("Prospecto no encontrado".into()))?;
+
+    let documents = sqlx::query_as::<_, models::SalesDocument>(
+        "SELECT id, contract_id, file_name, file_url, doc_type, is_verified, uploaded_by, created_at
+         FROM crm_sales_documents WHERE contract_id = $1",
+    )
+    .bind(id)
+    .fetch_all(&state.pool)
+    .await?;
+
+    if documents.is_empty() {
+        return Err(CrmError::Validation(
+            "El contrato no tiene documentos asociados para firmar".into(),
+        ));
+    }
+
+    let sign_request = crate::signature::SignatureRequest {
+        document_id: contract.id.to_string(),
+        document_name: format!("Contrato {} - {}", contract.id, prospect.company.as_deref().unwrap_or("SchoolCBB")),
+        document_url: documents[0].file_url.clone().unwrap_or_default(),
+        signers: vec![
+            crate::signature::SignerInfo {
+                rut: prospect.rut.clone().unwrap_or_default(),
+                name: format!("{} {}", prospect.first_name, prospect.last_name),
+                email: prospect.email.clone().unwrap_or_default(),
+                role: "cliente".to_string(),
+            },
+        ],
+        expires_in_days: 30,
+    };
+
+    let sig_result = crate::signature::request_signature(&state.signature_config, &sign_request).await?;
+
+    let provider = state.signature_config.provider.clone();
+    tracing::info!(
+        "Solicitud de firma enviada a {}: request_id={}",
+        provider, sig_result.request_id
+    );
+
+    sqlx::query(
+        "UPDATE crm_sales_contracts SET signed_at = NOW(), status = 'signed',
+         verified_at = CASE WHEN $1 = 'mock' THEN NOW() ELSE NULL END,
+         updated_at = NOW() WHERE id = $2",
+    )
+    .bind(&provider)
     .bind(id)
     .execute(&state.pool)
     .await?;
 
-    Ok(Json(json!({"message": "Firmas verificadas"})))
+    log_activity(
+        &state.pool,
+        contract.prospect_id,
+        "contract",
+        &format!("Firma solicitada vía {provider}, request_id={}", sig_result.request_id),
+        None,
+    )
+    .await;
+
+    Ok(Json(json!({
+        "message": "Solicitud de firma enviada",
+        "provider": provider,
+        "request_id": sig_result.request_id,
+        "signing_url": sig_result.signing_url,
+        "status": "signed",
+    })))
 }
 
 async fn activate_license(
@@ -1398,27 +1473,47 @@ async fn generate_proposal_pdf(
     .await?
     .ok_or(CrmError::NotFound("Prospecto no encontrado".into()))?;
 
-    // Simulate PDF generation (in production, use a PDF library like printpdf or genpdf)
-    let pdf_url = format!("/generated/proposals/{}.pdf", proposal.id);
-    tracing::info!("📄 PDF generado: propuesta {} para {} {}", proposal.id, prospect.first_name, prospect.last_name);
+    let output_dir = std::env::var("PDF_OUTPUT_DIR").unwrap_or_else(|_| "/tmp/proposals".into());
+    let client_name = format!("{} {}", prospect.first_name, prospect.last_name);
+    let company = prospect.company.as_deref().unwrap_or("");
+    let rut = prospect.rut.as_deref().unwrap_or("");
 
-    log_activity(&state.pool, proposal.prospect_id, "proposal", "PDF de propuesta generado", None).await;
+    match crate::pdf::generate_proposal_pdf(
+        &output_dir,
+        &proposal.id.to_string(),
+        &client_name,
+        company,
+        rut,
+        prospect.email.as_deref().unwrap_or(""),
+        "", // plan_name placeholder
+        proposal.total_value,
+        proposal.discount,
+        &proposal.status,
+    ) {
+        Ok(filename) => {
+            let pdf_url = format!("/generated/proposals/{}", filename);
+            tracing::info!("PDF generado: propuesta {} para {}", proposal.id, client_name);
 
-    Ok(Json(json!({
-        "message": "PDF generado correctamente",
-        "pdf_url": pdf_url,
-        "proposal": {
-            "id": proposal.id,
-            "total_value": proposal.total_value,
-            "discount": proposal.discount,
-            "status": proposal.status,
-        },
-        "client": {
-            "name": format!("{} {}", prospect.first_name, prospect.last_name),
-            "company": prospect.company,
-            "rut": prospect.rut,
+            log_activity(&state.pool, proposal.prospect_id, "proposal", "PDF de propuesta generado", None).await;
+
+            Ok(Json(json!({
+                "message": "PDF generado correctamente",
+                "pdf_url": pdf_url,
+                "proposal": {
+                    "id": proposal.id,
+                    "total_value": proposal.total_value,
+                    "discount": proposal.discount,
+                    "status": proposal.status,
+                },
+                "client": {
+                    "name": client_name,
+                    "company": company,
+                    "rut": rut,
+                }
+            })))
         }
-    })))
+        Err(e) => Err(CrmError::Internal(format!("Error generando PDF: {e}"))),
+    }
 }
 
 // ─── Invoice Generation ───

@@ -21,3 +21,4 @@ uuid.workspace = true
 chrono.workspace = true
 jsonwebtoken.workspace = true
 reqwest = { workspace = true, features = ["json"] }
+printpdf = "0.7"

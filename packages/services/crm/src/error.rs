@@ -33,6 +33,12 @@ pub enum CrmError {
     External(String),
 }
 
+impl From<String> for CrmError {
+    fn from(s: String) -> Self {
+        CrmError::External(s)
+    }
+}
+
 impl IntoResponse for CrmError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {
