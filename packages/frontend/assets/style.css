@@ -3775,3 +3775,139 @@ tr.selected td:first-child { border-left: 3px solid var(--primary); }
     grid-template-columns: 2fr 1fr;
     gap: var(--space-5);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ISAMS-Style Refinements
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Breadcrumbs ─── */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 0;
+    flex-wrap: wrap;
+}
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.breadcrumb-item a,
+.breadcrumb-item span {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.breadcrumb-item a:hover {
+    color: var(--primary);
+}
+.breadcrumb-item.active span {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+.breadcrumb-separator {
+    color: var(--border);
+    font-size: 12px;
+    user-select: none;
+}
+
+/* ─── Card Hover Elevation ─── */
+.widget-card,
+.mosaico-card,
+.section-card,
+.chart-card,
+.info-card {
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.widget-card:hover,
+.mosaico-card:hover,
+.section-card:hover,
+.chart-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* ─── Card Accent Variants ─── */
+.card-accent-blue { border-top: 3px solid #2563eb; }
+.card-accent-green { border-top: 3px solid #16a34a; }
+.card-accent-amber { border-top: 3px solid #d97706; }
+.card-accent-red { border-top: 3px solid #dc2626; }
+.card-accent-purple { border-top: 3px solid #7c3aed; }
+
+/* ─── Tabs Refinement (ISAMS style) ─── */
+.tab-bar,
+.tabs-header {
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0;
+    padding: 0;
+    margin-bottom: var(--space-5);
+}
+.tab {
+    all: unset;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    position: relative;
+    user-select: none;
+}
+.tab:hover {
+    color: var(--text-primary);
+    background: rgba(0,0,0,0.02);
+}
+.tab.active,
+.tab-active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: transparent;
+}
+
+/* ─── Detail Tabs Refinement ─── */
+.detail-tabs {
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0;
+    margin-bottom: var(--space-5);
+}
+.detail-tabs .tab {
+    padding: 10px 16px;
+    font-size: 13px;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    background: none;
+}
+.detail-tabs .tab:hover {
+    color: var(--text-primary);
+    background: rgba(0,0,0,0.02);
+}
+.detail-tabs .tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+/* ─── Topbar breadcrumb area ─── */
+.topbar-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.topbar-breadcrumb .breadcrumb {
+    font-size: 13px;
+}
+
+/* ─── ISAMS Table refinements ─── */
+.data-table th {
+    background: var(--bg);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--border);
+}
