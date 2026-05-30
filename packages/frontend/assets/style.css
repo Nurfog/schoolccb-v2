@@ -3719,3 +3719,59 @@ tr.selected td:first-child { border-left: 3px solid var(--primary); }
     cursor: pointer;
     accent-color: var(--primary);
 }
+
+/* ─── KPI Grid Wide ─── */
+.kpi-grid-wide {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+}
+
+.kpi-grid-wide .kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.kpi-grid-wide .kpi-value.primary { color: var(--primary); }
+.kpi-grid-wide .kpi-value.info { color: var(--info); }
+.kpi-grid-wide .kpi-value.success { color: var(--success); }
+.kpi-grid-wide .kpi-value.danger { color: var(--danger); }
+.kpi-grid-wide .kpi-value.warning { color: var(--warning); }
+.kpi-grid-wide .kpi-value.secondary { color: var(--text-secondary); }
+.kpi-grid-wide .kpi-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ─── License Plan ─── */
+.license-plan-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 8px;
+}
+.license-days {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+.license-days strong {
+    color: var(--text-primary);
+}
+.license-modules {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* ─── Dashboard Two Columns ─── */
+.dashboard-grid-2col {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-5);
+}

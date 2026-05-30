@@ -15,6 +15,7 @@ use crate::components::pages::attendance_page::AttendancePage;
 use crate::components::pages::audit_page::AuditPage;
 use crate::components::pages::classrooms_page::ClassroomsPage;
 use crate::components::pages::client_portal_page::ClientPortalPage;
+use crate::components::pages::complementary_subjects_page::ComplementarySubjectsPage;
 use crate::components::pages::complaints_page::ComplaintsPage;
 use crate::components::pages::config_page::ConfigPage;
 use crate::components::pages::corporations_page::CorporationsPage;
@@ -34,6 +35,7 @@ use crate::components::pages::payroll_page::PayrollPage;
 use crate::components::pages::reports::ReportsPage;
 use crate::components::pages::roles_page::RolesPage;
 use crate::components::pages::sales_page::SalesPage;
+use crate::components::pages::teacher_schedules_page::TeacherSchedulesPage;
 use crate::components::pages::sige_page::SigePage;
 use crate::components::pages::students_page::StudentsPage;
 use crate::components::pages::subjects_page::SubjectsPage;
@@ -41,6 +43,10 @@ use crate::components::pages::curriculum_agent::CurriculumAgent;
 use crate::components::pages::dashboard_mosaicos_page::DashboardMosaicosPage;
 use crate::components::pages::root_page::RootDashboard as RootDashboardPage;
 use crate::components::pages::sostenedor_page::SostenedorPage;
+use crate::components::pages::parent_meetings_page::ParentMeetingsPage;
+use crate::components::pages::parent_portal_page::ParentPortalPage;
+use crate::components::pages::student_portal_page::StudentPortalPage;
+use crate::components::pages::academic_calendar_page::AcademicCalendarPage;
 use crate::components::pages::users_page::UsersPage;
 
 pub fn has_token() -> bool {
@@ -146,6 +152,8 @@ pub enum Route {
         Agenda {},
         #[route("/academic-years")]
         AcademicYears {},
+        #[route("/academic-calendar")]
+        AcademicCalendar {},
         #[route("/audit")]
         Audit {},
         #[route("/grade-levels")]
@@ -160,10 +168,20 @@ pub enum Route {
         ClientPortal {},
         #[route("/my-portal")]
         EmployeePortal {},
+        #[route("/parent-portal")]
+        ParentPortal {},
+        #[route("/parent-meetings")]
+        ParentMeetings {},
+        #[route("/student-portal")]
+        StudentPortal {},
+        #[route("/teacher-schedules")]
+        TeacherSchedules {},
         #[route("/sige")]
         Sige {},
         #[route("/complaints")]
         Complaints {},
+        #[route("/complementary-subjects")]
+        ComplementarySubjects {},
         #[route("/curriculum")]
         Curriculum {},
         #[route("/sales")]
@@ -314,6 +332,9 @@ pub fn Agenda() -> Element { require_auth(); use_page_title("Agenda"); rsx! { Ag
 pub fn AcademicYears() -> Element { require_auth(); use_page_title("Años Académicos"); rsx! { AcademicYearsPage {} } }
 
 #[component]
+pub fn AcademicCalendar() -> Element { require_auth(); use_page_title("Calendario Académico"); rsx! { AcademicCalendarPage {} } }
+
+#[component]
 pub fn Audit() -> Element { require_auth(); use_page_title("Auditoría"); rsx! { AuditPage {} } }
 
 #[component]
@@ -335,10 +356,25 @@ pub fn ClientPortal() -> Element { require_auth(); use_page_title("Portal Client
 pub fn EmployeePortal() -> Element { require_auth(); use_page_title("Mi Portal"); rsx! { EmployeePortalPage {} } }
 
 #[component]
+pub fn ParentPortal() -> Element { require_auth(); use_page_title("Portal Apoderado"); rsx! { ParentPortalPage {} } }
+
+#[component]
+pub fn ParentMeetings() -> Element { require_auth(); use_page_title("Reuniones Apoderados"); rsx! { ParentMeetingsPage {} } }
+
+#[component]
+pub fn StudentPortal() -> Element { require_auth(); use_page_title("Portal Alumno"); rsx! { StudentPortalPage {} } }
+
+#[component]
+pub fn TeacherSchedules() -> Element { require_auth(); use_page_title("Horarios Docentes"); rsx! { TeacherSchedulesPage {} } }
+
+#[component]
 pub fn Sige() -> Element { require_auth(); use_page_title("Sincronización SIGE"); rsx! { SigePage {} } }
 
 #[component]
 pub fn Complaints() -> Element { require_auth(); use_page_title("Reclamos y Sugerencias"); rsx! { ComplaintsPage {} } }
+
+#[component]
+pub fn ComplementarySubjects() -> Element { require_auth(); use_page_title("Asignaturas Complementarias"); rsx! { ComplementarySubjectsPage {} } }
 
 #[component]
 pub fn Curriculum() -> Element { use_page_title("Currículum Nacional"); rsx! { CurriculumAgent {} } }

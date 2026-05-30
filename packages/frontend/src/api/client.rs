@@ -140,6 +140,43 @@ pub async fn fetch_agenda() -> Result<Value, String> {
     fetch_json("/api/dashboard/agenda").await
 }
 
+// ─── Corporation Dashboard (Sostenedor) ───
+pub async fn fetch_corp_dashboard_summary() -> Result<Value, String> {
+    fetch_json("/api/corporation/dashboard/summary").await
+}
+pub async fn fetch_corp_dashboard_schools() -> Result<Value, String> {
+    fetch_json("/api/corporation/dashboard/schools").await
+}
+pub async fn fetch_corp_dashboard_comparisons() -> Result<Value, String> {
+    fetch_json("/api/corporation/dashboard/comparisons").await
+}
+pub async fn fetch_corp_dashboard_trends() -> Result<Value, String> {
+    fetch_json("/api/corporation/dashboard/trends").await
+}
+pub async fn fetch_corp_dashboard_alerts() -> Result<Value, String> {
+    fetch_json("/api/corporation/dashboard/alerts").await
+}
+pub async fn fetch_corp_license() -> Result<Value, String> {
+    fetch_json("/api/corporation/dashboard/license").await
+}
+
+// ─── School Dashboard (Colegio) ───
+pub async fn fetch_school_attendance_trends() -> Result<Value, String> {
+    fetch_json("/api/school/dashboard/attendance-trends").await
+}
+pub async fn fetch_school_grades_distribution() -> Result<Value, String> {
+    fetch_json("/api/school/dashboard/grades-distribution").await
+}
+pub async fn fetch_school_finance_summary() -> Result<Value, String> {
+    fetch_json("/api/school/dashboard/finance-summary").await
+}
+pub async fn fetch_school_teacher_performance() -> Result<Value, String> {
+    fetch_json("/api/school/dashboard/teacher-performance").await
+}
+pub async fn fetch_school_top_alerts() -> Result<Value, String> {
+    fetch_json("/api/school/dashboard/top-alerts").await
+}
+
 // ─── Students ───
 pub async fn search_students(query: &str) -> Result<Value, String> {
     let q = urlencoding(query);
@@ -519,6 +556,203 @@ pub async fn admin_update_legal_rep(id: &str, payload: &Value) -> Result<Value, 
 }
 pub async fn admin_delete_legal_rep(id: &str) -> Result<Value, String> {
     delete_json(&format!("/api/admin/legal-representatives/{}", id)).await
+}
+
+// ─── Parent Portal (Apoderado) ───
+pub async fn fetch_parent_children() -> Result<Value, String> {
+    fetch_json("/api/portal/parent/children").await
+}
+pub async fn fetch_child_grades(child_id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/portal/parent/children/{}/grades", child_id)).await
+}
+pub async fn fetch_child_attendance(child_id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/portal/parent/children/{}/attendance", child_id)).await
+}
+pub async fn fetch_child_schedule(child_id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/portal/parent/children/{}/schedule", child_id)).await
+}
+pub async fn fetch_child_annotations(child_id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/portal/parent/children/{}/annotations", child_id)).await
+}
+pub async fn fetch_parent_certificates() -> Result<Value, String> {
+    fetch_json("/api/portal/parent/certificates").await
+}
+pub async fn request_certificate(payload: &Value) -> Result<Value, String> {
+    post_json("/api/portal/parent/certificates/request", payload).await
+}
+pub async fn fetch_parent_appointments() -> Result<Value, String> {
+    fetch_json("/api/portal/parent/appointments").await
+}
+pub async fn create_parent_appointment(payload: &Value) -> Result<Value, String> {
+    post_json("/api/portal/parent/appointments", payload).await
+}
+pub async fn cancel_parent_appointment(id: &str) -> Result<Value, String> {
+    put_json(&format!("/api/portal/parent/appointments/{}", id), &json!({})).await
+}
+pub async fn fetch_parent_messages() -> Result<Value, String> {
+    fetch_json("/api/portal/parent/messages").await
+}
+pub async fn send_parent_message(payload: &Value) -> Result<Value, String> {
+    post_json("/api/portal/parent/messages", payload).await
+}
+pub async fn fetch_available_slots() -> Result<Value, String> {
+    fetch_json("/api/portal/parent/available-slots").await
+}
+
+// ─── Student Portal (Alumno) ───
+pub async fn fetch_student_grades() -> Result<Value, String> {
+    fetch_json("/api/portal/student/grades").await
+}
+pub async fn fetch_student_attendance() -> Result<Value, String> {
+    fetch_json("/api/portal/student/attendance").await
+}
+pub async fn fetch_student_schedule() -> Result<Value, String> {
+    fetch_json("/api/portal/student/schedule").await
+}
+pub async fn fetch_student_annotations() -> Result<Value, String> {
+    fetch_json("/api/portal/student/annotations").await
+}
+pub async fn fetch_student_profile() -> Result<Value, String> {
+    fetch_json("/api/portal/student/profile").await
+}
+pub async fn fetch_student_appointments() -> Result<Value, String> {
+    fetch_json("/api/portal/student/appointments").await
+}
+pub async fn create_student_appointment(payload: &Value) -> Result<Value, String> {
+    post_json("/api/portal/student/appointments", payload).await
+}
+
+// ─── CRM / Sales ───
+pub async fn fetch_sales_proposals() -> Result<Value, String> {
+    fetch_json("/api/sales/proposals").await
+}
+pub async fn create_sales_proposal(payload: &Value) -> Result<Value, String> {
+    post_json("/api/sales/proposals", payload).await
+}
+pub async fn get_sales_proposal(id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/sales/proposals/{}", id)).await
+}
+pub async fn apply_proposal_discount(id: &str, payload: &Value) -> Result<Value, String> {
+    put_json(&format!("/api/sales/proposals/{}/discount", id), payload).await
+}
+pub async fn generate_proposal_pdf(id: &str) -> Result<Value, String> {
+    post_json(&format!("/api/sales/proposals/{}/generate-pdf", id), &json!({})).await
+}
+pub async fn create_sales_contract(payload: &Value) -> Result<Value, String> {
+    post_json("/api/sales/contracts", payload).await
+}
+pub async fn get_sales_contract(id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/sales/contracts/{}", id)).await
+}
+pub async fn verify_contract_signatures(id: &str) -> Result<Value, String> {
+    put_json(&format!("/api/sales/contracts/{}/verify-signatures", id), &json!({})).await
+}
+pub async fn activate_contract_license(id: &str) -> Result<Value, String> {
+    post_json(&format!("/api/sales/contracts/{}/activate", id), &json!({})).await
+}
+pub async fn generate_contract_invoice(id: &str) -> Result<Value, String> {
+    post_json(&format!("/api/sales/contracts/{}/invoice", id), &json!({})).await
+}
+pub async fn fetch_sales_plans() -> Result<Value, String> {
+    fetch_json("/api/sales/plans").await
+}
+
+// ─── Complementary Subjects ───
+pub async fn fetch_complementary_subjects(course_id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/courses/{}/complementary-subjects", course_id)).await
+}
+pub async fn create_complementary_subject(course_id: &str, payload: &Value) -> Result<Value, String> {
+    post_json(&format!("/api/courses/{}/complementary-subjects", course_id), payload).await
+}
+pub async fn update_complementary_subject(id: &str, payload: &Value) -> Result<Value, String> {
+    put_json(&format!("/api/complementary-subjects/{}", id), payload).await
+}
+pub async fn delete_complementary_subject(id: &str) -> Result<Value, String> {
+    delete_json(&format!("/api/complementary-subjects/{}", id)).await
+}
+
+// ─── Teacher Schedules ───
+pub async fn fetch_teacher_schedules(teacher_id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/hr/teachers/{}/schedules", teacher_id)).await
+}
+pub async fn create_teacher_schedule(teacher_id: &str, payload: &Value) -> Result<Value, String> {
+    post_json(&format!("/api/hr/teachers/{}/schedules", teacher_id), payload).await
+}
+pub async fn delete_teacher_schedule(id: &str) -> Result<Value, String> {
+    delete_json(&format!("/api/hr/schedules/{}", id)).await
+}
+pub async fn fetch_teacher_hours(teacher_id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/hr/teachers/{}/hours", teacher_id)).await
+}
+pub async fn set_teacher_hours(teacher_id: &str, payload: &Value) -> Result<Value, String> {
+    post_json(&format!("/api/hr/teachers/{}/hours", teacher_id), payload).await
+}
+pub async fn fetch_extra_duties(teacher_id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/hr/teachers/{}/extra-duties", teacher_id)).await
+}
+pub async fn create_extra_duty(teacher_id: &str, payload: &Value) -> Result<Value, String> {
+    post_json(&format!("/api/hr/teachers/{}/extra-duties", teacher_id), payload).await
+}
+pub async fn update_extra_duty(id: &str, payload: &Value) -> Result<Value, String> {
+    put_json(&format!("/api/hr/extra-duties/{}", id), payload).await
+}
+
+// ─── Academic Calendar ───
+pub async fn fetch_calendar_events() -> Result<Value, String> {
+    fetch_json("/api/academic/calendar").await
+}
+pub async fn create_calendar_event(payload: &Value) -> Result<Value, String> {
+    post_json("/api/academic/calendar", payload).await
+}
+pub async fn update_calendar_event(id: &str, payload: &Value) -> Result<Value, String> {
+    put_json(&format!("/api/academic/calendar/{}", id), payload).await
+}
+pub async fn delete_calendar_event(id: &str) -> Result<Value, String> {
+    delete_json(&format!("/api/academic/calendar/{}", id)).await
+}
+pub async fn fetch_holidays() -> Result<Value, String> {
+    fetch_json("/api/academic/holidays").await
+}
+pub async fn create_holiday(payload: &Value) -> Result<Value, String> {
+    post_json("/api/academic/holidays", payload).await
+}
+pub async fn delete_holiday(id: &str) -> Result<Value, String> {
+    delete_json(&format!("/api/academic/holidays/{}", id)).await
+}
+pub async fn fetch_exams() -> Result<Value, String> {
+    fetch_json("/api/academic/exams").await
+}
+pub async fn create_exam(payload: &Value) -> Result<Value, String> {
+    post_json("/api/academic/exams", payload).await
+}
+pub async fn update_exam(id: &str, payload: &Value) -> Result<Value, String> {
+    put_json(&format!("/api/academic/exams/{}", id), payload).await
+}
+pub async fn delete_exam(id: &str) -> Result<Value, String> {
+    delete_json(&format!("/api/academic/exams/{}", id)).await
+}
+
+// ─── Parent Meetings ───
+pub async fn fetch_meetings() -> Result<Value, String> {
+    fetch_json("/api/meetings").await
+}
+pub async fn create_meeting(payload: &Value) -> Result<Value, String> {
+    post_json("/api/meetings", payload).await
+}
+pub async fn cancel_meeting(id: &str) -> Result<Value, String> {
+    post_json(&format!("/api/meetings/{}/cancel", id), &json!({})).await
+}
+pub async fn fetch_general_meetings() -> Result<Value, String> {
+    fetch_json("/api/meetings/general").await
+}
+pub async fn create_general_meeting(payload: &Value) -> Result<Value, String> {
+    post_json("/api/meetings/general", payload).await
+}
+pub async fn fetch_meeting_minutes(meeting_id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/meetings/general/{}/minutes", meeting_id)).await
+}
+pub async fn save_meeting_minutes(meeting_id: &str, payload: &Value) -> Result<Value, String> {
+    post_json(&format!("/api/meetings/general/{}/minutes", meeting_id), payload).await
 }
 
 pub async fn check_vacancies() -> Result<Value, String> {

@@ -10,6 +10,8 @@ pub fn SalesPage() -> Element {
     let tab_pipeline = if active_tab() == "pipeline" { "tab active" } else { "tab" };
     let tab_dashboard = if active_tab() == "dashboard" { "tab active" } else { "tab" };
     let tab_team = if active_tab() == "team" { "tab active" } else { "tab" };
+    let tab_proposals = if active_tab() == "proposals" { "tab active" } else { "tab" };
+    let tab_contracts = if active_tab() == "contracts" { "tab active" } else { "tab" };
 
     rsx! {
         div { class: "page-header",
@@ -18,12 +20,18 @@ pub fn SalesPage() -> Element {
         }
         div { class: "tab-bar",
             button { class: "{tab_pipeline}", onclick: move |_| active_tab.set("pipeline".to_string()), "Pipeline" }
+            button { class: "{tab_proposals}", onclick: move |_| active_tab.set("proposals".to_string()), "Cotizaciones" }
+            button { class: "{tab_contracts}", onclick: move |_| active_tab.set("contracts".to_string()), "Contratos" }
             button { class: "{tab_dashboard}", onclick: move |_| active_tab.set("dashboard".to_string()), "Dashboard" }
             button { class: "{tab_team}", onclick: move |_| active_tab.set("team".to_string()), "Equipo" }
         }
         div { class: "tab-content",
             if active_tab() == "pipeline" {
                 SalesPipeline {}
+            } else if active_tab() == "proposals" {
+                SalesProposals {}
+            } else if active_tab() == "contracts" {
+                SalesContracts {}
             } else if active_tab() == "dashboard" {
                 SalesDashboard {}
             } else {
@@ -556,6 +564,252 @@ fn SalesFunnelChart(data: Vec<Value>) -> Element {
     rsx! {
         div { class: "funnel-chart",
             {bars.into_iter()}
+        }
+    }
+}
+
+// ─── Proposals Tab (Quote Builder) ───
+
+#[component]
+fn SalesProposals() -> Element {
+    let mut proposals = use_resource(client::fetch_sales_proposals);
+    let plans = use_resource(client::fetch_sales_plans);
+    let mut show_form = use_signal(|| false);
+    let mut sel_prospect_id = use_signal(String::new);
+    let mut sel_plan_id = use_signal(String::new);
+    let mut total_value = use_signal(|| 0.0);
+    let mut saving = use_signal(|| false);
+
+    rsx! {
+        div { class: "page-toolbar",
+            button { class: "btn btn-primary", onclick: move |_| show_form.set(!show_form()),
+                if show_form() { "Cancelar" } else { "Nueva Cotizaci\u{00f3}n" }
+            }
+        }
+        if show_form() {
+            match plans() {
+                Some(Ok(data)) => {
+                    let list = data["plans"].as_array().cloned().unwrap_or_default();
+                    let plan_opts: Vec<Element> = list.iter().map(|plan| {
+                        let pid = plan["id"].as_str().unwrap_or("").to_string();
+                        let pname = plan["name"].as_str().unwrap_or("").to_string();
+                        let price = plan["price_monthly"].as_f64().unwrap_or(0.0);
+                        let modules = plan["modules"].as_array().cloned().unwrap_or_default();
+                        let mod_count = modules.iter().filter(|m| m["included"].as_bool().unwrap_or(false)).count();
+                        rsx! {
+                            option { value: "{pid}", "{pname} — ${price:.0}/mes ({mod_count} m\u{00f3}dulos)" }
+                        }
+                    }).collect();
+                    let plan_id = sel_plan_id();
+                    let sel_plan = list.iter().find(|p| p["id"].as_str() == Some(&plan_id)).cloned();
+                    let plan_detail = match sel_plan {
+                        Some(plan) => {
+                            let plan_name = plan["name"].as_str().unwrap_or("").to_string();
+                            let base_price = plan["price_monthly"].as_f64().unwrap_or(0.0);
+                            let mods = plan["modules"].as_array().cloned().unwrap_or_default();
+                            let included_count = mods.iter().filter(|m| m["included"].as_bool().unwrap_or(false)).count();
+                            let mod_rows: Vec<Element> = mods.iter().map(|m| {
+                                let name = m["module_name"].as_str().unwrap_or("").to_string();
+                                let inc = m["included"].as_bool().unwrap_or(false);
+                                let icon = if inc { "✅" } else { "❌" };
+                                rsx! { div { class: "alert-item", span { "{icon} {name}" } } }
+                            }).collect();
+                            rsx! {
+                                div { class: "widget-card", style: "margin-top: 12px;",
+                                    div { class: "widget-card-header",
+                                        h3 { "{plan_name}" }
+                                        span { "${base_price:.0}/mes" }
+                                    }
+                                    div { class: "widget-card-body",
+                                        p { "{included_count} m\u{00f3}dulos incluidos" }
+                                        {mod_rows.into_iter()}
+                                        div { class: "form-group", style: "margin-top: 12px;",
+                                            label { "Valor Total Estimado:" }
+                                            input {
+                                                class: "form-input",
+                                                r#type: "number",
+                                                value: "{total_value}",
+                                                oninput: move |e| {
+                                                    if let Ok(v) = e.value().parse::<f64>() { total_value.set(v); }
+                                                }
+                                            }
+                                        }
+                                        div { class: "form-actions",
+                                            button {
+                                                class: "btn btn-primary",
+                                                disabled: saving() || sel_prospect_id().trim().is_empty(),
+                                                onclick: move |_| {
+                                                    saving.set(true);
+                                                    let payload = serde_json::json!({
+                                                        "prospect_id": sel_prospect_id(),
+                                                        "plan_id": sel_plan_id(),
+                                                        "total_value": total_value(),
+                                                        "modules": mods,
+                                                        "notes": "Cotizaci\u{00f3}n generada desde CRM"
+                                                    });
+                                                    spawn(async move {
+                                                        let _ = client::create_sales_proposal(&payload).await;
+                                                        saving.set(false);
+                                                        show_form.set(false);
+                                                        proposals.restart();
+                                                    });
+                                                },
+                                                if saving() { "Creando..." } else { "Crear Cotizaci\u{00f3}n" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        None => rsx! {}
+                    };
+                    rsx! {
+                        div { class: "form-card",
+                            h3 { "Crear Cotizaci\u{00f3}n" }
+                            div { class: "form-row",
+                                div { class: "form-group",
+                                    label { "ID del Prospecto:" }
+                                    input { class: "form-input", value: "{sel_prospect_id}", oninput: move |e| sel_prospect_id.set(e.value()), placeholder: "UUID del prospecto" }
+                                }
+                                div { class: "form-group",
+                                    label { "Plan:" }
+                                    select { class: "form-input", value: "{sel_plan_id}", oninput: move |e| sel_plan_id.set(e.value()),
+                                        option { value: "", "Seleccionar plan..." }
+                                        {plan_opts.into_iter()}
+                                    }
+                                }
+                            }
+                            {plan_detail}
+                        }
+                    }
+                }
+                _ => rsx! { div { class: "loading-spinner", "Cargando planes..." } }
+            }
+        }
+        match proposals() {
+            Some(Ok(data)) => {
+                let list = data["proposals"].as_array().cloned().unwrap_or_default();
+                let rows: Vec<Element> = list.iter().map(|p| {
+                    let prospect_name = format!("{} {}", p["first_name"].as_str().unwrap_or(""), p["last_name"].as_str().unwrap_or(""));
+                    let plan_name = p["plan_name"].as_str().unwrap_or("-").to_string();
+                    let val = p["total_value"].as_f64().unwrap_or(0.0);
+                    let discount = p["discount"].as_f64().unwrap_or(0.0);
+                    let status = p["status"].as_str().unwrap_or("draft").to_string();
+                    let version = p["version"].as_i64().unwrap_or(1);
+                    let net = val - discount;
+                    rsx! {
+                        div { class: "contract-card",
+                            div { class: "contract-status-{status}", "{status}" }
+                            div { style: "flex: 1;",
+                                div { class: "alert-name", "{prospect_name} — {plan_name}" }
+                                div { class: "alert-detail", "Valor: ${val:.0} | Desc: ${discount:.0} | Neto: ${net:.0} | v{version}" }
+                            }
+                        }
+                    }
+                }).collect();
+                rsx! {
+                    div { class: "widget-card",
+                        div { class: "widget-card-header",
+                            h3 { "Cotizaciones" }
+                            span { "{list.len()} cotizaciones" }
+                        }
+                        div { class: "widget-card-body",
+                            if rows.is_empty() {
+                                div { class: "empty-state", "Sin cotizaciones" }
+                            } else {
+                                {rows.into_iter()}
+                            }
+                        }
+                    }
+                }
+            }
+            _ => rsx! { div { class: "loading-spinner", "Cargando..." } }
+        }
+    }
+}
+
+// ─── Contracts Tab (Contract Builder) ───
+
+#[component]
+fn SalesContracts() -> Element {
+    let proposals = use_resource(client::fetch_sales_proposals);
+    let mut sel_proposal_id = use_signal(String::new);
+    let mut tax_rate = use_signal(|| 19.0);
+    let mut notes = use_signal(String::new);
+    let mut saving = use_signal(|| false);
+    let mut msg = use_signal(|| None::<String>);
+
+    rsx! {
+        div { class: "page-toolbar",
+            h3 { "Generar Contrato desde Cotizaci\u{00f3}n" }
+        }
+        div { class: "form-card",
+            div { class: "form-row",
+                div { class: "form-group",
+                    label { "Seleccionar Cotizaci\u{00f3}n Aprobada:" }
+                    match proposals() {
+                        Some(Ok(data)) => {
+                            let list = data["proposals"].as_array().cloned().unwrap_or_default();
+                            let approved: Vec<Value> = list.into_iter().filter(|p| p["status"].as_str() == Some("accepted")).collect();
+                            let opts: Vec<Element> = approved.iter().map(|p| {
+                                let pid = p["id"].as_str().unwrap_or("").to_string();
+                                let pname = format!("{} {} — ${:.0}", p["first_name"].as_str().unwrap_or(""), p["last_name"].as_str().unwrap_or(""), p["total_value"].as_f64().unwrap_or(0.0));
+                                rsx! { option { value: "{pid}", "{pname}" } }
+                            }).collect();
+                            rsx! {
+                                select { class: "form-input", value: "{sel_proposal_id}", oninput: move |e| sel_proposal_id.set(e.value()),
+                                    option { value: "", "Seleccionar..." }
+                                    {opts.into_iter()}
+                                }
+                            }
+                        }
+                        _ => rsx! { div { class: "loading-spinner", "Cargando..." } }
+                    }
+                }
+            }
+            div { class: "form-row",
+                div { class: "form-group",
+                    label { "Tasa de Impuesto (%):" }
+                    input { class: "form-input", r#type: "number", value: "{tax_rate}", oninput: move |e| { if let Ok(v) = e.value().parse::<f64>() { tax_rate.set(v); } } }
+                }
+                div { class: "form-group",
+                    label { "Notas:" }
+                    input { class: "form-input", value: "{notes}", oninput: move |e| notes.set(e.value()) }
+                }
+            }
+            div { class: "form-actions",
+                button {
+                    class: "btn btn-primary",
+                    disabled: saving() || sel_proposal_id().trim().is_empty(),
+                    onclick: move |_| {
+                        saving.set(true);
+                        let payload = serde_json::json!({
+                            "prospect_id": sel_proposal_id(),
+                            "plan_id": "",
+                            "total_value": 0,
+                            "modules": [],
+                            "tax_rate": tax_rate() / 100.0,
+                            "notes": notes(),
+                        });
+                        let pid = sel_proposal_id();
+                        spawn(async move {
+                            let result = client::create_sales_contract(&payload).await;
+                            saving.set(false);
+                            match result {
+                                Ok(resp) => {
+                                    let cid = resp["id"].as_str().unwrap_or("").to_string();
+                                    msg.set(Some(format!("Contrato creado exitosamente (ID: {cid})")));
+                                }
+                                Err(e) => msg.set(Some(format!("Error: {e}"))),
+                            }
+                        });
+                    },
+                    if saving() { "Creando..." } else { "Crear Contrato" }
+                }
+            }
+            if let Some(ref m) = msg() {
+                div { class: "alert alert-success", style: "margin-top: 12px;", "{m}" }
+            }
         }
     }
 }
