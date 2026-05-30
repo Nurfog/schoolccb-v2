@@ -1,4 +1,4 @@
-use axum::{Json, Router, extract::{Path, State}, routing::{get, post, put, delete}};
+use axum::{Json, Router, extract::{Path, State}, routing::{get, post, put}};
 use serde_json::{Value, json};
 use uuid::Uuid;
 use crate::error::SisResult;
