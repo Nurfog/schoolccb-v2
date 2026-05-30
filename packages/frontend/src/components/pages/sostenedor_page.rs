@@ -1,6 +1,62 @@
 use dioxus::prelude::*;
+use wasm_bindgen::JsCast;
+use web_sys::window;
 use crate::api::client;
 use crate::components::widgets::simple_chart::BarChart;
+
+fn current_year() -> String {
+    js_sys::Date::new_0().get_full_year().to_string()
+}
+
+fn export_csv(table_id: &str, filename: &str) {
+    if let Some(win) = window() {
+        if let Some(doc) = win.document() {
+            if let Some(table) = doc.get_element_by_id(table_id) {
+                let mut csv = String::from("\u{feff}");
+                if let Some(element) = table.dyn_ref::<web_sys::HtmlElement>() {
+                    if let Ok(rows) = element.query_selector_all("tr") {
+                        for i in 0..rows.length() {
+                            if let Some(row) = rows.item(i) {
+                                if let Some(row_elem) = row.dyn_ref::<web_sys::HtmlElement>() {
+                                    if let Ok(cells) = row_elem.query_selector_all("td, th") {
+                                        let mut row_data: Vec<String> = Vec::new();
+                                        for j in 0..cells.length() {
+                                            if let Some(cell) = cells.item(j) {
+                                                if let Some(cell_elem) = cell.dyn_ref::<web_sys::HtmlElement>() {
+                                                    let text = cell_elem.text_content().unwrap_or_default();
+                                                    row_data.push(format!("\"{}\"", text.replace('"', "\"\"")));
+                                                }
+                                            }
+                                        }
+                                        csv.push_str(&row_data.join(","));
+                                        csv.push('\n');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                let data_url = format!("data:text/csv;charset=utf-8,{}", js_sys::encode_uri_component(&csv));
+                if let Ok(anchor) = doc.create_element("a") {
+                    let _ = anchor.set_attribute("href", &data_url);
+                    let _ = anchor.set_attribute("download", filename);
+                    let _ = anchor.set_attribute("style", "display:none");
+                    let _ = doc.body().and_then(|b| b.append_child(&anchor).ok());
+                    if let Some(a_elem) = anchor.dyn_ref::<web_sys::HtmlElement>() {
+                        let _ = a_elem.click();
+                    }
+                    let _ = doc.body().and_then(|b| b.remove_child(&anchor).ok());
+                }
+            }
+        }
+    }
+}
+
+fn export_pdf() {
+    if let Some(win) = window() {
+        let _ = win.print();
+    }
+}
 
 #[component]
 pub fn SostenedorPage() -> Element {
@@ -10,11 +66,25 @@ pub fn SostenedorPage() -> Element {
     let trends = use_resource(client::fetch_corp_dashboard_trends);
     let alerts = use_resource(client::fetch_corp_dashboard_alerts);
     let license = use_resource(client::fetch_corp_license);
+    let mut selected_year = use_signal(current_year);
 
     rsx! {
         div { class: "page-header",
             h1 { "Panel del Sostenedor" }
             p { "Visión global de tu corporación" }
+        }
+        div { class: "page-toolbar", style: "display: flex; gap: 12px; align-items: center; margin-bottom: 16px;",
+            div { class: "filter-group",
+                label { "Año:" }
+                select { class: "form-input", value: "{selected_year}", oninput: move |e| selected_year.set(e.value()),
+                    option { value: "2026", "2026" }
+                    option { value: "2025", "2025" }
+                    option { value: "2024", "2024" }
+                    option { value: "2023", "2023" }
+                }
+            }
+            button { class: "btn btn-secondary", onclick: move |_| export_csv("schools-table", "colegios.csv"), "Exportar CSV" }
+            button { class: "btn btn-secondary", onclick: move |_| export_pdf(), "Exportar PDF" }
         }
         match summary() {
             Some(Ok(data)) => {
@@ -102,7 +172,7 @@ pub fn SostenedorPage() -> Element {
                             }
                             div { class: "widget-card-body",
                                 div { class: "data-table-container",
-                                    table { class: "data-table",
+                                    table { id: "schools-table", class: "data-table",
                                         thead {
                                             tr {
                                                 th { "Colegio" }

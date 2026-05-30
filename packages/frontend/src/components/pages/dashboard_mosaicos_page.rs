@@ -23,6 +23,12 @@ fn sev_class(s: &str) -> &'static str {
     }
 }
 
+fn export_pdf() {
+    if let Some(win) = web_sys::window() {
+        let _ = win.print();
+    }
+}
+
 #[component]
 pub fn DashboardMosaicosPage() -> Element {
     use_page_title("Dashboard");
@@ -34,11 +40,25 @@ pub fn DashboardMosaicosPage() -> Element {
     let finance = use_resource(client::fetch_school_finance_summary);
     let teacher_perf = use_resource(client::fetch_school_teacher_performance);
     let top_alerts = use_resource(client::fetch_school_top_alerts);
+    let mut selected_period = use_signal(|| "month".to_string());
 
     rsx! {
         div { class: "page-header",
             h1 { "Dashboard" }
             p { "Panorama general del colegio" }
+        }
+        div { class: "page-toolbar", style: "display: flex; gap: 12px; align-items: center; margin-bottom: 16px;",
+            div { class: "filter-group",
+                label { "Período:" }
+                select { class: "form-input", value: "{selected_period}", oninput: move |e| selected_period.set(e.value()),
+                    option { value: "day", "Hoy" }
+                    option { value: "week", "Esta Semana" }
+                    option { value: "month", "Este Mes" }
+                    option { value: "semester", "Este Semestre" }
+                    option { value: "year", "Este Año" }
+                }
+            }
+            button { class: "btn btn-secondary", onclick: move |_| export_pdf(), "Exportar PDF" }
         }
         match summary() {
             Some(Ok(data)) => {
