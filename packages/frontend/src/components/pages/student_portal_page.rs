@@ -10,13 +10,24 @@ pub fn StudentPortalPage() -> Element {
     let attendance = use_resource(client::fetch_student_attendance);
     let schedule = use_resource(client::fetch_student_schedule);
     let annotations = use_resource(client::fetch_student_annotations);
-    let appointments = use_resource(client::fetch_student_appointments);
+    let mut appt_key = use_signal(|| 0u32);
+    let appointments = use_resource(move || {
+        let _ = appt_key();
+        client::fetch_student_appointments()
+    });
 
     let mut show_grades = use_signal(|| false);
     let mut show_att = use_signal(|| false);
     let mut show_sch = use_signal(|| false);
     let mut show_ann = use_signal(|| false);
     let mut show_app = use_signal(|| false);
+
+    let mut show_form = use_signal(|| false);
+    let mut appt_type = use_signal(String::new);
+    let mut appt_date = use_signal(String::new);
+    let mut appt_notes = use_signal(String::new);
+    let mut submitting = use_signal(|| false);
+    let mut error_msg = use_signal(|| None::<String>);
 
     rsx! {
         div { class: "page-header",
@@ -222,12 +233,78 @@ pub fn StudentPortalPage() -> Element {
                     }).collect();
                     rsx! {
                         div { class: "widget-card", style: "margin-top: 1rem;",
-                            div { class: "widget-card-header", h3 { "Citas con Apoyo" } }
+                            div { class: "widget-card-header",
+                                h3 { "Citas con Apoyo" }
+                                button { class: "btn-primary btn-sm", onclick: move |_| show_form.set(!show_form()),
+                                    if show_form() { "Cancelar" } else { "Nueva Cita" }
+                                }
+                            }
                             div { class: "widget-card-body",
                                 if app_rows.is_empty() {
                                     div { class: "empty-state", "Sin citas agendadas" }
                                 } else {
                                     {app_rows.into_iter()}
+                                }
+                                if show_form() {
+                                    div { style: "margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);",
+                                        div { class: "form-group",
+                                            label { "Tipo de Cita" }
+                                            select { class: "form-input", value: "{appt_type}", oninput: move |e| appt_type.set(e.value()),
+                                                option { value: "", "Seleccionar..." }
+                                                option { value: "psicologica", "Psicológica" }
+                                                option { value: "pedagogica", "Pedagógica" }
+                                                option { value: "social", "Social" }
+                                                option { value: "otro", "Otro" }
+                                            }
+                                        }
+                                        div { class: "form-group",
+                                            label { "Fecha" }
+                                            input { class: "form-input", r#type: "date", value: "{appt_date}", oninput: move |e| appt_date.set(e.value()) }
+                                        }
+                                        div { class: "form-group",
+                                            label { "Motivo" }
+                                            textarea { class: "form-input", rows: "3", value: "{appt_notes}", oninput: move |e| appt_notes.set(e.value()) }
+                                        }
+                                        if let Some(msg) = error_msg() {
+                                            div { class: "alert alert-error", "{msg}" }
+                                        }
+                                        div { style: "display: flex; gap: 8px; margin-top: 8px;",
+                                            button {
+                                                class: "btn-primary btn-sm",
+                                                disabled: submitting(),
+                                                onclick: move |_| {
+                                                    if appt_type().is_empty() || appt_date().is_empty() || appt_notes().is_empty() {
+                                                        error_msg.set(Some("Todos los campos son obligatorios".into()));
+                                                        return;
+                                                    }
+                                                    submitting.set(true);
+                                                    error_msg.set(None);
+                                                    let payload = serde_json::json!({
+                                                        "type": appt_type(),
+                                                        "date": appt_date(),
+                                                        "notes": appt_notes()
+                                                    });
+                                                    spawn(async move {
+                                                        match client::create_student_appointment(&payload).await {
+                                                            Ok(_) => {
+                                                                submitting.set(false);
+                                                                show_form.set(false);
+                                                                appt_type.set(String::new());
+                                                                appt_date.set(String::new());
+                                                                appt_notes.set(String::new());
+                                                                appt_key += 1;
+                                                            }
+                                                            Err(e) => {
+                                                                submitting.set(false);
+                                                                error_msg.set(Some(e));
+                                                            }
+                                                        }
+                                                    });
+                                                },
+                                                if submitting() { "Enviando..." } else { "Solicitar Cita" }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
