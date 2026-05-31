@@ -303,15 +303,55 @@ async fn request_certificate(
     let output_dir = std::env::var("PDF_OUTPUT_DIR").unwrap_or_else(|_| "/tmp/certificates".into());
     let dir = PathBuf::from(&output_dir);
     let _ = fs::create_dir_all(&dir);
-    let filename = format!("{}_{}_{}.txt", cert_type, student_id, chrono::Utc::now().format("%Y%m%d"));
+    let filename = format!("{}_{}_{}.pdf", cert_type, student_id, chrono::Utc::now().format("%Y%m%d"));
 
-    // Generate text-based certificate (PDF generation requires fixing dep conflict)
-    let content = format!(
-        "Certificado: {}\nAlumno: {}\nRUT: {}\nCurso: {}\nColegio: {}\nFecha: {}\n",
-        cert_type, student_info.0, student_info.1, student_info.2, student_info.3,
-        chrono::Utc::now().format("%d/%m/%Y")
+    let title = match cert_type {
+        "alumno_regular" => "CERTIFICADO DE ALUMNO REGULAR",
+        "notas" => "CERTIFICADO DE NOTAS",
+        "asistencia" => "CERTIFICADO DE ASISTENCIA",
+        "conducta" => "CERTIFICADO DE BUENA CONDUCTA",
+        _ => "CERTIFICADO",
+    };
+    let date = chrono::Utc::now().format("%d/%m/%Y");
+
+    // Generate minimal valid PDF (no external deps)
+    let text = format!(
+        "{}|{}|{}|{}|{}|{}",
+        title, student_info.0, student_info.1, student_info.2, student_info.3, date,
     );
-    let _ = fs::write(dir.join(&filename), &content);
+    let stream_content = format!(
+        "BT /F1 18 Tf 50 730 Td ({}) Tj /F1 12 Tf 50 690 Td (Alumno: {}) Tj \
+         /F1 12 Tf 50 670 Td (RUT: {}) Tj /F1 12 Tf 50 650 Td (Curso: {}) Tj \
+         /F1 12 Tf 50 630 Td (Colegio: {}) Tj /F1 12 Tf 50 610 Td (Fecha: {}) Tj ET",
+        title, student_info.0, student_info.1, student_info.2, student_info.3, date,
+    );
+
+    let pdf = format!(
+        "%PDF-1.4\r
+1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\r
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\r
+3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj\r
+4 0 obj<</Length {}>>stream\r
+{}\r
+endstream\r
+endobj\r
+5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\r
+xref\r
+0 6\r
+0000000000 65535 f \r
+0000000009 00000 n \r
+0000000058 00000 n \r
+0000000115 00000 n \r
+0000000268 00000 n \r
+0000000646 00000 n \r
+trailer<</Size 6/Root 1 0 R>>\r
+startxref\r
+714\r
+%%%%EOF",
+        stream_content.len(), stream_content,
+    );
+
+    let _ = fs::write(dir.join(&filename), &pdf);
 
     let cert_id = Uuid::new_v4();
     let file_url = format!("/certificates/{filename}");
