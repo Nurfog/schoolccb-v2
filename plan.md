@@ -150,6 +150,7 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 
 #### Inscripción Final
 - [x] Endpoint `POST /api/admission/enroll` — inscribir alumno en curso
+- [x] Pago de matrícula: endpoint `POST /api/admission/contracts/{id}/pay` + botón en frontend
 - [ ] Generar documentos tributarios (integración finance) — pendiente de requerimientos específicos
 - [x] Frontend: confirmation screen con resumen
 
@@ -187,24 +188,19 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 ### 2.7 UTP (Unidad Técnico Pedagógica)
 
 #### Calendario Académico
-- [ ] Tabla `academic_calendar`: eventos configurables con alertas
-- [ ] Endpoint `POST /api/academic/calendar` — crear evento
-- [ ] Frontend: calendario con vista mensual/semanal
+- [x] Tabla `academic_calendar` + endpoints CRUD
+- [x] Frontend con 3 tabs (eventos, feriados, pruebas)
 
 #### Días Feriados
-- [ ] Tabla `holidays`: fecha, nombre, tipo (legal / escolar)
-- [ ] Endpoint `POST /api/academic/holidays` — cargar feriados
-- [x] Seeder automático con feriados chilenos del año (2025, 2026)
+- [x] Tabla `holidays` + endpoints CRUD
+- [x] Seeder automático con feriados chilenos (2025-2027)
 
 #### Calendario de Pruebas
-- [ ] Tabla `exam_schedule`: asignatura, curso, fecha, período, responsable
-- [ ] Endpoint `POST /api/academic/exams` — crear prueba
-- [ ] Frontend: Exam Calendar con alertas
+- [x] Tabla `exam_schedule` + endpoints CRUD
+- [x] Frontend integrado en página de calendario
 
 #### Períodos Académicos
-- [ ] Ya existe `AcademicYears` en frontend
 - [ ] Agregar `periods` (semestral/trimestral) con fechas de inicio/fin
-- [ ] Endpoint `POST /api/academic/periods` — definir período
 
 ### 2.8 Asignación Docente
 
@@ -472,7 +468,7 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 | 🟡 Alta | Portal Apoderado (notas, asistencia, comunicación) | ✅ Completo |
 | 🟡 Alta | Portal Alumno (notas, horario, citas) | ✅ Completo |
 | 🟡 Alta | Admisión (matrícula completa con becas) | CRM Ventas |
-| 🟡 Alta | Calendario Académico + Pruebas (UTP) | Academic existente |
+| 🟡 Alta | Calendario Académico + Pruebas (UTP) | ✅ Completo (backend + frontend) |
 | 🟡 Alta | Reuniones de Apoderados + Minutas | ✅ Completo (backend + frontend) |
 | 🟢 Media | Horarios Docentes + Tareas Extras | HR existente |
 | 🟢 Media | Certificados online | Reporting existente |

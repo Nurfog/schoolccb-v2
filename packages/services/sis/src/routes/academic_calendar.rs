@@ -107,20 +107,45 @@ async fn list_exams(claims: Claims, State(state): State<AppState>) -> SisResult<
     Ok(Json(json!({"exams": exams})))
 }
 
+async fn resolve_subject_id(pool: &sqlx::PgPool, name: &str) -> Option<Uuid> {
+    sqlx::query_scalar("SELECT id FROM subjects WHERE name ILIKE $1 LIMIT 1")
+        .bind(format!("%{}%", name))
+        .fetch_optional(pool).await.ok().flatten()
+}
+
+async fn resolve_teacher_id(pool: &sqlx::PgPool, name: &str) -> Option<Uuid> {
+    sqlx::query_scalar("SELECT id FROM users WHERE name ILIKE $1 AND role = 'Profesor' LIMIT 1")
+        .bind(format!("%{}%", name))
+        .fetch_optional(pool).await.ok().flatten()
+}
+
 async fn create_exam(claims: Claims, State(state): State<AppState>, Json(p): Json<Value>) -> SisResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Director", "UTP", "GerenteGeneral"])?;
     let school_id = claims.school_id.as_deref().and_then(|s| Uuid::parse_str(s).ok());
     let id = Uuid::new_v4();
+
+    let subject_id = if let Some(sid) = p.get("subject_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()) {
+        Some(sid)
+    } else if let Some(name) = p.get("subject").and_then(|v| v.as_str()) {
+        resolve_subject_id(&state.pool, name).await
+    } else { None };
+
+    let teacher_id = if let Some(tid) = p.get("responsible_teacher_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()) {
+        Some(tid)
+    } else if let Some(name) = p.get("responsible").and_then(|v| v.as_str()) {
+        resolve_teacher_id(&state.pool, name).await
+    } else { None };
+
     sqlx::query("INSERT INTO exam_schedule (id, school_id, course_id, subject_id, title, exam_date, start_time, end_time, responsible_teacher_id, notes)
                  VALUES ($1, $2, $3, $4, $5, $6::date, $7::time, $8::time, $9, $10)")
         .bind(id).bind(school_id)
         .bind(p.get("course_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
-        .bind(p.get("subject_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
+        .bind(subject_id)
         .bind(p.get("title").and_then(|v| v.as_str()))
         .bind(p.get("date").and_then(|v| v.as_str()))
-        .bind(p.get("start_time").and_then(|v| v.as_str()))
+        .bind(p.get("start_time").or_else(|| p.get("time")).and_then(|v| v.as_str()))
         .bind(p.get("end_time").and_then(|v| v.as_str()))
-        .bind(p.get("responsible_teacher_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
+        .bind(teacher_id)
         .bind(p.get("notes").and_then(|v| v.as_str()))
         .execute(&state.pool).await?;
     Ok(Json(json!({"id": id})))
@@ -128,9 +153,30 @@ async fn create_exam(claims: Claims, State(state): State<AppState>, Json(p): Jso
 
 async fn update_exam(claims: Claims, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<Value>) -> SisResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Director", "UTP", "GerenteGeneral"])?;
-    sqlx::query("UPDATE exam_schedule SET title = COALESCE($1, title), exam_date = COALESCE($2::date, exam_date), notes = COALESCE($3, notes) WHERE id = $4")
+
+    let subject_id = if let Some(sid) = p.get("subject_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()) {
+        Some(sid)
+    } else if let Some(name) = p.get("subject").and_then(|v| v.as_str()) {
+        resolve_subject_id(&state.pool, name).await
+    } else { None };
+
+    let teacher_id = if let Some(tid) = p.get("responsible_teacher_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()) {
+        Some(tid)
+    } else if let Some(name) = p.get("responsible").and_then(|v| v.as_str()) {
+        resolve_teacher_id(&state.pool, name).await
+    } else { None };
+
+    sqlx::query("UPDATE exam_schedule SET
+        title = COALESCE($1, title), exam_date = COALESCE($2::date, exam_date),
+        subject_id = COALESCE($3, subject_id), responsible_teacher_id = COALESCE($4, responsible_teacher_id),
+        start_time = COALESCE($5::time, start_time), end_time = COALESCE($6::time, end_time),
+        notes = COALESCE($7, notes) WHERE id = $8")
         .bind(p.get("title").and_then(|v| v.as_str()))
         .bind(p.get("date").and_then(|v| v.as_str()))
+        .bind(subject_id)
+        .bind(teacher_id)
+        .bind(p.get("start_time").or_else(|| p.get("time")).and_then(|v| v.as_str()))
+        .bind(p.get("end_time").and_then(|v| v.as_str()))
         .bind(p.get("notes").and_then(|v| v.as_str()))
         .bind(id).execute(&state.pool).await?;
     Ok(Json(json!({"message": "Examen actualizado"})))

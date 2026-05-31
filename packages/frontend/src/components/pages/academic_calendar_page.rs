@@ -157,13 +157,13 @@ pub fn AcademicCalendarPage() -> Element {
                         }
                         div { class: "field",
                             label { "Fecha" }
-                            input { class: "form-input", value: "{event_date}", placeholder: "2025-05-30",
+                            input { class: "form-input", r#type: "date", value: "{event_date}",
                                 oninput: move |e| event_date.set(e.value()),
                             }
                         }
                         div { class: "field",
                             label { "Hora" }
-                            input { class: "form-input", value: "{event_time}", placeholder: "10:00",
+                            input { class: "form-input", r#type: "time", value: "{event_time}",
                                 oninput: move |e| event_time.set(e.value()),
                             }
                         }
@@ -272,7 +272,7 @@ pub fn AcademicCalendarPage() -> Element {
                         }
                         div { class: "field",
                             label { "Fecha" }
-                            input { class: "form-input", value: "{holiday_date}", placeholder: "2025-09-18",
+                            input { class: "form-input", r#type: "date", value: "{holiday_date}",
                                 oninput: move |e| holiday_date.set(e.value()),
                             }
                         }
@@ -362,13 +362,13 @@ pub fn AcademicCalendarPage() -> Element {
                         }
                         div { class: "field",
                             label { "Fecha" }
-                            input { class: "form-input", value: "{exam_date}", placeholder: "2025-06-15",
+                            input { class: "form-input", r#type: "date", value: "{exam_date}",
                                 oninput: move |e| exam_date.set(e.value()),
                             }
                         }
                         div { class: "field",
                             label { "Hora" }
-                            input { class: "form-input", value: "{exam_time}", placeholder: "10:00",
+                            input { class: "form-input", r#type: "time", value: "{exam_time}",
                                 oninput: move |e| exam_time.set(e.value()),
                             }
                         }
