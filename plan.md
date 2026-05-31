@@ -29,8 +29,8 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 | Finanzas | ✅ Completado |
 | SIGE / MINEDUC | ✅ Completado |
 | Portal Público | ⬜ No iniciado |
-| Portal Apoderado (my-portal) | ✅ Parcial |
-| Portal Alumno | ⬜ No iniciado |
+| Portal Apoderado (my-portal) | ✅ Completo |
+| Portal Alumno | ✅ Completo — notas, asistencia, horario, anotaciones, citas |
 | Portal Corporación (Sostenedor) | ✅ Completo — KPIs, gráficos, tabla ordenable, filtros, exportación |
 | Dashboard Corporativo | ✅ Completo — 6 endpoints + frontend completo con filtros, ranking, donut, morosidad |
 | Dashboard por Colegio | ✅ Completo — 8 endpoints + frontend con gráficos, alertas, finanzas |
@@ -239,15 +239,16 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 ### 2.10 Reuniones de Apoderados
 
 #### Reuniones Individuales (Profesor Jefe ↔ Apoderado)
-- [ ] Tabla `parent_meetings`: profesor_id, apoderado_id, fecha, hora, estado
-- [ ] Endpoint `POST /api/meetings/schedule` — agendar
-- [ ] Frontend: Meeting Scheduler con slots disponibles
+- [x] Tabla `parent_meetings`
+- [x] Endpoints CRUD: list, create, update, cancel
+- [x] Frontend: create form, list with cancel
 
 #### Reuniones Generales
-- [ ] Tabla `general_meetings`: curso, fecha, hora, lugar, orden_del_día
-- [ ] Endpoint `POST /api/meetings/general` — crear reunión
-- [ ] **Minuta**: tabla `meeting_minutes`, envío automático por email
-- [ ] Frontend: Meeting Manager + Minutes Editor
+- [x] Tabla `general_meetings`
+- [x] Endpoints CRUD: list, create, update
+- [x] **Minuta**: tabla `meeting_minutes`, save/read
+- [x] Frontend: 3 tabs (individuales, generales, minutas)
+- [ ] Envío automático de minutas por email
 
 ---
 
@@ -415,16 +416,16 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 ## Etapa 4 — Portal Alumnos
 
 ### 4.1 Información Académica
-- [ ] Endpoint `GET /api/portal/student/grades` — notas y promedios
-- [ ] Endpoint `GET /api/portal/student/attendance` — asistencia
-- [ ] Endpoint `GET /api/portal/student/annotations` — anotaciones
-- [ ] Endpoint `GET /api/portal/student/schedule` — horario de clases
-- [ ] Frontend: Student Dashboard (vista del alumno)
+- [x] Endpoint `GET /api/portal/student/grades` — notas y promedios
+- [x] Endpoint `GET /api/portal/student/attendance` — asistencia
+- [x] Endpoint `GET /api/portal/student/annotations` — anotaciones
+- [x] Endpoint `GET /api/portal/student/schedule` — horario de clases
+- [x] Frontend: Student Dashboard completo con perfil, notas, asistencia, horario, anotaciones
 
 ### 4.2 Citas con Personal de Apoyo
-- [ ] Endpoint `GET /api/portal/student/appointments` — listar citas
-- [ ] Endpoint `POST /api/portal/student/appointments` — agendar cita
-- [ ] Frontend: Appointment Booking (vista alumno)
+- [x] Endpoint `GET /api/portal/student/appointments` — listar citas
+- [x] Endpoint `POST /api/portal/student/appointments` — agendar cita
+- [x] Frontend: Appointment Booking con formulario y validación
 
 ---
 
@@ -468,11 +469,11 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 | 🔴 Crítica | Dashboard Corporativo (KPIs, comparativas, alertas) | ✅ Completo |
 | 🔴 Crítica | Dashboard por Colegio (gráficos, tendencias) | ✅ Completo |
 | 🟡 Alta | Remover Root / migrar a CRM + Corp Dashboard | ✅ Completo |
-| 🟡 Alta | Portal Apoderado (notas, asistencia, comunicación) | Auth, Academic existentes |
-| 🟡 Alta | Portal Alumno (notas, horario, citas) | Auth, Academic existentes |
+| 🟡 Alta | Portal Apoderado (notas, asistencia, comunicación) | ✅ Completo |
+| 🟡 Alta | Portal Alumno (notas, horario, citas) | ✅ Completo |
 | 🟡 Alta | Admisión (matrícula completa con becas) | CRM Ventas |
 | 🟡 Alta | Calendario Académico + Pruebas (UTP) | Academic existente |
-| 🟡 Alta | Reuniones de Apoderados + Minutas | Notifications existente |
+| 🟡 Alta | Reuniones de Apoderados + Minutas | ✅ Completo (backend + frontend) |
 | 🟢 Media | Horarios Docentes + Tareas Extras | HR existente |
 | 🟢 Media | Certificados online | Reporting existente |
 | 🔵 Baja | Cursos Complementarios | Academic existente |

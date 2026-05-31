@@ -31,17 +31,33 @@ async fn list_meetings(claims: Claims, State(state): State<AppState>) -> SisResu
 async fn create_meeting(claims: Claims, State(state): State<AppState>, Json(p): Json<Value>) -> SisResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Director", "UTP", "Profesor", "GerenteGeneral"])?;
     let school_id = claims.school_id.as_deref().and_then(|s| Uuid::parse_str(s).ok());
+    let teacher_id = Uuid::parse_str(&claims.sub).ok();
     let id = Uuid::new_v4();
-    sqlx::query("INSERT INTO parent_meetings (id, school_id, teacher_id, guardian_user_id, student_id, scheduled_date, start_time, end_time, location)
-                 VALUES ($1, $2, $3, $4, $5, $6::date, $7::time, $8::time, $9)")
+
+    // Support both student_id (UUID) and student (name lookup)
+    let student_id = if let Some(sid) = p.get("student_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()) {
+        Some(sid)
+    } else if let Some(name) = p.get("student").and_then(|v| v.as_str()) {
+        sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM students WHERE first_name || ' ' || last_name ILIKE $1 LIMIT 1",
+        ).bind(format!("%{}%", name)).fetch_optional(&state.pool).await?
+    } else {
+        None
+    };
+
+    let time = p.get("time").or_else(|| p.get("start_time")).and_then(|v| v.as_str());
+
+    sqlx::query("INSERT INTO parent_meetings (id, school_id, teacher_id, guardian_user_id, student_id, scheduled_date, start_time, end_time, location, notes)
+                 VALUES ($1, $2, $3, $4, $5, $6::date, $7::time, $8::time, $9, $10)")
         .bind(id).bind(school_id)
-        .bind(p.get("teacher_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
+        .bind(teacher_id)
         .bind(p.get("guardian_user_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
-        .bind(p.get("student_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
+        .bind(student_id)
         .bind(p.get("date").and_then(|v| v.as_str()))
-        .bind(p.get("start_time").and_then(|v| v.as_str()))
+        .bind(time)
         .bind(p.get("end_time").and_then(|v| v.as_str()))
         .bind(p.get("location").and_then(|v| v.as_str()))
+        .bind(p.get("reason").or_else(|| p.get("notes")).and_then(|v| v.as_str()))
         .execute(&state.pool).await?;
     Ok(Json(json!({"id": id})))
 }
@@ -79,13 +95,14 @@ async fn create_general(claims: Claims, State(state): State<AppState>, Json(p): 
     require_any_role(&claims, &["Administrador", "Director", "UTP", "GerenteGeneral"])?;
     let school_id = claims.school_id.as_deref().and_then(|s| Uuid::parse_str(s).ok());
     let id = Uuid::new_v4();
+    let time = p.get("time").or_else(|| p.get("start_time")).and_then(|v| v.as_str());
     sqlx::query("INSERT INTO general_meetings (id, school_id, title, description, meeting_date, start_time, end_time, location, agenda, created_by)
                  VALUES ($1, $2, $3, $4, $5::date, $6::time, $7::time, $8, $9, $10)")
         .bind(id).bind(school_id)
         .bind(p.get("title").and_then(|v| v.as_str()))
         .bind(p.get("description").and_then(|v| v.as_str()))
         .bind(p.get("date").and_then(|v| v.as_str()))
-        .bind(p.get("start_time").and_then(|v| v.as_str()))
+        .bind(time)
         .bind(p.get("end_time").and_then(|v| v.as_str()))
         .bind(p.get("location").and_then(|v| v.as_str()))
         .bind(p.get("agenda"))

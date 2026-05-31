@@ -163,7 +163,7 @@ pub fn ParentMeetingsPage() -> Element {
                                     div { class: "alert-name", "{student}" }
                                     div { class: "alert-detail", "{date} {time} — {location} ({status})" }
                                 }
-                                if status != "cancelada" {
+                                if status != "cancelled" {
                                     button { class: "btn btn-sm btn-danger", onclick: on_cancel, "Cancelar" }
                                 }
                             }
