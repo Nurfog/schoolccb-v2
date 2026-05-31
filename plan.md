@@ -470,7 +470,7 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 | 🟡 Alta | Admisión (matrícula completa con becas) | CRM Ventas |
 | 🟡 Alta | Calendario Académico + Pruebas (UTP) | ✅ Completo (backend + frontend) |
 | 🟡 Alta | Reuniones de Apoderados + Minutas | ✅ Completo (backend + frontend) |
-| 🟢 Media | Horarios Docentes + Tareas Extras | HR existente |
+| 🟢 Media | Horarios Docentes + Tareas Extras | ✅ Completo |
 | 🟢 Media | Certificados online | Reporting existente |
 | 🔵 Baja | Cursos Complementarios | Academic existente |
 

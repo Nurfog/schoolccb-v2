@@ -12,7 +12,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/hr/substitutes", get(list_substitutes).post(create_substitute))
         .route("/api/hr/teachers/{id}/hours", get(get_contract_hours).post(set_contract_hours))
         .route("/api/hr/teachers/{id}/extra-duties", get(list_extra_duties).post(create_extra_duty))
-        .route("/api/hr/extra-duties/{id}", put(update_extra_duty))
+        .route("/api/hr/extra-duties/{id}", put(update_extra_duty).delete(delete_extra_duty))
 }
 
 async fn list_schedules(claims: Claims, State(state): State<AppState>, Path(id): Path<Uuid>) -> SisResult<Json<Value>> {
@@ -94,12 +94,14 @@ async fn get_contract_hours(claims: Claims, State(state): State<AppState>, Path(
 }
 async fn set_contract_hours(claims: Claims, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<Value>) -> SisResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Director", "GerenteGeneral"])?;
-    let total = p.get("total_hours").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+    let total = p.get("total_hours").or_else(|| p.get("total")).and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+    let class_h = p.get("class_hours").or_else(|| p.get("class")).and_then(|v| v.as_i64()).map(|v| v as i32);
+    let admin_h = p.get("admin_hours").or_else(|| p.get("admin")).and_then(|v| v.as_i64()).map(|v| v as i32);
     sqlx::query("INSERT INTO teacher_contract_hours (teacher_id, total_hours, class_hours, admin_hours) VALUES ($1, $2, $3, $4)
                  ON CONFLICT (teacher_id, academic_year_id) DO UPDATE SET total_hours = $2, class_hours = COALESCE($3, teacher_contract_hours.class_hours), admin_hours = COALESCE($4, teacher_contract_hours.admin_hours), updated_at = NOW()")
         .bind(id).bind(total)
-        .bind(p.get("class_hours").and_then(|v| v.as_i64()).map(|v| v as i32))
-        .bind(p.get("admin_hours").and_then(|v| v.as_i64()).map(|v| v as i32))
+        .bind(class_h)
+        .bind(admin_h)
         .execute(&state.pool).await?;
     Ok(Json(json!({"message": "Horas asignadas"})))
 }
@@ -133,4 +135,9 @@ async fn update_extra_duty(claims: Claims, State(state): State<AppState>, Path(i
         .bind(p.get("description").and_then(|v| v.as_str()))
         .bind(id).execute(&state.pool).await?;
     Ok(Json(json!({"message": "Tarea extra actualizada"})))
+}
+async fn delete_extra_duty(claims: Claims, State(state): State<AppState>, Path(id): Path<Uuid>) -> SisResult<Json<Value>> {
+    require_any_role(&claims, &["Administrador", "Director", "GerenteGeneral"])?;
+    sqlx::query("DELETE FROM extra_duties WHERE id = $1").bind(id).execute(&state.pool).await?;
+    Ok(Json(json!({"message": "Tarea extra eliminada"})))
 }
