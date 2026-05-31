@@ -18,9 +18,6 @@ pub fn client_router() -> Router<AppState> {
 }
 
 fn require_corporation_user(claims: &Claims) -> Result<(), AuthError> {
-    if claims.role == "Root" {
-        return Ok(());
-    }
     if claims.corporation_id.is_some() {
         return Ok(());
     }
@@ -30,9 +27,6 @@ fn require_corporation_user(claims: &Claims) -> Result<(), AuthError> {
 }
 
 fn corporation_id(claims: &Claims) -> Result<Uuid, AuthError> {
-    if claims.role == "Root" {
-        return Err(AuthError::Internal("Root no tiene corporación asociada".into()));
-    }
     claims
         .corporation_id
         .as_ref()

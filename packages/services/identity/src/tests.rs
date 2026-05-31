@@ -3,12 +3,12 @@ use crate::models::Claims;
 use crate::routes::{generate_token_pair, require_role};
 use uuid::Uuid;
 
-fn make_root_claims() -> Claims {
+fn make_admin_claims() -> Claims {
     Claims {
         sub: Uuid::new_v4().to_string(),
-        role: "Root".into(),
-        name: "Test Root".into(),
-        email: "root@test.cl".into(),
+        role: "GerenteGeneral".into(),
+        name: "Test Admin".into(),
+        email: "admin@test.cl".into(),
         exp: 9999999999,
         iat: 0,
         school_id: None,
@@ -42,19 +42,19 @@ fn test_generate_token_pair_creates_valid_jwt() {
     };
     let user_id = Uuid::new_v4();
     let (token, claims) =
-        generate_token_pair(&config, user_id, "Root", "Test", "test@test.cl", None, None, None)
+        generate_token_pair(&config, user_id, "GerenteGeneral", "Test", "test@test.cl", None, None, None)
             .expect("should generate token pair");
 
     assert!(!token.is_empty());
     assert_eq!(claims.sub, user_id.to_string());
-    assert_eq!(claims.role, "Root");
+    assert_eq!(claims.role, "GerenteGeneral");
     assert_eq!(claims.name, "Test");
     assert_eq!(claims.email, "test@test.cl");
 }
 
 #[test]
-fn test_require_role_returns_ok_for_root() {
-    let claims = make_root_claims();
+fn test_require_role_returns_ok_for_admin() {
+    let claims = make_admin_claims();
     assert!(require_role(&claims, "Profesor").is_ok());
 }
 

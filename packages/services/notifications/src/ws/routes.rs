@@ -553,7 +553,7 @@ async fn send_notification(
     State(state): State<AppState>,
     Json(payload): Json<SendNotificationPayload>,
 ) -> NotifResult<Json<Value>> {
-    require_any_role(&claims, &["Root", "Administrador", "Sostenedor"])?;
+    require_any_role(&claims, &["GerenteGeneral", "Administrador", "Sostenedor"])?;
 
     let id = Uuid::new_v4();
     let ntype = payload.notification_type.unwrap_or_else(|| "info".into());

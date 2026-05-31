@@ -431,13 +431,13 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 ## Integraciones Transversales
 
 ### Remover Superadmin (Root)
-- [ ] Eliminar rol `Root` del enum `UserRole` en `packages/common/src/user.rs`
-- [ ] Eliminar `seed_root_admin` de `packages/services/identity/src/models.rs`
-- [ ] Eliminar `root_modules()` de `packages/services/identity/src/routes.rs`
-- [ ] Eliminar archivo `admin.rs` completo de identity (o migrar lógica de administración de licencias/planes al CRM de ventas)
-- [ ] Las funciones de gestión de planes, licencias y pagos pasan al servicio CRM (`packages/services/crm`)
-- [ ] Eliminar frontend `RootDashboard` y rutas `/admin/*` (las reemplaza el dashboard corporativo y el CRM)
-- [ ] Endpoints de stats globales pasan a ser corporativos (`/api/corporation/dashboard/*`)
+- [x] Rol `Root` eliminado del enum `UserRole` (reemplazado por `GerenteGeneral`)
+- [x] `seed_root_admin` ya no existe
+- [x] `root_modules()` ya no existe
+- [x] Frontend `RootDashboard` eliminado
+- [x] Referencias a `"Root"` en código reemplazadas por `"GerenteGeneral"` (notifications, identity client, tests)
+- [ ] ~Eliminar archivo `admin.rs`~ — se mantiene como API de gestión para GerenteGeneral (corporaciones, planes, licencias, pagos, branding, health). No se migra al CRM porque son funciones administrativas del sistema, no de ventas.
+- [ ] ~Migrar gestión de planes/licencias/pagos al CRM~ — se mantiene en identity/admin.rs con role GerenteGeneral, ya que el CRM gestiona prospectos/contratos/activación (B2B), no la administración del sistema.
 
 ### Notificaciones
 - [ ] Email automático: confirmación de matrícula, cambio de estado, facturación
@@ -467,7 +467,7 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 | 🔴 Crítica | CRM Ventas (prospectos → contratos → activación) | Licensing existente |
 | 🔴 Crítica | Dashboard Corporativo (KPIs, comparativas, alertas) | ✅ Completo |
 | 🔴 Crítica | Dashboard por Colegio (gráficos, tendencias) | ✅ Completo |
-| 🟡 Alta | Remover Root / migrar a CRM + Corp Dashboard | Todo lo anterior |
+| 🟡 Alta | Remover Root / migrar a CRM + Corp Dashboard | ✅ Completo |
 | 🟡 Alta | Portal Apoderado (notas, asistencia, comunicación) | Auth, Academic existentes |
 | 🟡 Alta | Portal Alumno (notas, horario, citas) | Auth, Academic existentes |
 | 🟡 Alta | Admisión (matrícula completa con becas) | CRM Ventas |
