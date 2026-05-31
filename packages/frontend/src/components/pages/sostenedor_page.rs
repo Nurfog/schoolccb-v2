@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::window;
 use crate::api::client;
-use crate::components::widgets::simple_chart::BarChart;
+use crate::components::widgets::simple_chart::{BarChart, DoughnutChart};
 
 fn current_year() -> String {
     js_sys::Date::new_0().get_full_year().to_string()
@@ -67,13 +67,60 @@ pub fn SostenedorPage() -> Element {
     let alerts = use_resource(client::fetch_corp_dashboard_alerts);
     let license = use_resource(client::fetch_corp_license);
     let mut selected_year = use_signal(current_year);
+    let mut selected_school = use_signal(|| "all".to_string());
+    let mut sort_col = use_signal(|| "name".to_string());
+    let mut sort_dir = use_signal(|| 1i32);
+
+    let mut toggle_sort = move |col: &str| {
+        if sort_col() == col {
+            sort_dir.set(-sort_dir());
+        } else {
+            sort_col.set(col.to_string());
+            sort_dir.set(1);
+        }
+    };
+
+    let sort_arrow = move |col: &str| {
+        if sort_col() == col {
+            if sort_dir() == 1 { " ▲" } else { " ▼" }
+        } else { "" }
+    };
 
     rsx! {
         div { class: "page-header",
             h1 { "Panel del Sostenedor" }
-            p { "Visión global de tu corporación" }
+            p { "Visión global de tu corporación educativa" }
         }
-        div { class: "page-toolbar", style: "display: flex; gap: 12px; align-items: center; margin-bottom: 16px;",
+        div { class: "page-toolbar", style: "display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;",
+            div { class: "filter-group",
+                label { "Colegio:" }
+                select { class: "form-input",
+                    value: "{selected_school}",
+                    oninput: move |e| selected_school.set(e.value()),
+                    option { value: "all", "Todos los colegios" }
+                    {
+                    match schools() {
+                        Some(Ok(data)) => {
+                            let list = data["schools"].as_array().cloned().unwrap_or_default();
+                            let opts: Vec<Element> = list.iter().map(|s| {
+                                let sid = s["id"].as_str().unwrap_or("").to_string();
+                                let sname = s["name"].as_str().unwrap_or("").to_string();
+                                let is_sel = selected_school() == sid;
+                                rsx! {
+                                    option {
+                                        value: "{sid}",
+                                        selected: is_sel,
+                                        "{sname}"
+                                    }
+                                }
+                            }).collect();
+                            rsx! { {opts.into_iter()} }
+                        }
+                        _ => rsx! {}
+                    }
+                    }
+                }
+            }
             div { class: "filter-group",
                 label { "Año:" }
                 select { class: "form-input", value: "{selected_year}", oninput: move |e| selected_year.set(e.value()),
@@ -97,7 +144,9 @@ pub fn SostenedorPage() -> Element {
                 let active_lic = data["active_licenses"].as_i64().unwrap_or(0);
                 let expiring = data["expiring_licenses"].as_i64().unwrap_or(0);
                 let revenue = data["monthly_revenue"].as_f64().unwrap_or(0.0);
+                let delinquency = data["delinquency"].as_str().unwrap_or("0").to_string();
                 let exp_color = if expiring > 0 { "danger" } else { "success" };
+                let del_color = delinquency.parse::<f64>().map(|v| if v > 20.0 { "danger" } else if v > 10.0 { "warning" } else { "success" }).unwrap_or("success");
                 rsx! {
                     div { class: "kpi-grid-wide",
                         KpiCard { label: "Colegios", value: "{schools}", color: "primary" }
@@ -109,6 +158,7 @@ pub fn SostenedorPage() -> Element {
                         KpiCard { label: "Licencias Activas", value: "{active_lic}", color: "success" }
                         KpiCard { label: "Próximas a Vencer", value: "{expiring}", color: "{exp_color}" }
                         KpiCard { label: "Ingresos del Mes", value: "${revenue:.0}", color: "primary" }
+                        KpiCard { label: "Morosidad", value: "{delinquency}%", color: "{del_color}" }
                     }
                 }
             }
@@ -139,65 +189,42 @@ pub fn SostenedorPage() -> Element {
                 }
                 _ => rsx! {}
             }
-            match schools() {
-                Some(Ok(data)) => {
-                    let school_list = data["schools"].as_array().cloned().unwrap_or_default();
-                    let rows: Vec<Element> = school_list.iter().map(|school| {
-                        let name = school["name"].as_str().unwrap_or("-").to_string();
-                        let students = school["students"].as_i64().unwrap_or(0);
-                        let teachers = school["teachers"].as_i64().unwrap_or(0);
-                        let att = school["attendance"].as_str().unwrap_or("100").to_string();
-                        let att_cls = att.parse::<f64>().map(|v| {
-                            if v >= 90.0 { "pct-good" } else if v >= 80.0 { "pct-warning" } else { "pct-danger" }
-                        }).unwrap_or("");
-                        let grade = school["avg_grade"].as_str().unwrap_or("0").to_string();
-                        let g_cls = grade.parse::<f64>().map(|v| {
-                            if v >= 4.0 { "grade-good" } else { "grade-bad" }
-                        }).unwrap_or("");
-                        rsx! {
-                            tr {
-                                td { "{name}" }
-                                td { "{students}" }
-                                td { "{teachers}" }
-                                td { class: "{att_cls}", "{att}%" }
-                                td { class: "{g_cls}", "{grade}" }
-                            }
-                        }
-                    }).collect();
-                    rsx! {
-                        div { class: "widget-card",
-                            div { class: "widget-card-header",
-                                h3 { "Colegios" }
-                                span { "{school_list.len()} colegios" }
-                            }
-                            div { class: "widget-card-body",
-                                div { class: "data-table-container",
-                                    table { id: "schools-table", class: "data-table",
-                                        thead {
-                                            tr {
-                                                th { "Colegio" }
-                                                th { "Alumnos" }
-                                                th { "Docentes" }
-                                                th { "Asistencia" }
-                                                th { "Prom. Notas" }
-                                            }
-                                        }
-                                        tbody { {rows.into_iter()} }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                _ => rsx! {}
-            }
             match comparisons() {
                 Some(Ok(data)) => {
                     let comps = data["comparisons"].as_array().cloned().unwrap_or_default();
-                    if comps.is_empty() {
+                    let filtered: Vec<_> = if selected_school() == "all" {
+                        comps.clone()
+                    } else {
+                        comps.iter().filter(|c| c["school_id"].as_str().unwrap_or("") == selected_school()).cloned().collect()
+                    };
+                    if filtered.is_empty() {
                         rsx! {}
                     } else {
+                        let student_total: f64 = filtered.iter().filter_map(|c| c["total_students"].as_f64()).sum();
+                        let donut_data: Vec<_> = filtered.iter().filter(|c| {
+                            c["total_students"].as_f64().unwrap_or(0.0) > 0.0
+                        }).map(|c| {
+                            let pct = c["total_students"].as_f64().unwrap_or(0.0) / student_total.max(1.0) * 100.0;
+                            serde_json::json!({
+                                "school": c["school_name"].as_str().unwrap_or(""),
+                                "count": c["total_students"].as_i64().unwrap_or(0),
+                                "pct": format!("{:.0}", pct),
+                            })
+                        }).collect();
                         rsx! {
+                            div { class: "widget-card",
+                                div { class: "widget-card-header",
+                                    h3 { "Distribución de Alumnos" }
+                                }
+                                div { class: "widget-card-body",
+                                    DoughnutChart {
+                                        data: donut_data,
+                                        label_key: "school".to_string(),
+                                        value_key: "count".to_string(),
+                                        size: None,
+                                    }
+                                }
+                            }
                             div { class: "widget-card",
                                 div { class: "widget-card-header",
                                     h3 { "Comparativa de Asistencia" }
@@ -205,7 +232,7 @@ pub fn SostenedorPage() -> Element {
                                 }
                                 div { class: "widget-card-body",
                                     BarChart {
-                                        data: comps.clone(),
+                                        data: filtered.clone(),
                                         label_key: "school_name".to_string(),
                                         value_key: "attendance_pct".to_string(),
                                         height: None,
@@ -219,11 +246,170 @@ pub fn SostenedorPage() -> Element {
                                 }
                                 div { class: "widget-card-body",
                                     BarChart {
-                                        data: comps,
+                                        data: filtered.clone(),
                                         label_key: "school_name".to_string(),
                                         value_key: "avg_grade".to_string(),
                                         height: None,
                                         color: Some("#22c55e".to_string()),
+                                    }
+                                }
+                            }
+                            div { class: "widget-card",
+                                div { class: "widget-card-header",
+                                    h3 { "Morosidad por Colegio" }
+                                    span { "Morosidad %" }
+                                }
+                                div { class: "widget-card-body",
+                                    BarChart {
+                                        data: filtered.clone(),
+                                        label_key: "school_name".to_string(),
+                                        value_key: "delinquency".to_string(),
+                                        height: None,
+                                        color: Some("#ef4444".to_string()),
+                                    }
+                                }
+                            }
+                            div { class: "widget-card",
+                                div { class: "widget-card-header",
+                                    h3 { "Ranking por Rendimiento" }
+                                    span { "Promedio notas descendente" }
+                                }
+                                div { class: "widget-card-body",
+                                    {
+                                        let mut ranked = filtered.clone();
+                                        ranked.sort_by(|a, b| {
+                                            let av = a["avg_grade"].as_str().unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+                                            let bv = b["avg_grade"].as_str().unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+                                            bv.partial_cmp(&av).unwrap_or(std::cmp::Ordering::Equal)
+                                        });
+                                        let rank_rows: Vec<Element> = ranked.iter().enumerate().map(|(i, s)| {
+                                            let name = s["school_name"].as_str().unwrap_or("-").to_string();
+                                            let grade = s["avg_grade"].as_str().unwrap_or("0").to_string();
+                                            let g_cls = grade.parse::<f64>().map(|v| if v >= 4.0 { "grade-good" } else { "grade-bad" }).unwrap_or("");
+                                            rsx! {
+                                                tr {
+                                                    td { "{i + 1}" }
+                                                    td { "{name}" }
+                                                    td { class: "{g_cls}", "{grade}" }
+                                                }
+                                            }
+                                        }).collect();
+                                        rsx! {
+                                            div { class: "data-table-container",
+                                                table { class: "data-table",
+                                                    thead { tr {
+                                                        th { "#" }
+                                                        th { "Colegio" }
+                                                        th { "Prom. Notas" }
+                                                    }}
+                                                    tbody { {rank_rows.into_iter()} }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                _ => rsx! {}
+            }
+            match schools() {
+                Some(Ok(data)) => {
+                    let school_list = data["schools"].as_array().cloned().unwrap_or_default();
+                    let filtered: Vec<_> = if selected_school() == "all" {
+                        school_list.clone()
+                    } else {
+                        school_list.iter().filter(|s| s["id"].as_str().unwrap_or("") == selected_school()).cloned().collect()
+                    };
+                    let mut sorted = filtered.clone();
+                    let sc = sort_col();
+                    let sd = sort_dir();
+                    sorted.sort_by(|a, b| {
+                        let av = match sc.as_str() {
+                            "students" => a["students"].as_i64().unwrap_or(0) as f64,
+                            "teachers" => a["teachers"].as_i64().unwrap_or(0) as f64,
+                            "attendance" => a["attendance"].as_str().unwrap_or("0").parse::<f64>().unwrap_or(0.0),
+                            "grade" => a["avg_grade"].as_str().unwrap_or("0").parse::<f64>().unwrap_or(0.0),
+                            "delinquency" => a["delinquency"].as_str().unwrap_or("0").parse::<f64>().unwrap_or(0.0),
+                            _ => 0.0f64,
+                        };
+                        let bv = match sc.as_str() {
+                            "students" => b["students"].as_i64().unwrap_or(0) as f64,
+                            "teachers" => b["teachers"].as_i64().unwrap_or(0) as f64,
+                            "attendance" => b["attendance"].as_str().unwrap_or("0").parse::<f64>().unwrap_or(0.0),
+                            "grade" => b["avg_grade"].as_str().unwrap_or("0").parse::<f64>().unwrap_or(0.0),
+                            "delinquency" => b["delinquency"].as_str().unwrap_or("0").parse::<f64>().unwrap_or(0.0),
+                            _ => 0.0f64,
+                        };
+                        (av.partial_cmp(&bv).unwrap_or(std::cmp::Ordering::Equal)).then_with(|| {
+                            a["name"].as_str().unwrap_or("").cmp(b["name"].as_str().unwrap_or(""))
+                        })
+                    });
+                    if sd == -1 { sorted.reverse(); }
+                    let rows: Vec<Element> = sorted.iter().map(|school| {
+                        let name = school["name"].as_str().unwrap_or("-").to_string();
+                        let sid = school["id"].as_str().unwrap_or("").to_string();
+                        let students = school["students"].as_i64().unwrap_or(0);
+                        let teachers = school["teachers"].as_i64().unwrap_or(0);
+                        let att = school["attendance"].as_str().unwrap_or("100").to_string();
+                        let att_cls = att.parse::<f64>().map(|v| {
+                            if v >= 90.0 { "pct-good" } else if v >= 80.0 { "pct-warning" } else { "pct-danger" }
+                        }).unwrap_or("");
+                        let grade = school["avg_grade"].as_str().unwrap_or("0").to_string();
+                        let g_cls = grade.parse::<f64>().map(|v| {
+                            if v >= 4.0 { "grade-good" } else { "grade-bad" }
+                        }).unwrap_or("");
+                        let del = school["delinquency"].as_str().unwrap_or("0").to_string();
+                        let del_cls = del.parse::<f64>().map(|v| {
+                            if v > 20.0 { "pct-danger" } else if v > 10.0 { "pct-warning" } else { "pct-good" }
+                        }).unwrap_or("");
+                        rsx! {
+                            tr {
+                                td { "{name}" }
+                                td { "{students}" }
+                                td { "{teachers}" }
+                                td { class: "{att_cls}", "{att}%" }
+                                td { class: "{g_cls}", "{grade}" }
+                                td { class: "{del_cls}", "{del}%" }
+                                td {
+                                    a {
+                                        class: "btn btn-outline btn-small",
+                                        href: "/dashboard?school_id={sid}",
+                                        "Ver Dashboard"
+                                    }
+                                }
+                            }
+                        }
+                    }).collect();
+                    let n_schools = filtered.len();
+                    let arrow_name = sort_arrow("name");
+                    let arrow_students = sort_arrow("students");
+                    let arrow_teachers = sort_arrow("teachers");
+                    let arrow_attendance = sort_arrow("attendance");
+                    let arrow_grade = sort_arrow("grade");
+                    let arrow_del = sort_arrow("delinquency");
+                    rsx! {
+                        div { class: "widget-card",
+                            div { class: "widget-card-header",
+                                h3 { "Colegios" }
+                                span { "{n_schools} colegios" }
+                            }
+                            div { class: "widget-card-body",
+                                div { class: "data-table-container",
+                                    table { id: "schools-table", class: "data-table",
+                                        thead {
+                                            tr {
+                                                th { onclick: move |_| toggle_sort("name"), "Colegio{arrow_name}" }
+                                                th { onclick: move |_| toggle_sort("students"), "Alumnos{arrow_students}" }
+                                                th { onclick: move |_| toggle_sort("teachers"), "Docentes{arrow_teachers}" }
+                                                th { onclick: move |_| toggle_sort("attendance"), "Asistencia{arrow_attendance}" }
+                                                th { onclick: move |_| toggle_sort("grade"), "Prom. Notas{arrow_grade}" }
+                                                th { onclick: move |_| toggle_sort("delinquency"), "Morosidad{arrow_del}" }
+                                                th { "Acción" }
+                                            }
+                                        }
+                                        tbody { {rows.into_iter()} }
                                     }
                                 }
                             }

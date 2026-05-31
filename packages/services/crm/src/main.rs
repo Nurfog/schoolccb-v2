@@ -1,4 +1,5 @@
 mod config;
+mod email;
 mod error;
 mod models;
 mod pdf;
@@ -14,6 +15,7 @@ use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 
 use config::Config;
+use email::Mailer;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -21,6 +23,7 @@ pub struct AppState {
     pub config: Arc<Config>,
     pub client: reqwest::Client,
     pub signature_config: Arc<signature::SignatureConfig>,
+    pub mailer: Mailer,
 }
 
 #[tokio::main]
@@ -46,12 +49,14 @@ async fn main() {
     }
 
     let signature_config = Arc::new(signature::SignatureConfig::from_env());
+    let mailer = email::Mailer::new(pool.clone(), config.clone());
 
     let state = AppState {
         pool: pool.clone(),
         config: config.clone(),
         client,
         signature_config,
+        mailer,
     };
 
     let cors = if std::env::var("CORS_ENABLED").as_deref() == Ok("true") {

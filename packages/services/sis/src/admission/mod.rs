@@ -4,6 +4,8 @@ mod custom_fields;
 mod documents;
 mod metrics;
 mod prospects;
+mod reminders;
+mod scholarships;
 mod stages;
 mod upload;
 
@@ -19,4 +21,6 @@ pub fn router() -> axum::Router<crate::AppState> {
         .merge(upload::router())
         .merge(metrics::router())
         .merge(custom_fields::router())
+        .merge(reminders::router())
+        .merge(scholarships::router())
 }

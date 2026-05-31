@@ -7,6 +7,7 @@ use axum::{
 use jsonwebtoken::{DecodingKey, Validation};
 use schoolccb_common::rut::Rut;
 use serde::Deserialize;
+use sqlx::Row;
 use serde_json::{Value, json};
 use uuid::Uuid;
 
@@ -35,7 +36,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/sales/proposals/{id}/discount", put(apply_discount))
         .route("/api/sales/proposals/{id}/generate-pdf", post(generate_proposal_pdf))
         // Contracts
-        .route("/api/sales/contracts", post(create_contract))
+        .route("/api/sales/contracts", get(list_contracts).post(create_contract))
         .route("/api/sales/contracts/{id}", get(get_contract))
         .route("/api/sales/contracts/{id}/verify-signatures", put(verify_signatures))
         .route("/api/sales/contracts/{id}/activate", post(activate_license))
@@ -293,6 +294,16 @@ async fn create_prospect(
     .execute(&state.pool)
     .await?;
 
+    // Round-robin auto-assignment
+    let assigned_by_rr = auto_assign_round_robin(&state.pool).await;
+    if let Some(agent_user_id) = assigned_by_rr {
+        sqlx::query("UPDATE crm_sales_prospects SET assigned_to = $1 WHERE id = $2")
+            .bind(agent_user_id)
+            .bind(id)
+            .execute(&state.pool)
+            .await?;
+    }
+
     Ok(Json(json!({"id": id})))
 }
 
@@ -338,6 +349,16 @@ async fn public_create_prospect(
     .await?;
 
     log_activity(&state.pool, id, "web_contact", "Contacto desde sitio web", None).await;
+
+    // Round-robin auto-assignment for public prospects
+    let assigned_by_rr = auto_assign_round_robin(&state.pool).await;
+    if let Some(agent_user_id) = assigned_by_rr {
+        sqlx::query("UPDATE crm_sales_prospects SET assigned_to = $1 WHERE id = $2")
+            .bind(agent_user_id)
+            .bind(id)
+            .execute(&state.pool)
+            .await?;
+    }
 
     Ok(Json(json!({"id": id, "message": "Prospecto creado correctamente"})))
 }
@@ -700,6 +721,24 @@ async fn apply_discount(
 
 // ─── Contracts ───
 
+async fn list_contracts(
+    claims: Claims,
+    State(state): State<AppState>,
+) -> CrmResult<Json<Value>> {
+    require_sales_role(&claims)?;
+
+    let contracts = sqlx::query_as::<_, models::SalesContract>(
+        "SELECT c.id, c.prospect_id, c.tax_id, c.plan_id, c.modules, c.total_value, c.discount,
+         c.tax_rate, c.tax_amount, c.subtotal, c.status,
+         c.signed_at, c.verified_at, c.activated_at, c.invoices, c.notes, c.created_at, c.updated_at
+         FROM crm_sales_contracts c ORDER BY c.created_at DESC",
+    )
+    .fetch_all(&state.pool)
+    .await?;
+
+    Ok(Json(json!({"contracts": contracts})))
+}
+
 async fn create_contract(
     claims: Claims,
     State(state): State<AppState>,
@@ -944,11 +983,17 @@ async fn activate_license(
     .execute(&state.pool)
     .await?;
 
-    // 4. Send Welcome Email (Simulation for now)
+    // 4. Send Welcome Email
     let temp_pass = onboarding_data["temp_password"].as_str().unwrap_or("****");
-    tracing::info!("📧 BIENVENIDA: Enviando credenciales a {} -> Password: {}", prospect.email.as_deref().unwrap_or("-"), temp_pass);
+    state.mailer.send_welcome(
+        prospect.email.as_deref().unwrap_or("-"),
+        temp_pass,
+        prospect.company.as_deref().unwrap_or("SchoolCBB"),
+        &onboarding_payload.school_name,
+        Some(corp_id),
+    ).await;
 
-    // 4. Update prospect to "Cerrado Ganado"
+    // 5. Update prospect to "Cerrado Ganado"
     let won_stage: Option<(Uuid,)> = sqlx::query_as(
         "SELECT id FROM crm_sales_stages WHERE is_final = true AND name ILIKE '%Ganado%' LIMIT 1",
     )
@@ -1599,6 +1644,47 @@ async fn generate_invoice(
 }
 
 // ─── Helpers ───
+
+/// Auto-assigns a prospect using round-robin if active. Returns the user_id of the assigned agent.
+async fn auto_assign_round_robin(pool: &sqlx::PgPool) -> Option<Uuid> {
+    let config = sqlx::query(
+        "SELECT id, active, COALESCE(last_assigned_index, 0) as idx FROM crm_round_robin_config LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten()?;
+
+    let active: bool = config.get("active");
+    let config_id: Uuid = config.get("id");
+    let last_index: i32 = config.get("idx");
+
+    if !active {
+        return None;
+    }
+
+    let agents: Vec<Uuid> = sqlx::query_scalar(
+        "SELECT a.user_id FROM crm_sales_agents a WHERE a.active = true ORDER BY a.created_at",
+    )
+    .fetch_all(pool)
+    .await
+    .ok()?;
+
+    if agents.is_empty() {
+        return None;
+    }
+
+    let next_index = (last_index as usize + 1) % agents.len();
+    let assigned_user_id = agents[next_index];
+
+    let _ = sqlx::query("UPDATE crm_round_robin_config SET last_assigned_index = $1, updated_at = NOW() WHERE id = $2")
+        .bind(next_index as i32)
+        .bind(config_id)
+        .execute(pool)
+        .await;
+
+    Some(assigned_user_id)
+}
 
 async fn log_activity(pool: &sqlx::PgPool, prospect_id: Uuid, activity_type: &str, subject: &str, scheduled_at: Option<chrono::DateTime<chrono::Utc>>) {
     let _ = sqlx::query(

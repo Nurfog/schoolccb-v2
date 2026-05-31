@@ -147,6 +147,91 @@ pub struct UpdateClassroomPayload {
     pub active: Option<bool>,
 }
 
+/// Beca o descuento aplicable a contratos de matrícula.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "db", derive(sqlx::FromRow))]
+pub struct Scholarship {
+    pub id: Uuid,
+    pub school_id: Uuid,
+    pub name: String,
+    pub discount_percentage: f64,
+    pub valid_from: chrono::NaiveDate,
+    pub valid_until: chrono::NaiveDate,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Payload para crear una beca.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateScholarshipPayload {
+    pub school_id: Uuid,
+    pub name: String,
+    pub discount_percentage: f64,
+    pub valid_from: chrono::NaiveDate,
+    pub valid_until: chrono::NaiveDate,
+}
+
+/// Contrato de matrícula (enrollment) entre el colegio y el apoderado.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "db", derive(sqlx::FromRow))]
+pub struct EnrollmentContract {
+    pub id: Uuid,
+    pub student_id: Uuid,
+    pub school_id: Uuid,
+    pub grade_level: String,
+    pub guardian_user_id: Option<Uuid>,
+    pub scholarship_id: Option<Uuid>,
+    pub annexes: Option<serde_json::Value>,
+    pub total_fee: f64,
+    pub discount_amount: f64,
+    pub final_amount: f64,
+    pub payment_plan: String,
+    pub status: String,
+    pub signed_at: Option<DateTime<Utc>>,
+    pub enrolled_at: Option<DateTime<Utc>>,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Payload para crear un contrato de matrícula.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateEnrollmentContractPayload {
+    pub student_id: Uuid,
+    pub school_id: Uuid,
+    pub grade_level: String,
+    pub guardian_user_id: Option<Uuid>,
+    pub total_fee: f64,
+    pub discount_amount: Option<f64>,
+    pub payment_plan: Option<String>,
+    pub notes: Option<String>,
+}
+
+/// Recordatorio programado asociado a un prospecto de admisión.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "db", derive(sqlx::FromRow))]
+pub struct ProspectReminder {
+    pub id: Uuid,
+    pub prospect_id: Uuid,
+    pub reminder_type: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub remind_at: DateTime<Utc>,
+    pub is_sent: bool,
+    pub created_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Payload para crear un recordatorio en un prospecto.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateReminderPayload {
+    pub prospect_id: Uuid,
+    pub reminder_type: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub remind_at: DateTime<Utc>,
+}
+
 /// Resultado de la verificación de vacantes disponibles en un nivel.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VacancyCheckResult {

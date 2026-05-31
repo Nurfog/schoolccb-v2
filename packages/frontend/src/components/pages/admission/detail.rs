@@ -2,6 +2,7 @@ use crate::api::client;
 use crate::components::widgets::business_process_flow::BusinessProcessFlow;
 use crate::components::widgets::custom_fields_section::CustomFieldsSection;
 use dioxus::prelude::*;
+use js_sys::eval as js_eval;
 
 #[component]
 pub fn ProspectDetailModal(
@@ -89,25 +90,56 @@ pub fn ProspectDetailModal(
                         });
                     }};
 
-                    let activity_items: Vec<Element> = activities.iter().map(|a| {
-                        let atype = a["activity_type"].as_str().unwrap_or("").to_string();
-                        let asubj = a["subject"].as_str().unwrap_or("").to_string();
-                        rsx! { div { class: "activity-item",
-                            span { class: "activity-type", "{atype}" }
-                            span { "{asubj}" }
-                        }}
-                    }).collect();
+    let reminders = j["reminders"].as_array().cloned().unwrap_or_default();
 
-                    let doc_items: Vec<Element> = documents.iter().map(|d| {
-                        let fname = d["file_name"].as_str().unwrap_or("").to_string();
-                        let verified = d["is_verified"].as_bool().unwrap_or(false);
-                        rsx! { div { class: "doc-item",
-                            span { "{fname}" }
-                            span { class: "doc-status",
-                                if verified { "✓ Verificado" } else { "⏳ Pendiente" }
+    let activity_items: Vec<Element> = activities.iter().map(|a| {
+        let atype = a["activity_type"].as_str().unwrap_or("").to_string();
+        let asubj = a["subject"].as_str().unwrap_or("").to_string();
+        rsx! { div { class: "activity-item",
+            span { class: "activity-type", "{atype}" }
+            span { "{asubj}" }
+        }}
+    }).collect();
+
+    let doc_items: Vec<Element> = documents.iter().map(|d| {
+        let fname = d["file_name"].as_str().unwrap_or("").to_string();
+        let verified = d["is_verified"].as_bool().unwrap_or(false);
+        rsx! { div { class: "doc-item",
+            span { "{fname}" }
+            span { class: "doc-status",
+                if verified { "✓ Verificado" } else { "⏳ Pendiente" }
+            }
+        }}
+    }).collect();
+
+    let reminder_items: Vec<Element> = reminders.iter().map(|r| {
+        let rtitle = r["title"].as_str().unwrap_or("").to_string();
+        let rtype = r["reminder_type"].as_str().unwrap_or("").to_string();
+        let sent = r["is_sent"].as_bool().unwrap_or(false);
+        let rid = r["id"].as_str().unwrap_or("").to_string();
+        rsx! {
+            div { class: "reminder-item",
+                span { class: "reminder-type", "{rtype}" }
+                span { "{rtitle}" }
+                span { class: if sent { "reminder-sent" } else { "reminder-pending" },
+                    if sent { "✓ Enviado" } else { "⏳ Pendiente" }
+                }
+                button {
+                    class: "btn-icon btn-small",
+                    onclick: move |_| {
+                        spawn({
+                            let rid = rid.clone();
+                            async move {
+                                let _ = client::delete_reminder(&rid).await;
+                                prospect_detail.restart();
                             }
-                        }}
-                    }).collect();
+                        });
+                    },
+                    "✕"
+                }
+            }
+        }
+    }).collect();
 
                     rsx! {
                         div { class: "modal-overlay", role: "dialog", "aria-modal": "true", "aria-label": "Detalle del postulante", tabindex: "-1", onclick: close, onkeydown: move |e| if e.key() == Key::Escape { selected_id.set(None); },
@@ -205,6 +237,57 @@ pub fn ProspectDetailModal(
                                                         rsx! { p { "Sin documentos" } }
                                                     } else {
                                                         rsx! { { doc_items.into_iter() } }
+                                                    }
+                                                }
+                                            }
+                                            div { class: "detail-section",
+                                                h4 { "Recordatorios ({reminders.len()})" }
+                                                {
+                                                    if reminder_items.is_empty() {
+                                                        rsx! { p { "Sin recordatorios" } }
+                                                    } else {
+                                                        rsx! { { reminder_items.into_iter() } }
+                                                    }
+                                                }
+                                                div { class: "form-row", style: "margin-top: 8px; gap: 4px;",
+                                                    input {
+                                                        class: "form-input",
+                                                        placeholder: "Título",
+                                                        id: "reminder-title",
+                                                        style: "flex: 1;",
+                                                    }
+                                                    input {
+                                                        class: "form-input",
+                                                        r#type: "datetime-local",
+                                                        id: "reminder-date",
+                                                        style: "width: auto;",
+                                                    }
+                                                    button {
+                                                        class: "btn btn-primary btn-small",
+                                                        onclick: move |_| {
+                                                    let title = js_eval("document.getElementById('reminder-title').value");
+                                                    let remind_at = js_eval("document.getElementById('reminder-date').value");
+                                                    spawn({
+                                                        let pid = pid.clone();
+                                                        async move {
+                                                            let title_str = title.ok().and_then(|t| t.as_string());
+                                                            let date_str = remind_at.ok().and_then(|d| d.as_string());
+                                                            if let (Some(t), Some(d)) = (title_str, date_str) {
+                                                                if !t.is_empty() && !d.is_empty() {
+                                                                    let payload = serde_json::json!({
+                                                                        "prospect_id": pid,
+                                                                        "reminder_type": "follow_up",
+                                                                        "title": t,
+                                                                        "remind_at": format!("{}:00Z", d),
+                                                                    });
+                                                                    let _ = client::create_reminder(&payload).await;
+                                                                    prospect_detail.restart();
+                                                                }
+                                                            }
+                                                        }
+                                                    });
+                                                        },
+                                                        "Agregar"
                                                     }
                                                 }
                                             }

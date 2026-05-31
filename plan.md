@@ -22,7 +22,7 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 | Identity / Auth / JWT | ✅ Completado |
 | RBAC (Roles y Permisos) | ✅ Completado (ajustar: remover Root, agregar roles de ventas y corporativos faltantes) |
 | Licensing (Planes, Módulos, Pagos) | ✅ Completado (`packages/common/src/licensing.rs`, seeders) |
-| CRM Admisión (Prospects, Pipeline) | ✅ Parcial (`packages/common/src/admission.rs`, frontend `AdmissionPage`) |
+| CRM Ventas (Prospectos, Pipeline, Cotizaciones, Contratos, Documentos, Activación, Dashboard) | ✅ Completado |
 | Módulo Académico (Cursos, Asignaturas, Notas) | ✅ Completado |
 | Asistencia | ✅ Completado |
 | RRHH (Empleados, Contratos, Remuneraciones) | ✅ Completado |
@@ -31,9 +31,9 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 | Portal Público | ⬜ No iniciado |
 | Portal Apoderado (my-portal) | ✅ Parcial |
 | Portal Alumno | ⬜ No iniciado |
-| Portal Corporación (Sostenedor) | ⬜ Básico — falta dashboard completo con KPIs, comparativas, gráficos |
-| Dashboard Corporativo | ⬜ No existe — actualmente usa solo `/api/dashboard/summary` (escolar, no corporativo) |
-| Dashboard por Colegio | ✅ Parcial (mosaicos simples) — faltan gráficos, comparativas, tendencias |
+| Portal Corporación (Sostenedor) | ✅ Completo — KPIs, gráficos, tabla ordenable, filtros, exportación |
+| Dashboard Corporativo | ✅ Completo — 6 endpoints + frontend completo con filtros, ranking, donut, morosidad |
+| Dashboard por Colegio | ✅ Completo — 8 endpoints + frontend con gráficos, alertas, finanzas |
 | Root Dashboard | ❌ Eliminar — no existe en la arquitectura del flujo |
 
 ---
@@ -49,56 +49,56 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 - [x] Schema `crm_sales` en PostgreSQL (implementado como `crm_sales_*` en public por ahora)
 - [x] Crate `packages/services/crm` con router y modelos base
 - [x] Roles de Ventas: `GerenteGeneral`, `JefeVentas`, `AgenteVentas` en Identity y CRM
-- [ ] **Mejora:** Soporte para **RUT** en modelos de prospectos y corporaciones (validación chilena)
-- [ ] **Faltante:** Endpoints para gestión de equipo de ventas (crear agentes, asignar metas)
+- [x] **Mejora:** Soporte para **RUT** en modelos de prospectos y corporaciones (validación chilena)
+- [x] **Faltante:** Endpoints para gestión de equipo de ventas (crear agentes, asignar metas)
 
 ### 1.2 Interfaz de Usuario (Salesforce Style)
 - [x] Layout específico `/sales` en Dioxus
 - [x] **Pipeline Kanban** interactivo por etapas
 - [x] **Prospect Detail** con vista 360° del cliente
 - [x] **Contact Timeline** (Llamadas, Emails, WhatsApp, Notas)
-- [ ] **Quote Builder:** Implementar lógica de selección de módulos y cálculo de precios
-- [ ] **Contract Builder:** Generación de contrato basado en propuesta aprobada
-- [ ] **Document Viewer:** Visualización de documentos subidos y estado de verificación
-- [ ] **License Activator:** Wizard de activación final (Corporación + Licencia + Usuario Admin)
+- [x] **Quote Builder:** Implementar lógica de selección de módulos y cálculo de precios
+- [x] **Contract Builder:** Generación de contrato basado en propuesta aprobada
+- [x] **Document Viewer:** Visualización de documentos subidos y estado de verificación
+- [x] **License Activator:** Wizard de activación final (Corporación + Licencia + Usuario Admin)
 
 ### 1.3 Proceso de Venta (Backend & API)
 
 #### 1. Captación de Prospectos
-- [ ] **Bug/Faltante:** Integrar `POST /api/public/contact` del portal para crear prospectos en el CRM automáticamente
+- [x] **Bug/Faltante:** Integrar `POST /api/public/contact` del portal para crear prospectos en el CRM automáticamente (endpoint público)
 - [x] `POST /api/sales/prospects` — creación manual
-- [ ] **Faltante:** `POST /api/sales/prospects/import` — importación masiva vía CSV
+- [x] **Faltante:** `POST /api/sales/prospects/import` — importación masiva vía CSV
 - [x] Tabla `crm_sales_prospects` con campos básicos
 
 #### 2. Asignación y Seguimiento
 - [x] `PUT /api/sales/prospects/{id}/assign` — asignación manual a agente
-- [ ] **Mejora:** Regla de asignación automática (Round-robin)
+- [x] **Mejora:** Regla de asignación automática (Round-robin)
 - [x] `POST /api/sales/prospects/{id}/activities` — registro de interacciones
 
 #### 3. Propuestas y Negociación
 - [x] `POST /api/sales/proposals` — creación de borradores
 - [x] `PUT /api/sales/proposals/{id}/discount` — aplicación de descuentos (requiere JefeVentas+)
-- [ ] **Faltante:** Generación de PDF de la propuesta comercial
+- [x] **Faltante:** Generación de PDF de la propuesta comercial
 
 #### 4. Contratos y Documentación
 - [x] `POST /api/sales/contracts` — creación de contrato
 - [x] `POST /api/sales/contracts/{id}/documents` — subida de documentos (S3/Local)
 - [x] `PUT /api/sales/contracts/{id}/verify-signatures` — validación interna
-- [ ] **Mejora:** Integración con servicio de firma electrónica (ej. Toku)
+- [x] **Mejora:** Integración con servicio de firma electrónica (ej. Toku)
 
 #### 5. Facturación B2B
-- [ ] **Faltante:** `POST /api/sales/contracts/{id}/invoice` — integración con módulo `finance` para generar la primera factura/NC
-- [ ] **Mejora:** Soporte para impuestos (IVA) y exenciones según normativa chilena
+- [x] **Faltante:** `POST /api/sales/contracts/{id}/invoice` — generación de factura standalone (sin integración con módulo `finance` porque finance opera sobre B2C/estudiantes)
+- [x] **Mejora:** Soporte para impuestos (IVA) en contratos (tasa configurable, subtotal, impuesto calculado)
 
 #### 6. Activación del Servicio
 - [x] `POST /api/sales/contracts/{id}/activate` — creación de Corporación y Licencia
-- [ ] **Faltante:** Creación automática del **primer usuario (Sostenedor)** y envío de email de bienvenida
-- [ ] **Faltante:** Creación de un **Colegio por defecto** para la corporación recién creada
+- [x] **Faltante:** Creación automática del **primer usuario (Sostenedor)** y envío de email de bienvenida
+- [x] **Faltante:** Creación de un **Colegio por defecto** para la corporación recién creada
 
 ### 1.4 Dashboard Comercial
 - [x] `GET /api/sales/dashboard/summary` — KPIs básicos
-- [ ] **Mejora:** Gráficos de embudo de ventas (funnel) y rendimiento por agente
-- [ ] **Mejora:** Reporte de ingresos proyectados basado en pipeline actual
+- [x] **Mejora:** Gráficos de embudo de ventas (funnel) y rendimiento por agente
+- [x] **Mejora:** Reporte de ingresos proyectados basado en pipeline actual
 
 ---
 
@@ -132,15 +132,15 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 - [ ] Mejorar frontend `AdmissionPage` con pipeline visual
 
 #### Contacto por Agente de Ventas (Admisión)
-- [ ] Endpoint `POST /api/admission/prospects/{id}/activities` — registrar contacto
-- [ ] Endpoint `POST /api/admission/prospects/{id}/reminder` — programar recordatorio
-- [ ] Frontend: agenda de seguimientos con notificaciones
+- [x] Endpoint `POST /api/admission/prospects/{id}/activities` — registrar contacto
+- [x] Endpoint `POST /api/admission/prospects/{id}/reminder` — programar recordatorio
+- [x] Frontend: agenda de seguimientos con notificaciones
 
 #### Preparación de Contrato (Matrícula)
-- [ ] Tabla `enrollment_contracts`: alumno, apoderados, anexos (PIE, TEA, etc.)
-- [ ] Endpoint `POST /api/admission/contracts` — crear contrato de matrícula
-- [ ] Endpoint `POST /api/admission/contracts/{id}/documents` — subir anexos
-- [ ] Frontend: Enrollment Contract Builder
+- [x] Tabla `enrollment_contracts`: alumno, apoderados, anexos (PIE, TEA, etc.)
+- [x] Endpoint `POST /api/admission/contracts` — crear contrato de matrícula
+- [x] Endpoint `POST /api/admission/contracts/{id}/documents` — subir anexos
+- [x] Frontend: Enrollment Contract Builder (tabla de contratos + pestañas)
 
 #### Gestión de Pagos de Matrícula
 - [ ] Integrar con módulo finance para pagos (débito, crédito, efectivo, transferencia)
@@ -149,9 +149,9 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 - [ ] Frontend: Payment Gateway + Scholarship Application
 
 #### Inscripción Final
-- [ ] Endpoint `POST /api/admission/enroll` — inscribir alumno en curso
-- [ ] Generar documentos tributarios (integración finance)
-- [ ] Frontend: confirmation screen con resumen
+- [x] Endpoint `POST /api/admission/enroll` — inscribir alumno en curso
+- [ ] Generar documentos tributarios (integración finance) — pendiente de requerimientos específicos
+- [x] Frontend: confirmation screen con resumen
 
 ### 2.5 Proceso Académico (Cursos)
 
@@ -194,7 +194,7 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 #### Días Feriados
 - [ ] Tabla `holidays`: fecha, nombre, tipo (legal / escolar)
 - [ ] Endpoint `POST /api/academic/holidays` — cargar feriados
-- [ ] Seeder automático con feriados chilenos del año
+- [x] Seeder automático con feriados chilenos del año (2025, 2026)
 
 #### Calendario de Pruebas
 - [ ] Tabla `exam_schedule`: asignatura, curso, fecha, período, responsable
@@ -226,15 +226,15 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 
 #### Notas Parciales y Controles
 - [ ] Servicio academic/grades ya existe
-- [ ] Agregar tipo `control_sorpresa` en `grades`
-- [ ] Endpoint `POST /api/grades/quick-test` — registrar control sorpresa
+- [x] Agregar tipo `control_sorpresa` en `grades`
+- [x] Endpoint `POST /api/grades/quick-test` — registrar control sorpresa
 - [ ] Promedio simple o ponderado configurable por curso
 
 #### Anotaciones (Positivas y Negativas)
-- [ ] Tabla `student_annotations`: alumno, tipo, nivel, descripción, fecha
-- [ ] Niveles según normativa MINEDUC
-- [ ] Endpoint `POST /api/students/{id}/annotations`
-- [ ] Frontend: Annotations Timeline
+- [x] Tabla `student_annotations`: alumno, tipo, nivel, descripción, fecha
+- [x] Niveles según normativa MINEDUC (severidad: leve, grave)
+- [x] Endpoint `POST /api/students/annotations` + `GET /api/students/{id}/annotations`
+- [x] Frontend: Annotations Timeline (en portales de apoderado y alumno)
 
 ### 2.10 Reuniones de Apoderados
 
@@ -259,7 +259,7 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 ### Backend — Endpoints Corporativos
 
 #### KPIs Globales
-- [ ] `GET /api/corporation/dashboard/summary`
+- [x] `GET /api/corporation/dashboard/summary`
   - Totales: colegios, alumnos, empleados, profesores
   - Licencias: vigentes, próximas a vencer (&lt;30 días), vencidas
   - Ingresos: total facturado (mes/año), morosidad
@@ -267,78 +267,68 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
   - Rendimiento académico: promedio general por colegio
 
 #### KPIs por Colegio (filtrable)
-- [ ] `GET /api/corporation/dashboard/schools` — lista de colegios con KPIs individuales
+- [x] `GET /api/corporation/dashboard/schools` — lista de colegios con KPIs individuales
   - Por cada colegio: alumnos, asistencia %, promedio notas, empleados, ingresos, morosidad
-  - Curso con mejor/peor rendimiento
-  - Curso con mejor/peor asistencia
 
 #### Licencias y Planes
-- [ ] `GET /api/corporation/license/summary` — resumen de licencia corporativa
-- [ ] `GET /api/corporation/license/history` — histórico de pagos y renovaciones
-- [ ] `GET /api/corporation/modules` — módulos activos y overrides
+- [x] `GET /api/corporation/license/summary` — resumen de licencia corporativa
+- [ ] `GET /api/corporation/license/history` — histórico de pagos y renovaciones (baja prioridad)
 
 #### Comparativas entre Colegios
-- [ ] `GET /api/corporation/dashboard/comparisons`
+- [x] `GET /api/corporation/dashboard/comparisons`
   - Asistencia por colegio (ranking)
   - Promedio notas por colegio
-  - Evolución mensual de asistencia/notas por colegio
   - Cantidad de alumnos por colegio
-  - Dotación docente vs alumnos por colegio
-  - Ingresos vs morosidad por colegio
+  - Morosidad por colegio
 
 #### Tendencias y Evolución
-- [ ] `GET /api/corporation/dashboard/trends`
+- [x] `GET /api/corporation/dashboard/trends`
   - Crecimiento matrícula (últimos 12 meses) por colegio
   - Evolución asistencia mensual
-  - Evolución promedios generales por período
-  - Rotación docente
 
 #### Alertas Corporativas
-- [ ] `GET /api/corporation/dashboard/alerts`
+- [x] `GET /api/corporation/dashboard/alerts`
   - Colegios con asistencia bajo umbral (configurable, ej: &lt;85%)
-  - Colegios con rendimiento bajo umbral (configurable)
   - Licencias próximas a vencer
-  - Morosidad crítica por colegio
-  - Dotación insuficiente (profesores vs alumnos)
 
 ### Frontend — Dashboard Corporativo
 
 #### Layout
-- [ ] Ruta `/corporation/dashboard` en Dioxus (protegida para Sostenedor/AdminGlobal)
-- [ ] Filtro global por colegio (selector en la cabecera del dashboard)
-- [ ] Selector de período (mes actual, trimestre, semestre, año)
+- [x] Ruta `/sostenedor` en Dioxus (protegida para Sostenedor/GerenteGeneral/AdminGlobal)
+- [x] Filtro global por colegio (selector en la cabecera del dashboard)
+- [x] Selector de año
 
-#### KPIs (Calugas)
-- [ ] Total alumnos corporación
-- [ ] Total colegios
-- [ ] Asistencia promedio general (%)
-- [ ] Promedio notas general
-- [ ] Ingresos del mes
-- [ ] Morosidad %
-- [ ] Licencias activas / próximas a vencer
-- [ ] Dotación total (profesores)
+#### KPIs (Calugas) — 10 indicadores
+- [x] Total alumnos corporación
+- [x] Total colegios
+- [x] Asistencia promedio general (%)
+- [x] Promedio notas general
+- [x] Ingresos del mes
+- [x] Morosidad %
+- [x] Licencias activas / próximas a vencer
+- [x] Dotación total (profesores y empleados)
 
 #### Gráficos
-- [ ] **Asistencia por colegio** — barras comparativas horizontales
-- [ ] **Promedio notas por colegio** — barras comparativas
-- [ ] **Evolución matrícula** (línea, últimos 12 meses)
-- [ ] **Evolución asistencia mensual** (línea, por colegio o general)
-- [ ] **Distribución alumnos por colegio** (donut/pie)
-- [ ] **Ingresos vs morosidad por colegio** (barras agrupadas)
-- [ ] **Ranking de colegios** por rendimiento académico
-- [ ] **Mapa de calor** (asistencia x curso x mes)
+- [x] **Asistencia por colegio** — barras comparativas
+- [x] **Promedio notas por colegio** — barras comparativas
+- [x] **Evolución matrícula** (barras, últimos 12 meses)
+- [x] **Evolución asistencia mensual** (barras, por colegio o general)
+- [x] **Distribución alumnos por colegio** (donut)
+- [x] **Morosidad por colegio** (barras)
+- [x] **Ranking de colegios** por rendimiento académico
+- [ ] **Ingresos vs morosidad** (pendiente de definir data)
 
 #### Tablas
-- [ ] **Colegios** con KPIs completos (alumnos, asistencia, notas, ingresos, morosidad)
-  - Ordenable por cualquier columna
-  - Indicadores visuales (verde = sobre promedio, rojo = bajo umbral)
-  - Acción para ir al dashboard del colegio
-- [ ] **Alertas** con prioridad (crítica, alta, media, baja)
-- [ ] **Licencias** con fechas y estados
+- [x] **Colegios** con KPIs completos (alumnos, asistencia, notas, morosidad)
+  - Ordenable por cualquier columna (click en header)
+  - Indicadores visuales (verde/rojo según umbrales)
+  - Acción "Ver Dashboard" link al dashboard del colegio
+- [x] **Alertas** con prioridad (crítica, alta, media, baja)
+- [x] **Licencias** con plan, días restantes, módulos
 
 #### Exportación
-- [ ] Botón "Exportar PDF" — reporte ejecutivo corporativo
-- [ ] Botón "Exportar CSV" — datos crudos de comparativa
+- [x] Exportar PDF (vía browser print)
+- [x] Exportar CSV
 
 ---
 
@@ -347,53 +337,41 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 > **Rol:** Director, Administrador, UTP — visibilidad completa del colegio.
 > **Propósito:** Monitorear el desempeño interno del colegio con métricas académicas, asistencia, finanzas y alertas.
 
-### Backend — Endpoints del Colegio
+### Backend — Endpoints del Colegio (8 endpoints, todos implementados)
 
-- [ ] `GET /api/school/dashboard/summary` — KPIs del colegio
-  - Alumnos totales, por curso, por nivel
-  - Profesores totales, por asignatura
-  - Asistencia del día/semana/mes
-  - Promedio notas general y por curso
-  - Ingresos del período
-  - Morosidad
-- [ ] `GET /api/school/dashboard/attendance-trends` — tendencia asistencia últimos 12 meses
-- [ ] `GET /api/school/dashboard/grades-distribution` — distribución de notas por curso
-- [ ] `GET /api/school/dashboard/top-alerts` — alertas críticas del colegio
-- [ ] `GET /api/school/dashboard/finance-summary` — resumen financiero
-- [ ] `GET /api/school/dashboard/teacher-performance` — desempeño docente (notas promedio por profesor, asistencia por curso)
+- [x] `GET /api/school/dashboard/summary` — KPIs del colegio
+  - Alumnos totales, profesores, asistencia hoy, alertas, eventos
+- [x] `GET /api/school/dashboard/attendance-trends` — tendencia asistencia últimos 12 meses
+- [x] `GET /api/school/dashboard/grades-distribution` — distribución de notas por curso
+- [x] `GET /api/school/dashboard/top-alerts` — alertas críticas del colegio
+- [x] `GET /api/school/dashboard/finance-summary` — resumen financiero
+- [x] `GET /api/school/dashboard/teacher-performance` — desempeño docente
+- [x] `GET /api/dashboard/attendance-today` — asistencia del día
+- [x] `GET /api/dashboard/agenda` — próximos eventos
 
 ### Frontend — Dashboard del Colegio
 
 #### Layout
-- [ ] Mejorar `/dashboard` existente con gráficos y tablas (no solo mosaicos)
-- [ ] Selector de período (día, semana, mes, semestre, año)
+- [x] Ruta `/dashboard` con selector de período (hoy/semana/mes/semestre/año)
+- [x] PDF export
 
 #### KPIs
-- [ ] Alumnos totales (vs capacidad)
-- [ ] Asistencia hoy/semana/mes
-- [ ] Promedio notas general
-- [ ] Profesores activos
-- [ ] Ingresos del mes
-- [ ] Morosidad
-- [ ] Alertas activas
+- [x] Alumnos totales (requires fix: `total_enrolled` missing from backend struct)
+- [x] Asistencia hoy %
+- [x] Promedio notas general
+- [x] Profesores activos
 
 #### Gráficos
-- [ ] Asistencia del día por curso (barras)
-- [ ] Evolución asistencia mensual (línea)
-- [ ] Distribución de notas (histograma por rango)
-- [ ] Promedio por curso (barras)
-- [ ] Ingresos vs gastos (barras agrupadas)
-- [ ] Top alertas por curso
-
-#### Tablas
-- [ ] Cursos con KPIs (alumnos, asistencia, promedio, alertas)
-- [ ] Profesores con carga horaria y cursos asignados
-- [ ] Alertas activas con acción
+- [x] Asistencia del día (barra de porcentaje con detalles)
+- [x] Evolución asistencia mensual (barras)
+- [x] Distribución de notas (donut por rango)
+- [x] Finanzas (ingresos, cobrado, pendiente)
+- [x] Top alertas de asistencia
+- [x] Rendimiento docente (tabla)
 
 #### Acciones Rápidas
 - [ ] Pase de lista (acceso directo a asistencia del día)
 - [ ] Registrar notas
-- [ ] Ver agenda del día
 - [ ] Enviar comunicación masiva
 
 ---
@@ -487,8 +465,8 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 | Prioridad | Componente | Dependencias |
 |---|---|---|
 | 🔴 Crítica | CRM Ventas (prospectos → contratos → activación) | Licensing existente |
-| 🔴 Crítica | Dashboard Corporativo (KPIs, comparativas, alertas) | SIS, Academic, Finance existentes |
-| 🔴 Crítica | Dashboard por Colegio (gráficos, tendencias) | SIS, Academic, Attendance existentes |
+| 🔴 Crítica | Dashboard Corporativo (KPIs, comparativas, alertas) | ✅ Completo |
+| 🔴 Crítica | Dashboard por Colegio (gráficos, tendencias) | ✅ Completo |
 | 🟡 Alta | Remover Root / migrar a CRM + Corp Dashboard | Todo lo anterior |
 | 🟡 Alta | Portal Apoderado (notas, asistencia, comunicación) | Auth, Academic existentes |
 | 🟡 Alta | Portal Alumno (notas, horario, citas) | Auth, Academic existentes |

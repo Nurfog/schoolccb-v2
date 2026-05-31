@@ -118,8 +118,12 @@ async fn get_prospect(
         "SELECT id, prospect_id, file_name, s3_url, doc_type, is_verified, uploaded_by, created_at FROM prospect_documents WHERE prospect_id = $1 ORDER BY created_at DESC",
     ).bind(id).fetch_all(&state.pool).await?;
 
+    let reminders = sqlx::query_as::<_, schoolccb_common::admission::ProspectReminder>(
+        "SELECT id, prospect_id, reminder_type, title, description, remind_at, is_sent, created_by, created_at FROM prospect_reminders WHERE prospect_id = $1 ORDER BY remind_at ASC",
+    ).bind(id).fetch_all(&state.pool).await?;
+
     Ok(Json(
-        json!({ "prospect": prospect, "activities": activities, "documents": documents }),
+        json!({ "prospect": prospect, "activities": activities, "documents": documents, "reminders": reminders }),
     ))
 }
 

@@ -224,9 +224,10 @@ async fn child_annotations(
         return Err(crate::error::SisError::NotFound("Alumno no encontrado".into()));
     }
 
-    let annotations = sqlx::query_as::<_, (String, String, String, String)>(
-        "SELECT a.annotation_type, a.description, a.severity, a.created_at::text
+    let annotations = sqlx::query_as::<_, (String, String, String, String, Option<String>)>(
+        "SELECT a.annotation_type, a.description, a.severity, a.created_at::text, u.name
          FROM student_annotations a
+         LEFT JOIN users u ON u.id = a.created_by
          WHERE a.student_id = $1
          ORDER BY a.created_at DESC
          LIMIT 20",
@@ -235,7 +236,7 @@ async fn child_annotations(
     .fetch_all(&state.pool)
     .await.unwrap_or_default()
     .into_iter()
-    .map(|(t, desc, sev, date)| json!({"type": t, "description": desc, "severity": sev, "date": date}))
+    .map(|(t, desc, sev, date, teacher)| json!({"type": t, "description": desc, "severity": sev, "date": date, "teacher": teacher}))
     .collect::<Vec<_>>();
 
     Ok(Json(json!({"annotations": annotations})))

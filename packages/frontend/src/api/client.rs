@@ -367,6 +367,9 @@ pub async fn update_academic_year(id: &str, payload: &Value) -> Result<Value, St
 pub async fn delete_academic_year(id: &str) -> Result<Value, String> {
     delete_json(&format!("/api/academic-years/{}", id)).await
 }
+pub async fn quick_test(payload: &Value) -> Result<Value, String> {
+    post_json("/api/grades/quick-test", payload).await
+}
 pub async fn activate_academic_year(id: &str) -> Result<Value, String> {
     post_json(
         &format!("/api/academic-years/{}/activate", id),
@@ -697,6 +700,50 @@ pub async fn check_vacancies() -> Result<Value, String> {
 }
 pub async fn fetch_admission_metrics() -> Result<Value, String> {
     fetch_json("/api/admission/metrics").await
+}
+
+pub async fn fetch_prospect_reminders(prospect_id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/admission/reminders?prospect_id={}", prospect_id)).await
+}
+
+pub async fn create_reminder(payload: &Value) -> Result<Value, String> {
+    post_json("/api/admission/reminders", payload).await
+}
+
+pub async fn delete_reminder(id: &str) -> Result<Value, String> {
+    delete_json(&format!("/api/admission/reminders/{}", id)).await
+}
+
+pub async fn list_enrollment_contracts() -> Result<Value, String> {
+    fetch_json("/api/admission/contracts").await
+}
+
+pub async fn get_enrollment_contract(id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/admission/contracts/{}", id)).await
+}
+
+pub async fn create_enrollment_contract(payload: &Value) -> Result<Value, String> {
+    post_json("/api/admission/contracts", payload).await
+}
+
+pub async fn enroll_student(contract_id: &str) -> Result<Value, String> {
+    post_json(&format!("/api/admission/contracts/{}/enroll", contract_id), &json!({})).await
+}
+
+pub async fn list_scholarships() -> Result<Value, String> {
+    fetch_json("/api/admission/scholarships").await
+}
+
+pub async fn create_admission_scholarship(payload: &Value) -> Result<Value, String> {
+    post_json("/api/admission/scholarships", payload).await
+}
+
+pub async fn toggle_scholarship(id: &str) -> Result<Value, String> {
+    put_json(&format!("/api/admission/scholarships/{}/toggle", id), &json!({})).await
+}
+
+pub async fn apply_scholarship(scholarship_id: &str, student_id: &str) -> Result<Value, String> {
+    post_json(&format!("/api/admission/scholarships/{}/apply", scholarship_id), &json!({"student_id": student_id})).await
 }
 
 fn urlencoding(s: &str) -> String {

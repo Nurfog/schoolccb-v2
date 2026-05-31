@@ -1,4 +1,4 @@
-mod academic_calendar;
+pub mod academic_calendar;
 mod complementary_subjects;
 mod corporation_dashboard;
 mod parent_meetings;

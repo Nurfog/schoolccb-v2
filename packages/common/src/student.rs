@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -183,6 +184,28 @@ pub struct UpdateStudentPayload {
     pub emergency_contact_name: Option<String>,
     pub emergency_contact_phone: Option<String>,
     pub emergency_contact_relation: Option<String>,
+}
+
+/// Anotación positiva o negativa de un estudiante, según normativa MINEDUC.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StudentAnnotation {
+    pub id: Uuid,
+    pub student_id: Uuid,
+    pub annotation_type: String,
+    pub description: String,
+    pub severity: String,
+    pub created_by: Option<Uuid>,
+    pub teacher_name: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Payload para crear una anotación en un estudiante.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateAnnotationPayload {
+    pub student_id: Uuid,
+    pub annotation_type: String,
+    pub description: String,
+    pub severity: String,
 }
 
 #[cfg(test)]

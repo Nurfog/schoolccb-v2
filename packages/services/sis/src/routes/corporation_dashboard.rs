@@ -129,6 +129,20 @@ async fn summary(
     .fetch_one(&state.pool)
     .await.unwrap_or(0.0);
 
+    // Delinquency (morosidad): pending school fees / total fees across all schools
+    let delinquency: f64 = sqlx::query_scalar(
+        "SELECT COALESCE(
+            SUM(CASE WHEN f.paid = false THEN f.amount ELSE 0 END) /
+            NULLIF(SUM(f.amount), 0) * 100, 0
+         ) FROM fees f
+         JOIN enrollments e ON e.student_id = f.student_id
+         JOIN schools sch ON sch.id = e.school_id
+         WHERE sch.corporation_id = $1",
+    )
+    .bind(corp_id)
+    .fetch_one(&state.pool)
+    .await.unwrap_or(0.0);
+
     Ok(Json(json!({
         "total_schools": total_schools,
         "total_students": total_students,
@@ -139,6 +153,7 @@ async fn summary(
         "active_licenses": active_licenses,
         "expiring_licenses": expiring_licenses,
         "monthly_revenue": monthly_revenue,
+        "delinquency": format!("{:.1}", delinquency),
     })))
 }
 
@@ -189,6 +204,14 @@ async fn school_kpis(
              WHERE g.value IS NOT NULL",
         ).bind(id).fetch_one(&state.pool).await.unwrap_or(0.0);
 
+        let delinquency: f64 = sqlx::query_scalar(
+            "SELECT COALESCE(
+                SUM(CASE WHEN f.paid = false THEN f.amount ELSE 0 END) /
+                NULLIF(SUM(f.amount), 0) * 100, 0
+             ) FROM fees f
+             JOIN enrollments e ON e.student_id = f.student_id AND e.school_id = $1",
+        ).bind(id).fetch_one(&state.pool).await.unwrap_or(0.0);
+
         schools.push(json!({
             "id": id,
             "name": name,
@@ -196,6 +219,7 @@ async fn school_kpis(
             "teachers": teachers,
             "attendance": format!("{:.1}", attendance),
             "avg_grade": format!("{:.1}", avg_grade),
+            "delinquency": format!("{:.1}", delinquency),
         }));
     }
 
@@ -236,12 +260,21 @@ async fn comparisons(
              WHERE g.value IS NOT NULL",
         ).bind(id).fetch_one(&state.pool).await.unwrap_or(0.0);
 
+        let delinquency: f64 = sqlx::query_scalar(
+            "SELECT COALESCE(
+                SUM(CASE WHEN f.paid = false THEN f.amount ELSE 0 END) /
+                NULLIF(SUM(f.amount), 0) * 100, 0
+             ) FROM fees f
+             JOIN enrollments e ON e.student_id = f.student_id AND e.school_id = $1",
+        ).bind(id).fetch_one(&state.pool).await.unwrap_or(0.0);
+
         school_data.push(json!({
             "school_id": id,
             "school_name": name,
             "total_students": students,
             "attendance_pct": format!("{:.1}", attendance),
             "avg_grade": format!("{:.1}", avg_grade),
+            "delinquency": format!("{:.1}", delinquency),
         }));
     }
 

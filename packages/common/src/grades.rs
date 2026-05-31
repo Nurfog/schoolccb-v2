@@ -50,6 +50,8 @@ pub enum GradeType {
     Sumativa,
     /// Calificación formativa (no pondera).
     Formativa,
+    /// Control sorpresa (no pondera, solo informativo).
+    ControlSorpresa,
 }
 
 /// Semestre académico.

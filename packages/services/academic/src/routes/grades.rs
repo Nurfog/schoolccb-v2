@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, Query, State},
     routing::{get, post},
 };
+use chrono::Datelike;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -38,6 +39,10 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/grades/by-subject/{subject_id}/{year}",
             get(grades_by_subject),
+        )
+        .route(
+            "/api/grades/quick-test",
+            post(quick_test),
         )
 }
 
@@ -510,6 +515,48 @@ async fn resolve_subject_name(
     ))?;
 
     Ok(row.0)
+}
+
+async fn quick_test(
+    claims: Claims,
+    State(state): State<AppState>,
+    Json(payload): Json<serde_json::Value>,
+) -> AcademicResult<Json<Value>> {
+    require_any_role(&claims, &["Administrador", "Director", "UTP", "Profesor"])?;
+
+    let student_id = payload.get("student_id")
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or(AcademicError::Validation("student_id requerido".into()))?;
+    let course_subject_id = payload.get("course_subject_id")
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .ok_or(AcademicError::Validation("course_subject_id requerido".into()))?;
+    let grade_val = payload.get("grade").and_then(|v| v.as_f64())
+        .ok_or(AcademicError::Validation("grade requerido".into()))?;
+    let teacher_id = Uuid::parse_str(&claims.sub)
+        .map_err(|_| AcademicError::Unauthorized)?;
+
+    let subject = resolve_subject_name(&state.pool, course_subject_id).await?;
+    let id = Uuid::new_v4();
+    let today = chrono::Utc::now().date_naive();
+
+    sqlx::query(
+        "INSERT INTO grades (id, student_id, subject, grade, grade_type, semester, year, date, teacher_id, observation)
+         VALUES ($1, $2, $3, $4, 'ControlSorpresa', 0, $5, $6, $7, $8)",
+    )
+    .bind(id)
+    .bind(student_id)
+    .bind(&subject)
+    .bind(grade_val)
+    .bind(today.year())
+    .bind(today)
+    .bind(teacher_id)
+    .bind(payload.get("observation").and_then(|v| v.as_str()))
+    .execute(&state.pool)
+    .await?;
+
+    Ok(Json(json!({"id": id, "grade": grade_val, "grade_type": "ControlSorpresa", "subject": subject})))
 }
 
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]

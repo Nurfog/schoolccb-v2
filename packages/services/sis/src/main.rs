@@ -47,6 +47,8 @@ async fn main() {
     tracing::info!("SIS Service connected to database");
     schoolccb_common::db_schema::run(&pool).await;
     admission::seed_pipeline_stages(&pool).await;
+    routes::academic_calendar::seed_holidays(&pool, 2025).await;
+    routes::academic_calendar::seed_holidays(&pool, 2026).await;
 
     let event_bus = Arc::new(BroadcastBus::new(256));
 

@@ -9,6 +9,7 @@ pub mod admission;
 pub mod attendance;
 pub mod audit;
 pub mod communication;
+pub mod email;
 pub mod event_bus;
 pub mod finance;
 pub mod grades;

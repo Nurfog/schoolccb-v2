@@ -323,6 +323,58 @@ pub async fn run(pool: &PgPool) {
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )",
         "CREATE INDEX IF NOT EXISTS idx_prospect_documents_prospect ON prospect_documents(prospect_id)",
+        "CREATE TABLE IF NOT EXISTS prospect_reminders (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            prospect_id UUID NOT NULL REFERENCES prospects(id) ON DELETE CASCADE,
+            reminder_type VARCHAR(30) NOT NULL DEFAULT 'follow_up',
+            title VARCHAR(255) NOT NULL,
+            description TEXT,
+            remind_at TIMESTAMPTZ NOT NULL,
+            is_sent BOOLEAN NOT NULL DEFAULT false,
+            created_by UUID REFERENCES users(id),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )",
+        "CREATE INDEX IF NOT EXISTS idx_prospect_reminders_prospect ON prospect_reminders(prospect_id)",
+        "CREATE INDEX IF NOT EXISTS idx_prospect_reminders_unsent ON prospect_reminders(remind_at) WHERE is_sent = false",
+        "CREATE TABLE IF NOT EXISTS student_annotations (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+            annotation_type VARCHAR(30) NOT NULL DEFAULT 'observacion',
+            description TEXT NOT NULL,
+            severity VARCHAR(20) NOT NULL DEFAULT 'leve',
+            created_by UUID REFERENCES users(id),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )",
+        "CREATE INDEX IF NOT EXISTS idx_student_annotations_student ON student_annotations(student_id)",
+        "CREATE TABLE IF NOT EXISTS enrollment_contracts (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            student_id UUID NOT NULL,
+            school_id UUID NOT NULL,
+            grade_level VARCHAR(50) NOT NULL,
+            guardian_user_id UUID,
+            scholarship_id UUID,
+            annexes JSONB DEFAULT '[]',
+            total_fee DOUBLE PRECISION NOT NULL DEFAULT 0,
+            discount_amount DOUBLE PRECISION NOT NULL DEFAULT 0,
+            final_amount DOUBLE PRECISION NOT NULL DEFAULT 0,
+            payment_plan VARCHAR(20) DEFAULT 'monthly',
+            status VARCHAR(20) NOT NULL DEFAULT 'draft',
+            signed_at TIMESTAMPTZ,
+            enrolled_at TIMESTAMPTZ,
+            notes TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )",
+        "CREATE TABLE IF NOT EXISTS holidays (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            school_id UUID,
+            date DATE NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            holiday_type VARCHAR(20) NOT NULL DEFAULT 'legal',
+            is_recurring BOOLEAN NOT NULL DEFAULT false,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )",
+        "CREATE INDEX IF NOT EXISTS idx_holidays_date ON holidays(date)",
         "CREATE TABLE IF NOT EXISTS grade_levels (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             code VARCHAR(20) UNIQUE NOT NULL,

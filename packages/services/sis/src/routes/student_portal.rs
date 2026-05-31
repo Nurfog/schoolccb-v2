@@ -130,16 +130,18 @@ async fn my_annotations(
     require_alumno(&claims)?;
     let sid = student_id_from_claims(&claims)?;
 
-    let annotations = sqlx::query_as::<_, (String, String, String, String)>(
-        "SELECT annotation_type, description, severity, created_at::text
-         FROM student_annotations WHERE student_id = $1
-         ORDER BY created_at DESC LIMIT 20",
+    let annotations = sqlx::query_as::<_, (String, String, String, String, Option<String>)>(
+        "SELECT a.annotation_type, a.description, a.severity, a.created_at::text, u.name
+         FROM student_annotations a
+         LEFT JOIN users u ON u.id = a.created_by
+         WHERE a.student_id = $1
+         ORDER BY a.created_at DESC LIMIT 20",
     )
     .bind(sid)
     .fetch_all(&state.pool)
     .await.unwrap_or_default()
     .into_iter()
-    .map(|(t, d, s, c)| json!({"type": t, "description": d, "severity": s, "date": c}))
+    .map(|(t, d, s, c, teacher)| json!({"type": t, "description": d, "severity": s, "date": c, "teacher": teacher}))
     .collect::<Vec<_>>();
 
     Ok(Json(json!({"annotations": annotations})))

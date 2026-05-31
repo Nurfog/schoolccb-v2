@@ -141,3 +141,92 @@ async fn delete_exam(claims: Claims, State(state): State<AppState>, Path(id): Pa
     sqlx::query("DELETE FROM exam_schedule WHERE id = $1").bind(id).execute(&state.pool).await?;
     Ok(Json(json!({"message": "Examen eliminado"})))
 }
+
+/// Calcula la fecha del Domingo de Pascua usando el algoritmo de Anonymous Gregorian.
+fn easter_sunday(year: i32) -> (i32, u32, u32) {
+    let a = year % 19;
+    let b = year / 100;
+    let c = year % 100;
+    let d = b / 4;
+    let e = b % 4;
+    let f = (b + 8) / 25;
+    let g = (b - f + 1) / 3;
+    let h = (19 * a + b - d - g + 15) % 30;
+    let i = c / 4;
+    let k = c % 4;
+    let l = (32 + 2 * e + 2 * i - h - k) % 7;
+    let m = (a + 11 * h + 22 * l) / 451;
+    let month = (h + l - 7 * m + 114) / 31;
+    let day = ((h + l - 7 * m + 114) % 31) + 1;
+    (year, month as u32, day as u32)
+}
+
+/// Siembra automática de feriados chilenos para un año dado.
+pub async fn seed_holidays(pool: &sqlx::PgPool, year: i32) {
+    let easter = easter_sunday(year);
+    let easter_date = chrono::NaiveDate::from_ymd_opt(easter.0, easter.1, easter.2);
+
+    let fixed = vec![
+        (1, 1, "Año Nuevo", "legal", true),
+        (5, 1, "Día del Trabajo", "legal", true),
+        (5, 21, "Día de las Glorias Navales", "legal", true),
+        (6, 29, "San Pedro y San Pablo", "legal", true),
+        (7, 16, "Virgen del Carmen", "legal", true),
+        (8, 15, "Asunción de la Virgen", "legal", true),
+        (9, 18, "Independencia Nacional", "legal", true),
+        (9, 19, "Día de las Glorias del Ejército", "legal", true),
+        (10, 12, "Encuentro de Dos Mundos", "legal", true),
+        (10, 31, "Día de las Iglesias Evangélicas", "legal", true),
+        (11, 1, "Día de Todos los Santos", "legal", true),
+        (12, 8, "Inmaculada Concepción", "legal", true),
+        (12, 25, "Navidad", "legal", true),
+    ];
+
+    let mut holidays: Vec<(chrono::NaiveDate, &str, &str, bool)> = fixed.into_iter()
+        .filter_map(|(m, d, name, htype, recurring)| {
+            chrono::NaiveDate::from_ymd_opt(year, m, d)
+                .map(|date| (date, name, htype, recurring))
+        })
+        .collect();
+
+    if let Some(e) = easter_date {
+        holidays.push((e - chrono::Duration::days(2), "Viernes Santo", "legal", false));
+        holidays.push((e - chrono::Duration::days(1), "Sábado Santo", "legal", false));
+        holidays.push((e + chrono::Duration::days(60), "Corpus Christi", "legal", false));
+    }
+
+    // Mid-winter school break (3rd week of July)
+    if let Some(winter_start) = chrono::NaiveDate::from_ymd_opt(year, 7, 14) {
+        holidays.push((winter_start, "Vacaciones de Invierno (inicio)", "school", false));
+    }
+
+    for (date, name, htype, recurring) in holidays {
+        let exists: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM holidays WHERE date = $1 AND name = $2",
+        )
+        .bind(date)
+        .bind(name)
+        .fetch_one(pool)
+        .await
+        .unwrap_or((0,));
+
+        if exists.0 == 0 {
+            let id = Uuid::new_v4();
+            sqlx::query(
+                "INSERT INTO holidays (id, date, name, holiday_type, is_recurring) VALUES ($1, $2, $3, $4, $5)",
+            )
+            .bind(id)
+            .bind(date)
+            .bind(name)
+            .bind(htype)
+            .bind(recurring)
+            .execute(pool)
+            .await
+            .unwrap_or_else(|e| {
+                tracing::warn!("No se pudo sembrar feriado {name}: {e}");
+                Default::default()
+            });
+            tracing::info!("Feriado sembrado: {name} ({date})");
+        }
+    }
+}

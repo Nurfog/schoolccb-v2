@@ -2,7 +2,7 @@ use axum::{
     Json, Router,
     extract::{FromRequestParts, Path, Query, State},
     http::request::Parts,
-    routing::{delete, get},
+    routing::{delete, get, post},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -154,6 +154,14 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/students/{id}/guardians/{guardian_id}",
             delete(remove_guardian),
+        )
+        .route(
+            "/api/students/annotations",
+            post(create_annotation),
+        )
+        .route(
+            "/api/students/{id}/annotations",
+            get(list_student_annotations),
         )
 }
 
@@ -607,4 +615,54 @@ async fn remove_guardian(
     Ok(Json(
         json!({ "message": "Apoderado desvinculado correctamente" }),
     ))
+}
+
+async fn create_annotation(
+    claims: Claims,
+    State(state): State<AppState>,
+    Json(payload): Json<schoolccb_common::student::CreateAnnotationPayload>,
+) -> SisResult<Json<Value>> {
+    require_any_role(&claims, &["Administrador", "Director", "UTP", "Profesor"])?;
+
+    let id = Uuid::new_v4();
+    let user_id = Uuid::parse_str(&claims.sub).ok();
+
+    sqlx::query(
+        "INSERT INTO student_annotations (id, student_id, annotation_type, description, severity, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6)",
+    )
+    .bind(id)
+    .bind(payload.student_id)
+    .bind(&payload.annotation_type)
+    .bind(&payload.description)
+    .bind(&payload.severity)
+    .bind(user_id)
+    .execute(&state.pool)
+    .await?;
+
+    Ok(Json(json!({"id": id, "message": "Anotación creada"})))
+}
+
+async fn list_student_annotations(
+    claims: Claims,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> SisResult<Json<Value>> {
+    require_any_role(&claims, &["Administrador", "Sostenedor", "Director", "UTP", "Profesor"])?;
+
+    let annotations = sqlx::query_as::<_, (String, String, String, String, Option<String>)>(
+        "SELECT a.annotation_type, a.description, a.severity, a.created_at::text, u.name
+         FROM student_annotations a
+         LEFT JOIN users u ON u.id = a.created_by
+         WHERE a.student_id = $1
+         ORDER BY a.created_at DESC LIMIT 50",
+    )
+    .bind(id)
+    .fetch_all(&state.pool)
+    .await.unwrap_or_default()
+    .into_iter()
+    .map(|(t, d, s, c, teacher)| json!({"type": t, "description": d, "severity": s, "date": c, "teacher": teacher}))
+    .collect::<Vec<_>>();
+
+    Ok(Json(json!({"annotations": annotations})))
 }
