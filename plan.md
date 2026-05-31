@@ -379,31 +379,31 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 ## Etapa 3 — Portal Apoderados
 
 ### 3.1 Comunicación con Profesor Jefe
-- [ ] Expandir portal existente (`/my-portal`) para apoderados
-- [ ] Endpoint `POST /api/portal/parent/messages` — enviar mensaje al profesor
-- [ ] Endpoint `GET /api/portal/parent/available-slots` — horarios disponibles
-- [ ] Frontend: Chat widget + Schedule Appointment
+- [x] Portal existente (`/parent-portal`) con hijos, notas, asistencia, horario, anotaciones
+- [x] Endpoint `POST /api/portal/parent/messages` — enviar mensaje al profesor
+- [x] Endpoint `GET /api/portal/parent/available-slots` — horarios disponibles
+- [x] Frontend: Chat widget + Schedule Appointment
 
 ### 3.2 Revisión de Información del Pupilo
-- [ ] Endpoint `GET /api/portal/parent/children` — lista de hijos
-- [ ] Endpoint `GET /api/portal/parent/children/{id}/grades` — notas
-- [ ] Endpoint `GET /api/portal/parent/children/{id}/attendance` — asistencia
-- [ ] Endpoint `GET /api/portal/parent/children/{id}/annotations` — anotaciones
-- [ ] Endpoint `GET /api/portal/parent/children/{id}/schedule` — horario
-- [ ] Frontend: Student Dashboard (vista del apoderado)
+- [x] Endpoint `GET /api/portal/parent/children` — lista de hijos
+- [x] Endpoint `GET /api/portal/parent/children/{id}/grades` — notas
+- [x] Endpoint `GET /api/portal/parent/children/{id}/attendance` — asistencia
+- [x] Endpoint `GET /api/portal/parent/children/{id}/annotations` — anotaciones
+- [x] Endpoint `GET /api/portal/parent/children/{id}/schedule` — horario
+- [x] Frontend: Student Dashboard (vista del apoderado)
 
 ### 3.3 Citas con Personal de Apoyo
-- [ ] Tabla `support_appointments`: alumno_id, tipo (enfermería, psicólogo, etc.), fecha, estado
-- [ ] Endpoint `POST /api/portal/parent/appointments` — agendar cita
-- [ ] Endpoint `GET /api/portal/parent/appointments` — listar citas
-- [ ] Frontend: Appointment Booking
+- [x] Tabla `support_appointments`: tipo, motivo, fecha, estado
+- [x] Endpoint `POST /api/portal/parent/appointments` — agendar cita
+- [x] Endpoint `GET /api/portal/parent/appointments` — listar citas
+- [x] Frontend: Appointment Booking
 
 ### 3.4 Emisión de Certificados
-- [ ] Tabla `certificate_types`: nombre, costo, gratuito, descripción
-- [ ] Endpoint `POST /api/portal/parent/certificates/request` — solicitar certificado
-- [ ] Endpoint `GET /api/portal/parent/certificates/{id}/download` — descargar PDF
-- [ ] Integración con módulo finance si tiene costo
-- [ ] Frontend: Certificate Store
+- [x] Tipos de certificado hardcoded (alumno regular, notas, asistencia, conducta)
+- [x] Endpoint `POST /api/portal/parent/certificates/request` — solicitar certificado
+- [x] Endpoint `GET /api/portal/parent/certificates/{id}/download` — descargar PDF
+- [x] Frontend: Certificate Store + botón descargar
+- [ ] Generar PDF real (actualmente texto plano)
 
 ### 3.5 Inscripción en Cursos Complementarios
 - [ ] Endpoint `GET /api/portal/parent/complementary-subjects` — listar disponibles

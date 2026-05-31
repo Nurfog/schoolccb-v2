@@ -390,7 +390,7 @@ async fn create_appointment(
     .bind(id)
     .bind(user_id)
     .bind(payload.get("type").and_then(|v| v.as_str()).unwrap_or("general"))
-    .bind(payload.get("reason").and_then(|v| v.as_str()))
+    .bind(payload.get("reason").or_else(|| payload.get("notes")).and_then(|v| v.as_str()))
     .bind(payload.get("date").and_then(|v| v.as_str()))
     .bind(payload.get("time").and_then(|v| v.as_str()))
     .execute(&state.pool)
@@ -449,14 +449,32 @@ async fn send_message(
     let user_id = Uuid::parse_str(&claims.sub).map_err(|_| SisError::Unauthorized)?;
     let id = Uuid::new_v4();
 
+    // Lookup teacher_id: support UUID directly or name string
+    let teacher_id = if let Some(tid) = payload.get("teacher_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()) {
+        Some(tid)
+    } else if let Some(name) = payload.get("teacher").and_then(|v| v.as_str()) {
+        sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM users WHERE name ILIKE $1 AND role = 'Profesor' LIMIT 1",
+        )
+        .bind(format!("%{}%", name))
+        .fetch_optional(&state.pool)
+        .await?
+    } else {
+        None
+    };
+
+    let student_id = payload.get("student_id")
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok());
+
     sqlx::query(
         "INSERT INTO parent_messages (id, parent_id, teacher_id, student_id, subject, message)
          VALUES ($1, $2, $3, $4, $5, $6)",
     )
     .bind(id)
     .bind(user_id)
-    .bind(payload.get("teacher_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
-    .bind(payload.get("student_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
+    .bind(teacher_id)
+    .bind(student_id)
     .bind(payload.get("subject").and_then(|v| v.as_str()).unwrap_or("Sin asunto"))
     .bind(payload.get("message").and_then(|v| v.as_str()).unwrap_or(""))
     .execute(&state.pool)
@@ -484,5 +502,5 @@ async fn available_slots(
     .map(|(id, teacher, day, start, end)| json!({"id": id, "teacher": teacher, "day": day, "start": start, "end": end}))
     .collect::<Vec<_>>();
 
-    Ok(Json(json!({"slots": slots})))
+    Ok(Json(json!({"available_slots": slots})))
 }

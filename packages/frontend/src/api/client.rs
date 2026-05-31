@@ -534,6 +534,9 @@ pub async fn send_parent_message(payload: &Value) -> Result<Value, String> {
 pub async fn fetch_available_slots() -> Result<Value, String> {
     fetch_json("/api/portal/parent/available-slots").await
 }
+pub async fn download_certificate(id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/portal/parent/certificates/{}/download", id)).await
+}
 
 // ─── Student Portal (Alumno) ───
 pub async fn fetch_student_grades() -> Result<Value, String> {

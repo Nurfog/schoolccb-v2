@@ -6,7 +6,11 @@ use crate::seo::use_page_title;
 pub fn ParentPortalPage() -> Element {
     use_page_title("Portal Apoderado");
     let children = use_resource(client::fetch_parent_children);
-    let certificates = use_resource(client::fetch_parent_certificates);
+    let mut cert_key = use_signal(|| 0);
+    let certificates = use_resource(move || {
+        let _ = cert_key();
+        client::fetch_parent_certificates()
+    });
 
     let mut appointment_key = use_signal(|| 0);
     let appointments = use_resource(move || {
@@ -29,8 +33,17 @@ pub fn ParentPortalPage() -> Element {
     let mut msg_teacher = use_signal(|| String::new());
     let mut msg_subject = use_signal(|| String::new());
     let mut msg_body = use_signal(|| String::new());
+    let mut msg_feedback = use_signal(|| None::<String>);
 
     let slots = use_resource(client::fetch_available_slots);
+
+    let first_child_id = match &children() {
+        Some(Ok(data)) => data["children"].as_array()
+            .and_then(|list| list.first())
+            .and_then(|c| c["id"].as_str().map(|s| s.to_string()))
+            .unwrap_or_default(),
+        _ => String::new(),
+    };
 
     rsx! {
         div { class: "page-header",
@@ -70,6 +83,7 @@ pub fn ParentPortalPage() -> Element {
                     let cert_rows: Vec<Element> = types.iter().map(|ct| {
                         let ct_id = ct["id"].as_str().unwrap_or("").to_string();
                         let ct_name = ct["name"].as_str().unwrap_or("").to_string();
+                        let sid = first_child_id.clone();
                         rsx! {
                             div { class: "alert-item",
                                 div { class: "alert-info",
@@ -78,11 +92,13 @@ pub fn ParentPortalPage() -> Element {
                                 button { class: "btn-primary btn-sm",
                                     onclick: move |_| {
                                         let cid = ct_id.clone();
+                                        let sid2 = sid.clone();
                                         spawn(async move {
                                             let _ = client::request_certificate(&serde_json::json!({
                                                 "certificate_type": cid,
-                                                "student_id": ""
+                                                "student_id": sid2,
                                             })).await;
+                                            cert_key += 1;
                                         });
                                     },
                                     "Solicitar"
@@ -94,11 +110,29 @@ pub fn ParentPortalPage() -> Element {
                         let ctype = c["type"].as_str().unwrap_or("").to_string();
                         let status = c["status"].as_str().unwrap_or("").to_string();
                         let date = c["date"].as_str().unwrap_or("").to_string();
+                        let cid = c["id"].as_str().unwrap_or("").to_string();
                         rsx! {
                             div { class: "alert-item",
                                 div { class: "alert-info",
                                     div { class: "alert-name", "{ctype}" }
                                     div { class: "alert-detail", "{date} — {status}" }
+                                }
+                                if status == "issued" {
+                                    button { class: "btn-outline btn-sm", style: "margin-left: 8px;",
+                                        onclick: move |_| {
+                                            let cid2 = cid.clone();
+                                            spawn(async move {
+                                                if let Ok(d) = client::download_certificate(&cid2).await {
+                                                if let Some(url) = d["file_url"].as_str() {
+                                                    if let Some(win) = web_sys::window() {
+                                                        let _ = win.open_with_url(url);
+                                                    }
+                                                }
+                                                }
+                                            });
+                                        },
+                                        "Descargar"
+                                    }
                                 }
                             }
                         }
@@ -140,9 +174,9 @@ pub fn ParentPortalPage() -> Element {
                                 if can_cancel {
                                     button { class: "btn-danger btn-sm",
                                         onclick: move |_| {
-                                            let aid = aid.clone();
+                                            let aid2 = aid.clone();
                                             spawn(async move {
-                                                let _ = client::cancel_parent_appointment(&aid).await;
+                                                let _ = client::cancel_parent_appointment(&aid2).await;
                                                 appointment_key += 1;
                                             });
                                         },
@@ -155,7 +189,11 @@ pub fn ParentPortalPage() -> Element {
                     let slot_display: Vec<Element> = match slots() {
                         Some(Ok(data)) => {
                             data["available_slots"].as_array().cloned().unwrap_or_default().iter().map(|s| {
-                                let label = s["label"].as_str().unwrap_or("").to_string();
+                                let label = format!("{} — {}: {}-{}",
+                                    s["teacher"].as_str().unwrap_or(""),
+                                    s["day"].as_str().unwrap_or(""),
+                                    s["start"].as_str().unwrap_or(""),
+                                    s["end"].as_str().unwrap_or(""));
                                 rsx! {
                                     div { style: "font-size: 0.85rem; padding: 2px 0;", "{label}" }
                                 }
@@ -177,7 +215,7 @@ pub fn ParentPortalPage() -> Element {
                                     div { style: "margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;",
                                         h4 { "Agendar Nueva Cita" }
                                         input {
-                                            placeholder: "Tipo de cita",
+                                            placeholder: "Tipo (enfermería, psicólogo, etc.)",
                                             value: "{appt_type}",
                                             oninput: move |e| appt_type.set(e.value())
                                         }
@@ -186,10 +224,11 @@ pub fn ParentPortalPage() -> Element {
                                             value: "{appt_date}",
                                             oninput: move |e| appt_date.set(e.value())
                                         }
-                                        input {
-                                            placeholder: "Notas / Motivo",
+                                        textarea {
+                                            placeholder: "Motivo / Notas",
                                             value: "{appt_notes}",
-                                            oninput: move |e| appt_notes.set(e.value())
+                                            oninput: move |e| appt_notes.set(e.value()),
+                                            rows: 2,
                                         }
                                         if !slot_display.is_empty() {
                                             div { style: "margin-top: 8px;",
@@ -255,11 +294,14 @@ pub fn ParentPortalPage() -> Element {
                                 }
                             }
                             div { class: "widget-card-body",
+                                if let Some(ref fb) = msg_feedback() {
+                                    div { class: "alert alert-success", style: "margin-bottom: 8px;", "{fb}" }
+                                }
                                 if show_new_message() {
                                     div { style: "margin-bottom: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;",
                                         h4 { "Enviar Mensaje" }
                                         input {
-                                            placeholder: "Profesor",
+                                            placeholder: "Nombre del Profesor",
                                             value: "{msg_teacher}",
                                             oninput: move |e| msg_teacher.set(e.value())
                                         }
@@ -282,7 +324,14 @@ pub fn ParentPortalPage() -> Element {
                                                     "message": msg_body()
                                                 });
                                                 spawn(async move {
-                                                    let _ = client::send_parent_message(&payload).await;
+                                                    match client::send_parent_message(&payload).await {
+                                                        Ok(_) => {
+                                                            msg_feedback.set(Some("Mensaje enviado correctamente".to_string()));
+                                                        }
+                                                        Err(e) => {
+                                                            msg_feedback.set(Some(format!("Error: {e}")));
+                                                        }
+                                                    }
                                                     message_key += 1;
                                                 });
                                                 msg_teacher.set(String::new());
