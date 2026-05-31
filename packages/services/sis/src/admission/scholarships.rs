@@ -19,6 +19,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/admission/contracts", get(list_contracts).post(create_contract))
         .route("/api/admission/contracts/{id}", get(get_contract))
         .route("/api/admission/contracts/{id}/enroll", post(enroll_student))
+        .route("/api/admission/contracts/{id}/pay", post(register_contract_payment))
 }
 
 async fn list_scholarships(
@@ -223,6 +224,47 @@ async fn get_contract(
         "total_fee": contract.4, "discount": contract.5, "final_amount": contract.6,
         "payment_plan": contract.7, "notes": contract.8,
     })))
+}
+
+async fn register_contract_payment(
+    claims: Claims,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<Value>,
+) -> SisResult<Json<Value>> {
+    require_any_role(&claims, &["Administrador", "Admision", "GerenteGeneral"])?;
+
+    let contract = sqlx::query_as::<_, (Uuid, f64, String)>(
+        "SELECT ec.student_id, ec.final_amount, ec.school_id::text
+         FROM enrollment_contracts ec WHERE ec.id = $1 AND ec.status = 'draft'",
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or(crate::error::SisError::NotFound("Contrato no encontrado o ya pagado".into()))?;
+
+    let student_id = contract.0;
+    let amount = payload.get("amount").and_then(|v| v.as_f64()).unwrap_or(contract.1);
+    let method = payload.get("method").and_then(|v| v.as_str()).unwrap_or("Efectivo");
+    let fee_id = Uuid::new_v4();
+    let payment_id = Uuid::new_v4();
+
+    // Create fee and mark as paid in one step
+    sqlx::query(
+        "INSERT INTO fees (id, student_id, description, amount, due_date, paid, paid_date, paid_amount)
+         VALUES ($1, $2, 'Matrícula', $3, CURRENT_DATE, true, CURRENT_DATE, $3)",
+    )
+    .bind(fee_id).bind(student_id).bind(amount)
+    .execute(&state.pool).await?;
+
+    sqlx::query(
+        "INSERT INTO payments (id, fee_id, student_id, amount, payment_date, payment_method)
+         VALUES ($1, $2, $3, $4, CURRENT_DATE, $5)",
+    )
+    .bind(payment_id).bind(fee_id).bind(student_id).bind(amount).bind(method)
+    .execute(&state.pool).await?;
+
+    Ok(Json(json!({"fee_id": fee_id, "payment_id": payment_id, "message": "Pago registrado"})))
 }
 
 async fn enroll_student(

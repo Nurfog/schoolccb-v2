@@ -733,6 +733,10 @@ pub async fn enroll_student(contract_id: &str) -> Result<Value, String> {
     post_json(&format!("/api/admission/contracts/{}/enroll", contract_id), &json!({})).await
 }
 
+pub async fn pay_contract(contract_id: &str, amount: f64, method: &str) -> Result<Value, String> {
+    post_json(&format!("/api/admission/contracts/{}/pay", contract_id), &json!({"amount": amount, "method": method})).await
+}
+
 pub async fn list_scholarships() -> Result<Value, String> {
     fetch_json("/api/admission/scholarships").await
 }

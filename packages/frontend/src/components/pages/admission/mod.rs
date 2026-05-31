@@ -222,10 +222,12 @@ pub fn AdmissionPage() -> Element {
                                 let list = data["contracts"].as_array().cloned().unwrap_or_default();
                                 let contract_rows: Vec<Element> = list.iter().map(|c| {
                                     let cid = c["id"].as_str().unwrap_or("").to_string();
+                                    let cid2 = cid.clone();
                                     let is_draft = c["status"].as_str() == Some("draft");
                                     let cstudent = c["student"].as_str().unwrap_or("-").to_string();
                                     let cgrade = c["grade"].as_str().unwrap_or("-").to_string();
-                                    let camt_str = format!("${:.0}", c["amount"].as_f64().unwrap_or(0.0));
+                                    let camt = c["amount"].as_f64().unwrap_or(0.0);
+                                    let camt_str = format!("${:.0}", camt);
                                     let cstatus = c["status"].as_str().unwrap_or("-").to_string();
                                     let cdate = c["date"].as_str().unwrap_or("-").to_string();
                                     rsx! {
@@ -239,8 +241,20 @@ pub fn AdmissionPage() -> Element {
                                                 if is_draft {
                                                     button {
                                                         class: "btn btn-primary btn-small",
+                                                        style: "margin-right: 4px;",
                                                         onclick: move |_| enrolling_id.set(Some(cid.clone())),
                                                         "Matricular"
+                                                    }
+                                                    button {
+                                                        class: "btn btn-outline btn-small",
+                                                        onclick: move |_| {
+                                                            let cid3 = cid2.clone();
+                                                            spawn(async move {
+                                                                let _ = client::pay_contract(&cid3, camt, "Efectivo").await;
+                                                                contracts.restart();
+                                                            });
+                                                        },
+                                                        "Pagar"
                                                     }
                                                 } else {
                                                     span { class: "badge badge-success", "Completado" }
