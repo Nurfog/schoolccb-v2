@@ -303,9 +303,9 @@ async fn request_certificate(
     let output_dir = std::env::var("PDF_OUTPUT_DIR").unwrap_or_else(|_| "/tmp/certificates".into());
     let dir = PathBuf::from(&output_dir);
     let _ = fs::create_dir_all(&dir);
-    let filename = format!("{}_{}_{}.pdf", cert_type, student_id, chrono::Utc::now().format("%Y%m%d"));
+    let filename = format!("{}_{}_{}.txt", cert_type, student_id, chrono::Utc::now().format("%Y%m%d"));
 
-    // Generate simple text-based PDF (placeholder)
+    // Generate text-based certificate (PDF generation requires fixing dep conflict)
     let content = format!(
         "Certificado: {}\nAlumno: {}\nRUT: {}\nCurso: {}\nColegio: {}\nFecha: {}\n",
         cert_type, student_info.0, student_info.1, student_info.2, student_info.3,
