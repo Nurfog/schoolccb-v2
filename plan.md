@@ -403,9 +403,9 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 - [ ] Generar PDF real (actualmente texto plano)
 
 ### 3.5 Inscripción en Cursos Complementarios
-- [ ] Endpoint `GET /api/portal/parent/complementary-subjects` — listar disponibles
-- [ ] Endpoint `POST /api/portal/parent/enroll-complementary` — inscribir
-- [ ] Frontend: Course Catalog (vista del apoderado)
+- [x] Endpoint `GET /api/portal/parent/complementary-subjects` — listar disponibles
+- [x] Endpoint `POST /api/portal/parent/enroll-complementary` — inscribir (con verificación de cupo)
+- [x] Frontend: gestión de asignaturas complementarias por curso
 
 ---
 
@@ -472,7 +472,7 @@ Basado en el flujo de trabajo descrito en `flujo.md` y contrastado con el estado
 | 🟡 Alta | Reuniones de Apoderados + Minutas | ✅ Completo (backend + frontend) |
 | 🟢 Media | Horarios Docentes + Tareas Extras | ✅ Completo |
 | 🟢 Media | Certificados online | Reporting existente |
-| 🔵 Baja | Cursos Complementarios | Academic existente |
+| 🔵 Baja | Cursos Complementarios | ✅ Completo |
 
 ---
 

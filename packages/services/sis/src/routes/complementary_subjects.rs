@@ -26,7 +26,8 @@ async fn list_complementary(claims: Claims, State(state): State<AppState>, Path(
 async fn create_complementary(claims: Claims, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<Value>) -> SisResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Director", "UTP", "GerenteGeneral"])?;
     let sid = Uuid::new_v4();
-    sqlx::query("INSERT INTO complementary_subjects (id, school_id, course_id, name, description, max_students, teacher_id) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+    let is_active = p.get("is_active").or_else(|| p.get("active")).and_then(|v| v.as_bool()).unwrap_or(true);
+    sqlx::query("INSERT INTO complementary_subjects (id, school_id, course_id, name, description, max_students, teacher_id, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
         .bind(sid)
         .bind(claims.school_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()))
         .bind(id)
@@ -34,16 +35,18 @@ async fn create_complementary(claims: Claims, State(state): State<AppState>, Pat
         .bind(p.get("description").and_then(|v| v.as_str()))
         .bind(p.get("max_students").and_then(|v| v.as_i64()).unwrap_or(0) as i32)
         .bind(p.get("teacher_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
+        .bind(is_active)
         .execute(&state.pool).await?;
     Ok(Json(json!({"id": sid})))
 }
 
 async fn update_complementary(claims: Claims, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<Value>) -> SisResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Director", "UTP", "GerenteGeneral"])?;
-    sqlx::query("UPDATE complementary_subjects SET name = COALESCE($1, name), description = COALESCE($2, description), max_students = COALESCE($3, max_students), updated_at = NOW() WHERE id = $4")
+    sqlx::query("UPDATE complementary_subjects SET name = COALESCE($1, name), description = COALESCE($2, description), max_students = COALESCE($3, max_students), is_active = COALESCE($4, is_active), updated_at = NOW() WHERE id = $5")
         .bind(p.get("name").and_then(|v| v.as_str()))
         .bind(p.get("description").and_then(|v| v.as_str()))
         .bind(p.get("max_students").and_then(|v| v.as_i64()).map(|v| v as i32))
+        .bind(p.get("is_active").or_else(|| p.get("active")).and_then(|v| v.as_bool()))
         .bind(id).execute(&state.pool).await?;
     Ok(Json(json!({"message": "Asignatura actualizada"})))
 }
@@ -64,9 +67,32 @@ async fn list_available(claims: Claims, State(state): State<AppState>) -> SisRes
     Ok(Json(json!({"subjects": subjects})))
 }
 
-async fn enroll_complementary(claims: Claims, _state: State<AppState>, Json(p): Json<Value>) -> SisResult<Json<Value>> {
+async fn enroll_complementary(claims: Claims, State(state): State<AppState>, Json(p): Json<Value>) -> SisResult<Json<Value>> {
     require_any_role(&claims, &["Apoderado", "Alumno", "GerenteGeneral"])?;
-    let _sid = p.get("subject_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok())
+    let subject_id = p.get("subject_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok())
         .ok_or(crate::error::SisError::Validation("subject_id requerido".into()))?;
-    Ok(Json(json!({"message": "Inscripción exitosa"})))
+
+    let user_id = Uuid::parse_str(&claims.sub).map_err(|_| crate::error::SisError::Unauthorized)?;
+
+    // Check capacity
+    let (max, enrolled): (i32, i64) = sqlx::query_as(
+        "SELECT cs.max_students, (SELECT COUNT(*) FROM complementary_subject_enrollments WHERE subject_id = $1)
+         FROM complementary_subjects cs WHERE cs.id = $1 AND cs.is_active = true",
+    )
+    .bind(subject_id)
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or(crate::error::SisError::NotFound("Asignatura no encontrada".into()))?;
+
+    if max > 0 && enrolled >= max as i64 {
+        return Err(crate::error::SisError::Validation("La asignatura ha alcanzado su cupo máximo".into()));
+    }
+
+    let eid = Uuid::new_v4();
+    sqlx::query("INSERT INTO complementary_subject_enrollments (id, subject_id, student_id) VALUES ($1, $2, $3)")
+        .bind(eid).bind(subject_id).bind(user_id)
+        .execute(&state.pool)
+        .await?;
+
+    Ok(Json(json!({"id": eid, "message": "Inscripción exitosa"})))
 }

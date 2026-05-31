@@ -375,6 +375,27 @@ pub async fn run(pool: &PgPool) {
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )",
         "CREATE INDEX IF NOT EXISTS idx_holidays_date ON holidays(date)",
+        "CREATE TABLE IF NOT EXISTS complementary_subjects (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            school_id UUID NOT NULL,
+            course_id UUID,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            max_students INT DEFAULT 0,
+            teacher_id UUID,
+            schedule_info JSONB DEFAULT '{}',
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )",
+        "CREATE INDEX IF NOT EXISTS idx_complementary_subjects_course ON complementary_subjects(course_id)",
+        "CREATE TABLE IF NOT EXISTS complementary_subject_enrollments (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            subject_id UUID NOT NULL REFERENCES complementary_subjects(id) ON DELETE CASCADE,
+            student_id UUID NOT NULL,
+            enrolled_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )",
+        "CREATE INDEX IF NOT EXISTS idx_complementary_enrollments_subject ON complementary_subject_enrollments(subject_id)",
         "CREATE TABLE IF NOT EXISTS grade_levels (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             code VARCHAR(20) UNIQUE NOT NULL,
