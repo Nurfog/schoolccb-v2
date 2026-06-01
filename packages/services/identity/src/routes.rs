@@ -1183,17 +1183,26 @@ async fn list_modules(
     let fav_set: std::collections::HashSet<String> = favs.into_iter().map(|r| r.0).collect();
 
     let all_modules = if claims.role == "GerenteGeneral" {
-        let mut modules = builtin_modules();
-        modules.push(schoolccb_common::modules::Module {
-            id: "sales".into(),
-            name: "CRM de Ventas".into(),
-            icon: "trending-up".into(),
-            category: "Gestión".into(),
-            route: "/sales".into(),
-            parent: None,
-            is_favorite: false,
-        });
-        modules
+        vec![
+            schoolccb_common::modules::Module {
+                id: "sales".into(),
+                name: "CRM de Ventas".into(),
+                icon: "trending-up".into(),
+                category: "Gestión".into(),
+                route: "/sales".into(),
+                parent: None,
+                is_favorite: false,
+            },
+            schoolccb_common::modules::Module {
+                id: "corporations".into(),
+                name: "Corporaciones".into(),
+                icon: "home".into(),
+                category: "Configuración".into(),
+                route: "/corporations".into(),
+                parent: None,
+                is_favorite: false,
+            },
+        ]
     } else {
         let filter = q.filter_by_license.unwrap_or(true);
         let bm = builtin_modules();
