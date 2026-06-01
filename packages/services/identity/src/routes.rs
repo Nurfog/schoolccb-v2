@@ -1203,6 +1203,58 @@ async fn list_modules(
                 is_favorite: false,
             },
         ]
+    } else if claims.role == "AdminGlobal" {
+        // AdminGlobal: solo configuración de colegios/corporaciones, sin datos académicos
+        vec![
+            schoolccb_common::modules::Module {
+                id: "corporations".into(),
+                name: "Corporaciones y Colegios".into(),
+                icon: "home".into(),
+                category: "Configuración".into(),
+                route: "/corporations".into(),
+                parent: None, is_favorite: false,
+            },
+            schoolccb_common::modules::Module {
+                id: "users".into(),
+                name: "Usuarios y Perfiles".into(),
+                icon: "users".into(),
+                category: "Configuración".into(),
+                route: "/users".into(),
+                parent: None, is_favorite: false,
+            },
+            schoolccb_common::modules::Module {
+                id: "roles".into(),
+                name: "Roles y Permisos".into(),
+                icon: "users".into(),
+                category: "Configuración".into(),
+                route: "/roles".into(),
+                parent: None, is_favorite: false,
+            },
+            schoolccb_common::modules::Module {
+                id: "config".into(),
+                name: "Configuración General".into(),
+                icon: "settings".into(),
+                category: "Configuración".into(),
+                route: "/config".into(),
+                parent: None, is_favorite: false,
+            },
+            schoolccb_common::modules::Module {
+                id: "audit".into(),
+                name: "Auditoría".into(),
+                icon: "file-text".into(),
+                category: "Sistema".into(),
+                route: "/audit".into(),
+                parent: None, is_favorite: false,
+            },
+            schoolccb_common::modules::Module {
+                id: "license-portal".into(),
+                name: "Portal de Licencias".into(),
+                icon: "key".into(),
+                category: "Sistema".into(),
+                route: "/license-portal".into(),
+                parent: None, is_favorite: false,
+            },
+        ]
     } else {
         let filter = q.filter_by_license.unwrap_or(true);
         let bm = builtin_modules();
