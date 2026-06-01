@@ -375,7 +375,7 @@ pub fn SostenedorPage() -> Element {
                                 td {
                                     a {
                                         class: "btn btn-outline btn-small",
-                                        href: "/dashboard?school_id={sid}",
+                                        href: "/dashboard",
                                         "Ver Dashboard"
                                     }
                                 }
