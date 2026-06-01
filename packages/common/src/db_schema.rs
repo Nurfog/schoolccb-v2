@@ -1,5 +1,7 @@
+#[cfg(feature = "db")]
 use sqlx::PgPool;
 
+#[cfg(feature = "db")]
 pub async fn run(pool: &PgPool) {
     // Set search_path to include both public (CRM/sales) and colegios (school data) schemas
     sqlx::query("SET search_path TO public, colegios")

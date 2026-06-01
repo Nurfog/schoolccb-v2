@@ -1,9 +1,11 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "db")]
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "db", derive(FromRow))]
 pub struct EmailProvider {
     pub id: Uuid,
     pub corporation_id: Option<Uuid>,
@@ -53,7 +55,8 @@ pub struct UpdateEmailProviderPayload {
     pub is_active: Option<bool>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "db", derive(FromRow))]
 pub struct EmailQueueItem {
     pub id: Uuid,
     pub provider_id: Option<Uuid>,
