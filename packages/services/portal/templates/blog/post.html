@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+    <div class="container" style="max-width:800px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
+            <a href="/blog" style="color:#4fc3f7;text-decoration:none;font-weight:600">← Volver al blog</a>
+            <div style="display:flex;gap:1rem;align-items:center">
+                <span style="color:#b0bec5;font-size:0.9rem">{{ post.date }}</span>
+                <span style="color:#546e7a;font-size:0.9rem">Por {{ post.author }}</span>
+            </div>
+        </div>
+        <h1 style="font-size:2.2rem;font-weight:800;margin-bottom:2rem">{{ post.title }}</h1>
+        {{ post.html|safe }}
+    </div>
+</section>
+{% endblock %}

@@ -1,3 +1,4 @@
+mod blog;
 mod config;
 mod routes;
 
@@ -14,6 +15,7 @@ pub struct AppState {
     pub templates: Environment<'static>,
     pub client: reqwest::Client,
     pub one_time_tokens: RwLock<HashMap<String, (String, std::time::Instant)>>,
+    pub blog_posts: Vec<blog::BlogPost>,
 }
 
 #[tokio::main]
@@ -24,6 +26,9 @@ async fn main() {
 
     dotenvy::dotenv().ok();
     let config = Arc::new(config::Config::from_env());
+
+    let blog_posts = blog::load_blog_posts();
+    tracing::info!("Loaded {} blog posts", blog_posts.len());
 
     let mut templates = Environment::new();
     templates
@@ -47,12 +52,19 @@ async fn main() {
     templates
         .add_template("login.html", include_str!("../templates/login.html"))
         .expect("login template");
+    templates
+        .add_template("blog/index.html", include_str!("../templates/blog/index.html"))
+        .expect("blog/index template");
+    templates
+        .add_template("blog/post.html", include_str!("../templates/blog/post.html"))
+        .expect("blog/post template");
 
     let state = Arc::new(AppState {
         config,
         templates,
         client: reqwest::Client::new(),
         one_time_tokens: RwLock::new(HashMap::new()),
+        blog_posts,
     });
 
     let app = Router::new()

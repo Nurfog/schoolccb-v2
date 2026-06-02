@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h2>Blog</h2>
+        {% if posts %}
+        <div class="grid-3">
+            {% for post in posts %}
+            <a href="/blog/{{ post.slug }}" class="card blog-card" style="text-decoration:none;color:inherit">
+                <div style="display:flex;flex-direction:column;height:100%">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+                        <span style="color:#4fc3f7;font-size:0.85rem;font-weight:600">{{ post.date }}</span>
+                        <span style="color:#b0bec5;font-size:0.8rem">{{ post.author }}</span>
+                    </div>
+                    <h3 style="margin-bottom:0.8rem;flex-shrink:0">{{ post.title }}</h3>
+                    <p style="flex:1;color:#546e7a;font-size:0.95rem">{{ post.excerpt }}</p>
+                    <div style="margin-top:1rem;color:#4fc3f7;font-weight:600;font-size:0.9rem">Leer más →</div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="text-align:center;color:#546e7a;padding:4rem 0">No hay artículos publicados aún. Vuelve pronto.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

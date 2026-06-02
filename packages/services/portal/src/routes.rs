@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Query, State},
+    extract::{Path, Query, State},
     http::{
         StatusCode,
         header::{self, HeaderMap, HeaderValue},
@@ -24,6 +24,8 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/pricing", get(pricing))
         .route("/about", get(about))
         .route("/contact", get(contact_page))
+        .route("/blog", get(blog_index))
+        .route("/blog/{slug}", get(blog_post))
         .route("/login", get(login_page))
         .route("/app", get(app_redirect))
         .route("/app/", get(app_redirect))
@@ -139,17 +141,30 @@ async fn robots_txt() -> String {
     "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /app/\nDisallow: /login\n\nSitemap: https://schoolccb.cl/sitemap.xml".to_string()
 }
 
-async fn sitemap_xml() -> ([(axum::http::header::HeaderName, &'static str); 1], String) {
+async fn sitemap_xml(state: State<Arc<AppState>>) -> ([(axum::http::header::HeaderName, &'static str); 1], String) {
+    let mut urls = vec![
+        r#"  <url><loc>https://schoolccb.cl/</loc><priority>1.0</priority></url>"#.to_string(),
+        r#"  <url><loc>https://schoolccb.cl/features</loc><priority>0.8</priority></url>"#.to_string(),
+        r#"  <url><loc>https://schoolccb.cl/pricing</loc><priority>0.8</priority></url>"#.to_string(),
+        r#"  <url><loc>https://schoolccb.cl/about</loc><priority>0.6</priority></url>"#.to_string(),
+        r#"  <url><loc>https://schoolccb.cl/contact</loc><priority>0.7</priority></url>"#.to_string(),
+        r#"  <url><loc>https://schoolccb.cl/blog</loc><priority>0.8</priority></url>"#.to_string(),
+    ];
+    for post in &state.blog_posts {
+        urls.push(format!(
+            r#"  <url><loc>https://schoolccb.cl/blog/{}</loc><priority>0.6</priority></url>"#,
+            post.slug
+        ));
+    }
     (
         [(axum::http::header::CONTENT_TYPE, "application/xml")],
-        r#"<?xml version="1.0" encoding="UTF-8"?>
+        format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://schoolccb.cl/</loc><priority>1.0</priority></url>
-  <url><loc>https://schoolccb.cl/features</loc><priority>0.8</priority></url>
-  <url><loc>https://schoolccb.cl/pricing</loc><priority>0.8</priority></url>
-  <url><loc>https://schoolccb.cl/about</loc><priority>0.6</priority></url>
-  <url><loc>https://schoolccb.cl/contact</loc><priority>0.7</priority></url>
-</urlset>"#.to_string()
+{body}
+</urlset>"#,
+            body = urls.join("\n")
+        ),
     )
 }
 
@@ -180,6 +195,54 @@ async fn about(state: State<Arc<AppState>>) -> Result<Html<String>, StatusCode> 
 
 async fn contact_page(state: State<Arc<AppState>>) -> Result<Html<String>, StatusCode> {
     render(&state, "contact.html", json!({"title": "Contacto — SchoolCBB"})).await
+}
+
+async fn blog_index(state: State<Arc<AppState>>) -> Result<Html<String>, StatusCode> {
+    let posts: Vec<Value> = state
+        .blog_posts
+        .iter()
+        .map(|p| {
+            json!({
+                "slug": p.slug,
+                "title": p.title,
+                "date": p.date.format("%d/%m/%Y").to_string(),
+                "excerpt": p.excerpt,
+                "author": p.author,
+            })
+        })
+        .collect();
+    render(
+        &state,
+        "blog/index.html",
+        json!({"title": "Blog — SchoolCBB", "posts": posts}),
+    )
+    .await
+}
+
+async fn blog_post(
+    state: State<Arc<AppState>>,
+    Path(slug): axum::extract::Path<String>,
+) -> Result<Html<String>, StatusCode> {
+    let post = state.blog_posts.iter().find(|p| p.slug == slug);
+    match post {
+        Some(p) => {
+            render(
+                &state,
+                "blog/post.html",
+                json!({
+                    "title": format!("{} — SchoolCBB", p.title),
+                    "post": {
+                        "title": p.title,
+                        "date": p.date.format("%d/%m/%Y").to_string(),
+                        "author": p.author,
+                        "html": p.html,
+                    }
+                }),
+            )
+            .await
+        }
+        None => Err(StatusCode::NOT_FOUND),
+    }
 }
 
 async fn fetch_plans(state: &AppState) -> Result<Vec<Value>, ()> {

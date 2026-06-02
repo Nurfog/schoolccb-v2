@@ -19,3 +19,4 @@ chrono.workspace = true
 minijinja = "2.6"
 reqwest = { workspace = true, features = ["json"] }
 tower = { version = "0.5", features = ["util"] }
+pulldown-cmark = "0.13"
