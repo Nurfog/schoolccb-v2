@@ -4,12 +4,32 @@ use dioxus::prelude::*;
 #[component]
 pub fn ClassroomsPage() -> Element {
     let mut rooms = use_resource(|| client::fetch_classrooms());
+    let mut availability = use_resource(|| async {
+        let rooms = client::fetch_classrooms().await.ok();
+        let ids: Vec<String> = rooms
+            .and_then(|j| j["classrooms"].as_array().cloned())
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|r| r["id"].as_str().map(String::from))
+            .collect();
+        let mut map = std::collections::HashMap::new();
+        for id in ids {
+            if let Ok(data) = client::classroom_availability(&id).await {
+                if let Some(c) = data["classroom"].as_object() {
+                    map.insert(id.clone(), c.clone());
+                }
+            }
+        }
+        map
+    });
+
     let mut name = use_signal(String::new);
     let mut capacity = use_signal(|| 30i32);
     let mut location = use_signal(String::new);
     let mut editing_id = use_signal(|| None::<String>);
     let mut show_form = use_signal(|| false);
     let mut saving = use_signal(|| false);
+
     let mut reset_form = move || {
         name.set(String::new());
         capacity.set(30);
@@ -31,7 +51,16 @@ pub fn ClassroomsPage() -> Element {
             saving.set(false);
             reset_form();
             rooms.restart();
+            availability.restart();
         });
+    };
+
+    let do_edit = move |id: String, n: String, cap: i32, loc: String| {
+        name.set(n);
+        capacity.set(cap);
+        location.set(loc);
+        editing_id.set(Some(id));
+        show_form.set(true);
     };
 
     let do_delete = move |id: String| {
@@ -41,11 +70,12 @@ pub fn ClassroomsPage() -> Element {
         spawn(async move {
             let _ = client::delete_classroom(&id).await;
             rooms.restart();
+            availability.restart();
         });
     };
 
     rsx! {
-        div { class: "page-header", h1 { "Salas" } p { "Gestión de salas y aforo máximo" } }
+        div { class: "page-header", h1 { "Salas" } p { "Gestión de salas, capacidad y disponibilidad" } }
         div { class: "page-toolbar", button { class: "btn btn-primary", onclick: move |_| { reset_form(); show_form.set(true); }, "Nueva Sala" } }
         {
             if show_form() {
@@ -67,6 +97,15 @@ pub fn ClassroomsPage() -> Element {
             } else { rsx! {} }
         }
         div { class: "data-table-container",
+            style { "
+                .cap-bar { display: flex; align-items: center; gap: 8px; }
+                .cap-track { flex: 1; height: 8px; background: #eceff1; border-radius: 4px; overflow: hidden; }
+                .cap-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+                .cap-fill.low { background: #4caf50; }
+                .cap-fill.med { background: #ff9800; }
+                .cap-fill.high { background: #f44336; }
+                .cap-label { font-size: 0.85rem; color: #546e7a; white-space: nowrap; }
+            " }
             match rooms() {
                 Some(Ok(j)) => {
                     let rows: Vec<(String, String, i32, String)> = j["classrooms"].as_array().map(|arr| arr.iter().map(|r| {
@@ -74,13 +113,28 @@ pub fn ClassroomsPage() -> Element {
                     }).collect()).unwrap_or_default();
                     rsx! {
                         table { class: "data-table",
-                            thead { tr { th { "Nombre" } th { "Capacidad" } th { "Ubicación" } th { "Acciones" } } }
+                            thead { tr { th { "Nombre" } th { "Capacidad" } th { "Ocupación" } th { "Ubicación" } th { "Acciones" } } }
                             tbody { for (id, n, cap, loc) in &rows {
+                                let av = availability().as_ref().and_then(|m| m.get(id));
+                                let enrolled = av.and_then(|a| a.get("enrolled").and_then(|v| v.as_i64())).unwrap_or(0);
+                                let pct = if *cap > 0 { (enrolled as f64 / *cap as f64) * 100.0 } else { 0.0 };
+                                let fill_class = if pct >= 90.0 { "high" } else if pct >= 70.0 { "med" } else { "low" };
                                 tr {
                                     td { "{n}" }
                                     td { "{cap}" }
+                                    td {
+                                        div { class: "cap-bar",
+                                            div { class: "cap-track",
+                                                div { class: "cap-fill {fill_class}", style: "width: {pct:.0}%" }
+                                            }
+                                            span { class: "cap-label", "{enrolled}/{cap} ({pct:.0}%)" }
+                                        }
+                                    }
                                     td { if loc.is_empty() { "-" } else { "{loc}" } }
-                                    td { button { class: "btn btn-sm btn-danger", onclick: { let i = id.clone(); move |_| do_delete(i.clone()) }, "Eliminar" } }
+                                    td {
+                                        button { class: "btn btn-sm", onclick: { let i = id.clone(); let n = n.clone(); let loc = loc.clone(); move |_| do_edit(i.clone(), n.clone(), *cap, loc.clone()) }, "Editar" }
+                                        button { class: "btn btn-sm btn-danger", style: "margin-left: 4px;", onclick: { let i = id.clone(); move |_| do_delete(i.clone()) }, "Eliminar" }
+                                    }
                                 }
                             }}
                         }

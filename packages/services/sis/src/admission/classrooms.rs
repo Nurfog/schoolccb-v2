@@ -22,6 +22,7 @@ pub fn router() -> Router<AppState> {
                 .put(update_classroom)
                 .delete(delete_classroom),
         )
+        .route("/api/admission/classrooms/{id}/availability", get(classroom_availability))
         .route("/api/admission/vacancy-check", get(vacancy_check))
 }
 
@@ -143,6 +144,53 @@ async fn delete_classroom(
         .execute(&state.pool)
         .await?;
     Ok(Json(json!({ "message": "Sala eliminada" })))
+}
+
+async fn classroom_availability(
+    claims: Claims,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> SisResult<Json<Value>> {
+    require_any_role(
+        &claims,
+        &["Administrador", "Sostenedor", "Director", "UTP", "Admision"],
+    )?;
+
+    let room = sqlx::query_as::<_, (Uuid, String, i32, Option<String>, bool)>(
+        "SELECT id, name, capacity, location, active FROM classrooms WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or(crate::error::SisError::NotFound("Sala no encontrada".into()))?;
+
+    let enrolled: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*)::bigint FROM enrollments e
+         JOIN courses c ON c.id = e.course_id
+         WHERE c.classroom_id = $1 AND e.active = true
+         AND e.year = EXTRACT(YEAR FROM NOW())::int",
+    )
+    .bind(id)
+    .fetch_one(&state.pool)
+    .await?;
+
+    let capacity = room.2 as i64;
+    let available = (capacity - enrolled.0).max(0);
+
+    Ok(Json(json!({
+        "classroom": {
+            "id": room.0,
+            "name": room.1,
+            "capacity": capacity,
+            "location": room.3,
+            "active": room.4,
+            "enrolled": enrolled.0,
+            "available": available,
+            "usage_pct": if capacity > 0 {
+                format!("{:.0}%", (enrolled.0 as f64 / capacity as f64) * 100.0)
+            } else { "0%".to_string() },
+        }
+    })))
 }
 
 async fn vacancy_check(claims: Claims, State(state): State<AppState>) -> SisResult<Json<Value>> {
