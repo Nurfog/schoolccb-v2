@@ -38,6 +38,7 @@ use crate::components::pages::students_page::StudentsPage;
 use crate::components::pages::subjects_page::SubjectsPage;
 use crate::components::pages::curriculum_agent::CurriculumAgent;
 use crate::components::pages::dashboard_mosaicos_page::DashboardMosaicosPage;
+use crate::components::pages::interview_process_page::InterviewProcessPage;
 
 use crate::components::pages::sostenedor_page::SostenedorPage;
 use crate::components::pages::parent_meetings_page::ParentMeetingsPage;
@@ -171,6 +172,8 @@ pub enum Route {
         StudentPortal {},
         #[route("/teacher-schedules")]
         TeacherSchedules {},
+        #[route("/hr/interviews")]
+        Interviews {},
         #[route("/sige")]
         Sige {},
         #[route("/complaints")]
@@ -350,6 +353,9 @@ pub fn StudentPortal() -> Element { require_auth(); use_page_title("Portal Alumn
 
 #[component]
 pub fn TeacherSchedules() -> Element { require_auth(); use_page_title("Horarios Docentes"); rsx! { TeacherSchedulesPage {} } }
+
+#[component]
+pub fn Interviews() -> Element { require_auth(); use_page_title("Entrevistas"); rsx! { InterviewProcessPage {} } }
 
 #[component]
 pub fn Sige() -> Element { require_auth(); use_page_title("Sincronización SIGE"); rsx! { SigePage {} } }

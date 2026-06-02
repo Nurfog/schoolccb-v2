@@ -13,6 +13,8 @@ pub fn router() -> Router<AppState> {
         .route("/api/hr/teachers/{id}/hours", get(get_contract_hours).post(set_contract_hours))
         .route("/api/hr/teachers/{id}/extra-duties", get(list_extra_duties).post(create_extra_duty))
         .route("/api/hr/extra-duties/{id}", put(update_extra_duty).delete(delete_extra_duty))
+        .route("/api/hr/interviews", get(list_interviews).post(create_interview))
+        .route("/api/hr/interviews/{id}", get(get_interview).put(update_interview).delete(delete_interview))
 }
 
 async fn list_schedules(claims: Claims, State(state): State<AppState>, Path(id): Path<Uuid>) -> SisResult<Json<Value>> {
@@ -140,4 +142,86 @@ async fn delete_extra_duty(claims: Claims, State(state): State<AppState>, Path(i
     require_any_role(&claims, &["Administrador", "Director", "GerenteGeneral"])?;
     sqlx::query("DELETE FROM extra_duties WHERE id = $1").bind(id).execute(&state.pool).await?;
     Ok(Json(json!({"message": "Tarea extra eliminada"})))
+}
+
+// ─── Interview Process ───
+
+async fn list_interviews(claims: Claims, State(state): State<AppState>) -> SisResult<Json<Value>> {
+    require_any_role(&claims, &["Administrador", "Director", "GerenteGeneral", "DirectorRRHH"])?;
+    let school_id = claims.school_id.as_deref().and_then(|s| Uuid::parse_str(s).ok());
+    let interviews = sqlx::query_as::<_, (Uuid, String, String, String, String, String, String)>(
+        "SELECT id, candidate_name, position, interview_date::text, result, status, created_at::text
+         FROM interview_process WHERE ($1::uuid IS NULL OR school_id = $1)
+         ORDER BY created_at DESC"
+    ).bind(school_id).fetch_all(&state.pool).await?.into_iter()
+    .map(|(id, name, pos, date, result, status, created)| json!({
+        "id": id, "candidate": name, "position": pos, "date": date,
+        "result": result, "status": status, "created_at": created,
+    }))
+    .collect::<Vec<_>>();
+    Ok(Json(json!({"interviews": interviews})))
+}
+
+async fn get_interview(claims: Claims, State(state): State<AppState>, Path(id): Path<Uuid>) -> SisResult<Json<Value>> {
+    require_any_role(&claims, &["Administrador", "Director", "GerenteGeneral", "DirectorRRHH"])?;
+    let interview = sqlx::query_as::<_, (Uuid, String, Option<String>, Option<String>, String, Option<Uuid>, Option<String>, String, Option<String>, String)>(
+        "SELECT id, candidate_name, candidate_email, candidate_phone, position, interviewer_id,
+                interview_date::text, result, notes, status
+         FROM interview_process WHERE id = $1"
+    ).bind(id).fetch_optional(&state.pool).await?
+    .ok_or(crate::error::SisError::NotFound("Entrevista no encontrada".into()))?;
+    Ok(Json(json!({"interview": {
+        "id": interview.0, "candidate": interview.1, "email": interview.2,
+        "phone": interview.3, "position": interview.4, "interviewer_id": interview.5,
+        "date": interview.6, "result": interview.7, "notes": interview.8, "status": interview.9,
+    }})))
+}
+
+async fn create_interview(claims: Claims, State(state): State<AppState>, Json(p): Json<Value>) -> SisResult<Json<Value>> {
+    require_any_role(&claims, &["Administrador", "Director", "GerenteGeneral", "DirectorRRHH"])?;
+    let school_id = claims.school_id.as_deref().and_then(|s| Uuid::parse_str(s).ok());
+    let user_id = claims.sub.parse::<Uuid>().ok();
+    let id = Uuid::new_v4();
+    sqlx::query(
+        "INSERT INTO interview_process (id, candidate_name, candidate_email, candidate_phone, position,
+         interviewer_id, interview_date, result, notes, status, school_id, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, 'pending', $8, 'pendiente', $9, $10)"
+    )
+    .bind(id)
+    .bind(p.get("candidate_name").and_then(|v| v.as_str()).unwrap_or(""))
+    .bind(p.get("candidate_email").and_then(|v| v.as_str()))
+    .bind(p.get("candidate_phone").and_then(|v| v.as_str()))
+    .bind(p.get("position").and_then(|v| v.as_str()).unwrap_or(""))
+    .bind(p.get("interviewer_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
+    .bind(p.get("interview_date").and_then(|v| v.as_str()))
+    .bind(p.get("notes").and_then(|v| v.as_str()))
+    .bind(school_id)
+    .bind(user_id)
+    .execute(&state.pool).await?;
+    Ok(Json(json!({"id": id})))
+}
+
+async fn update_interview(claims: Claims, State(state): State<AppState>, Path(id): Path<Uuid>, Json(p): Json<Value>) -> SisResult<Json<Value>> {
+    require_any_role(&claims, &["Administrador", "Director", "GerenteGeneral", "DirectorRRHH"])?;
+    sqlx::query(
+        "UPDATE interview_process SET
+         result = COALESCE($1, result), notes = COALESCE($2, notes),
+         status = COALESCE($3, status), interview_date = COALESCE($4::timestamptz, interview_date),
+         interviewer_id = COALESCE($5, interviewer_id), updated_at = NOW()
+         WHERE id = $6"
+    )
+    .bind(p.get("result").and_then(|v| v.as_str()))
+    .bind(p.get("notes").and_then(|v| v.as_str()))
+    .bind(p.get("status").and_then(|v| v.as_str()))
+    .bind(p.get("interview_date").and_then(|v| v.as_str()))
+    .bind(p.get("interviewer_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
+    .bind(id)
+    .execute(&state.pool).await?;
+    Ok(Json(json!({"message": "Entrevista actualizada"})))
+}
+
+async fn delete_interview(claims: Claims, State(state): State<AppState>, Path(id): Path<Uuid>) -> SisResult<Json<Value>> {
+    require_any_role(&claims, &["Administrador", "GerenteGeneral", "DirectorRRHH"])?;
+    sqlx::query("DELETE FROM interview_process WHERE id = $1").bind(id).execute(&state.pool).await?;
+    Ok(Json(json!({"message": "Entrevista eliminada"})))
 }
