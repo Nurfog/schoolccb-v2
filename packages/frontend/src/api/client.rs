@@ -289,20 +289,20 @@ pub async fn create_payment(payload: &Value) -> Result<Value, String> {
     post_json("/api/finance/payments", payload).await
 }
 pub async fn fetch_all_scholarships() -> Result<Value, String> {
-    fetch_json("/api/finance/scholarships").await
+    fetch_json("/api/finance/student_scholarships").await
 }
 pub async fn create_scholarship(payload: &Value) -> Result<Value, String> {
-    post_json("/api/finance/scholarships", payload).await
+    post_json("/api/finance/student_scholarships", payload).await
 }
 pub async fn approve_scholarship(scholarship_id: &str) -> Result<Value, String> {
     put_json(
-        &format!("/api/finance/scholarships/{}", scholarship_id),
+        &format!("/api/finance/student_scholarships/{}", scholarship_id),
         &serde_json::json!({}),
     )
     .await
 }
 pub async fn delete_scholarship(scholarship_id: &str) -> Result<Value, String> {
-    delete_json(&format!("/api/finance/scholarships/{}", scholarship_id)).await
+    delete_json(&format!("/api/finance/student_scholarships/{}", scholarship_id)).await
 }
 
 // ─── Legal Representatives ───
@@ -435,6 +435,9 @@ pub async fn update_classroom(id: &str, payload: &Value) -> Result<Value, String
 }
 pub async fn delete_classroom(id: &str) -> Result<Value, String> {
     delete_json(&format!("/api/admission/classrooms/{}", id)).await
+}
+pub async fn classroom_availability(id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/admission/classrooms/{}/availability", id)).await
 }
 pub async fn fetch_audit_logs() -> Result<Value, String> {
     fetch_json("/api/academic/audit-log").await
@@ -751,6 +754,19 @@ pub async fn toggle_scholarship(id: &str) -> Result<Value, String> {
 
 pub async fn apply_scholarship(scholarship_id: &str, student_id: &str) -> Result<Value, String> {
     post_json(&format!("/api/admission/scholarships/{}/apply", scholarship_id), &json!({"student_id": student_id})).await
+}
+
+pub async fn fetch_interviews() -> Result<Value, String> {
+    fetch_json("/api/hr/interviews").await
+}
+pub async fn create_interview(payload: &Value) -> Result<Value, String> {
+    post_json("/api/hr/interviews", payload).await
+}
+pub async fn update_interview(id: &str, payload: &Value) -> Result<Value, String> {
+    put_json(&format!("/api/hr/interviews/{}", id), payload).await
+}
+pub async fn delete_interview(id: &str) -> Result<Value, String> {
+    delete_json(&format!("/api/hr/interviews/{}", id)).await
 }
 
 fn urlencoding(s: &str) -> String {

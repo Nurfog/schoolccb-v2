@@ -111,7 +111,7 @@ pub fn ScholarshipsTab() -> Element {
             {
                 match scholarships() {
                     Some(Ok(j)) => {
-                        let list: Vec<(String, String, String, String, String, String, bool)> = j["scholarships"].as_array().map(|arr| {
+                        let list: Vec<(String, String, String, String, String, String, bool)> = j["student_scholarships"].as_array().map(|arr| {
                             arr.iter().map(|s| {
                                 let disc = s["discount_percentage"].as_f64().unwrap_or(0.0);
                                 let disc_display = format!("{:.0}%", disc);

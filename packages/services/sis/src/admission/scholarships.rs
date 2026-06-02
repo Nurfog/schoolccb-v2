@@ -31,7 +31,7 @@ async fn list_scholarships(
 
     let scholarships = sqlx::query_as::<_, (Uuid, String, String, f64, i32, i32, bool)>(
         "SELECT id, name, description, discount_value, max_beneficiaries, current_beneficiaries, is_active
-         FROM scholarships WHERE ($1::uuid IS NULL OR school_id = $1)
+         FROM admission_scholarships WHERE ($1::uuid IS NULL OR school_id = $1)
          ORDER BY name",
     )
     .bind(school_id)
@@ -58,7 +58,7 @@ async fn create_scholarship(
     let id = Uuid::new_v4();
 
     sqlx::query(
-        "INSERT INTO scholarships (id, school_id, name, description, discount_type, discount_value, max_beneficiaries, requirements)
+        "INSERT INTO admission_scholarships (id, school_id, name, description, discount_type, discount_value, max_beneficiaries, requirements)
          VALUES ($1, $2, $3, $4, 'percentage', $5, $6, $7)",
     )
     .bind(id)
@@ -82,7 +82,7 @@ async fn update_scholarship(
 ) -> SisResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Sostenedor", "GerenteGeneral"])?;
     sqlx::query(
-        "UPDATE scholarships SET name = COALESCE($1, name), description = COALESCE($2, description),
+        "UPDATE admission_scholarships SET name = COALESCE($1, name), description = COALESCE($2, description),
          discount_value = COALESCE($3, discount_value), max_beneficiaries = COALESCE($4, max_beneficiaries),
          updated_at = NOW() WHERE id = $5",
     )
@@ -103,7 +103,7 @@ async fn toggle_scholarship(
     Path(id): Path<Uuid>,
 ) -> SisResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Sostenedor", "GerenteGeneral"])?;
-    sqlx::query("UPDATE scholarships SET is_active = NOT is_active, updated_at = NOW() WHERE id = $1")
+    sqlx::query("UPDATE admission_scholarships SET is_active = NOT is_active, updated_at = NOW() WHERE id = $1")
         .bind(id)
         .execute(&state.pool)
         .await?;
@@ -122,7 +122,7 @@ async fn apply_scholarship(
 
     // Check capacity
     let (max, current): (i32, i32) = sqlx::query_as(
-        "SELECT max_beneficiaries, current_beneficiaries FROM scholarships WHERE id = $1 AND is_active = true",
+        "SELECT max_beneficiaries, current_beneficiaries FROM admission_scholarships WHERE id = $1 AND is_active = true",
     )
     .bind(id)
     .fetch_optional(&state.pool)
@@ -140,7 +140,7 @@ async fn apply_scholarship(
         .execute(&state.pool)
         .await?;
 
-    sqlx::query("UPDATE scholarships SET current_beneficiaries = current_beneficiaries + 1 WHERE id = $1")
+    sqlx::query("UPDATE admission_scholarships SET current_beneficiaries = current_beneficiaries + 1 WHERE id = $1")
         .bind(id)
         .execute(&state.pool)
         .await?;

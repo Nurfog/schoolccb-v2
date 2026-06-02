@@ -13,35 +13,35 @@ use crate::routes::fees::{Claims, require_any_role};
 pub fn router() -> Router<AppState> {
     Router::new()
         .route(
-            "/api/finance/scholarships",
-            get(list_scholarships).post(create_scholarship),
+            "/api/finance/student_scholarships",
+            get(list_student_scholarships).post(create_scholarship),
         )
         .route(
-            "/api/finance/scholarships/{id}",
+            "/api/finance/student_scholarships/{id}",
             get(get_scholarship)
                 .put(approve_scholarship)
                 .delete(delete_scholarship),
         )
         .route(
-            "/api/finance/scholarships/student/{student_id}",
-            get(scholarships_by_student),
+            "/api/finance/student_scholarships/student/{student_id}",
+            get(student_scholarships_by_student),
         )
 }
 
-async fn list_scholarships(
+async fn list_student_scholarships(
     claims: Claims,
     State(state): State<AppState>,
 ) -> FinanceResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Sostenedor", "Director", "UTP"])?;
 
-    let scholarships = sqlx::query_as::<_, schoolccb_common::finance::Scholarship>(
-        "SELECT id, student_id, name, discount_percentage, approved, approved_by, valid_from, valid_until, created_at FROM scholarships ORDER BY name",
+    let student_scholarships = sqlx::query_as::<_, schoolccb_common::finance::Scholarship>(
+        "SELECT id, student_id, name, discount_percentage, approved, approved_by, valid_from, valid_until, created_at FROM student_scholarships ORDER BY name",
     )
     .fetch_all(&state.pool)
     .await?;
 
     Ok(Json(
-        json!({ "scholarships": scholarships, "total": scholarships.len() }),
+        json!({ "student_scholarships": student_scholarships, "total": student_scholarships.len() }),
     ))
 }
 
@@ -53,7 +53,7 @@ async fn get_scholarship(
     require_any_role(&claims, &["Administrador", "Sostenedor", "Director", "UTP"])?;
 
     let scholarship = sqlx::query_as::<_, schoolccb_common::finance::Scholarship>(
-        "SELECT id, student_id, name, discount_percentage, approved, approved_by, valid_from, valid_until, created_at FROM scholarships WHERE id = $1",
+        "SELECT id, student_id, name, discount_percentage, approved, approved_by, valid_from, valid_until, created_at FROM student_scholarships WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&state.pool)
@@ -82,7 +82,7 @@ async fn create_scholarship(
     let id = Uuid::new_v4();
     let result = sqlx::query_as::<_, schoolccb_common::finance::Scholarship>(
         r#"
-        INSERT INTO scholarships (id, student_id, name, discount_percentage, valid_from, valid_until)
+        INSERT INTO student_scholarships (id, student_id, name, discount_percentage, valid_from, valid_until)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, student_id, name, discount_percentage, approved, approved_by, valid_from, valid_until, created_at
         "#,
@@ -113,7 +113,7 @@ async fn approve_scholarship(
 
     let result = sqlx::query_as::<_, schoolccb_common::finance::Scholarship>(
         r#"
-        UPDATE scholarships SET approved = true, approved_by = $1 WHERE id = $2
+        UPDATE student_scholarships SET approved = true, approved_by = $1 WHERE id = $2
         RETURNING id, student_id, name, discount_percentage, approved, approved_by, valid_from, valid_until, created_at
         "#,
     )
@@ -133,7 +133,7 @@ async fn delete_scholarship(
 ) -> FinanceResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Sostenedor"])?;
 
-    sqlx::query("DELETE FROM scholarships WHERE id = $1")
+    sqlx::query("DELETE FROM student_scholarships WHERE id = $1")
         .bind(id)
         .execute(&state.pool)
         .await?;
@@ -141,7 +141,7 @@ async fn delete_scholarship(
     Ok(Json(json!({ "message": "Beca eliminada correctamente" })))
 }
 
-async fn scholarships_by_student(
+async fn student_scholarships_by_student(
     claims: Claims,
     State(state): State<AppState>,
     Path(student_id): Path<Uuid>,
@@ -157,12 +157,12 @@ async fn scholarships_by_student(
         ],
     )?;
 
-    let scholarships = sqlx::query_as::<_, schoolccb_common::finance::Scholarship>(
-        "SELECT id, student_id, name, discount_percentage, approved, approved_by, valid_from, valid_until, created_at FROM scholarships WHERE student_id = $1 ORDER BY valid_from DESC",
+    let student_scholarships = sqlx::query_as::<_, schoolccb_common::finance::Scholarship>(
+        "SELECT id, student_id, name, discount_percentage, approved, approved_by, valid_from, valid_until, created_at FROM student_scholarships WHERE student_id = $1 ORDER BY valid_from DESC",
     )
     .bind(student_id)
     .fetch_all(&state.pool)
     .await?;
 
-    Ok(Json(json!({ "scholarships": scholarships })))
+    Ok(Json(json!({ "student_scholarships": student_scholarships })))
 }

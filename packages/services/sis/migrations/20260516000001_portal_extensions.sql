@@ -48,8 +48,8 @@ CREATE TABLE IF NOT EXISTS teacher_available_slots (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Admission: becas y contratos de matrícula
-CREATE TABLE IF NOT EXISTS scholarships (
+-- Admission: becas de oferta (por colegio) y contratos de matrícula
+CREATE TABLE IF NOT EXISTS admission_scholarships (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     school_id UUID NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS enrollment_contracts (
     school_id UUID NOT NULL,
     grade_level VARCHAR(50) NOT NULL,
     guardian_user_id UUID,
-    scholarship_id UUID REFERENCES scholarships(id),
+    scholarship_id UUID REFERENCES admission_scholarships(id),
     annexes JSONB DEFAULT '[]',
     total_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
     discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -84,7 +84,5 @@ CREATE TABLE IF NOT EXISTS enrollment_contracts (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_portal_certificates_user ON portal_certificates(requested_by);
-CREATE INDEX IF NOT EXISTS idx_support_appointments_user ON support_appointments(requested_by);
-CREATE INDEX IF NOT EXISTS idx_scholarships_school ON scholarships(school_id);
+CREATE INDEX IF NOT EXISTS idx_admission_scholarships_school ON admission_scholarships(school_id);
 CREATE INDEX IF NOT EXISTS idx_enrollment_contracts_student ON enrollment_contracts(student_id);
