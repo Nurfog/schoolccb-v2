@@ -51,12 +51,29 @@ pub fn GradesPage() -> Element {
         }
     };
 
+    let mut quick_test_msg = use_signal(|| None::<String>);
+
+    let do_quick_test = move |_| {
+        quick_test_msg.set(Some("Ejecutando...".to_string()));
+        spawn(async move {
+            let payload = serde_json::json!({"year": selected_year(), "semester": selected_semester()});
+            match client::quick_test(&payload).await {
+                Ok(resp) => quick_test_msg.set(Some(resp["message"].as_str().unwrap_or("OK").to_string())),
+                Err(e) => quick_test_msg.set(Some(format!("Error: {e}"))),
+            }
+        });
+    };
+
     rsx! {
         div { class: "page-header",
             h1 { "Calificaciones" }
             p { "Consulta de notas por asignatura" }
         }
         div { class: "page-toolbar",
+            if let Some(ref msg) = quick_test_msg() {
+                span { class: "badge badge-info", style: "margin-right: 8px;", "{msg}" }
+            }
+            button { class: "btn btn-sm btn-outline", style: "margin-right: 8px;", onclick: do_quick_test, "Quick Test" }
             div { class: "filter-group",
                 label { "Asignatura:" }
                 select { value: "{selected_subject_id}", onchange: on_subject_change,

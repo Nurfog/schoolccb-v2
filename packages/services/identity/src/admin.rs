@@ -35,7 +35,7 @@ pub fn admin_router() -> Router<AppState> {
         .route("/api/management/legal-representatives/{id}", put(admin_update_legal_rep).delete(admin_delete_legal_rep))
         // Plans
         .route("/api/management/license-plans", get(admin_list_plans).post(admin_create_plan))
-        .route("/api/management/license-plans/{id}", put(admin_update_plan).delete(admin_delete_plan))
+        .route("/api/management/license-plans/{id}", get(admin_get_plan).put(admin_update_plan).delete(admin_delete_plan))
         .route("/api/management/license-plans/{id}/modules", post(admin_set_plan_modules))
         // Licenses
         .route("/api/management/licenses", get(admin_list_licenses).post(admin_assign_license))
@@ -466,7 +466,56 @@ async fn admin_list_plans(
     })
     .collect();
 
-    Ok(Json(json!({"plans": plans})))
+    let mut result = Vec::new();
+    for p in plans {
+        let modules: Vec<Value> = sqlx::query_as::<_, (String, String, bool, Option<serde_json::Value>)>(
+            "SELECT module_key, module_name, included, sub_modules FROM plan_modules WHERE plan_id = $1::uuid ORDER BY module_key",
+        )
+        .bind(p["id"].as_str().unwrap_or(""))
+        .fetch_all(&state.pool).await.unwrap_or_default()
+        .into_iter()
+        .map(|(k, n, inc, sub)| json!({"module_key": k, "module_name": n, "included": inc, "sub_modules": sub}))
+        .collect();
+        let mut plan = p;
+        plan.as_object_mut().unwrap().insert("modules".into(), json!(modules));
+        result.push(plan);
+    }
+
+    Ok(Json(json!({"plans": result})))
+}
+
+async fn admin_get_plan(
+    claims: Claims,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> AuthResult<Json<Value>> {
+    require_management(&claims)?;
+
+    let plan = sqlx::query_as::<_, (Uuid, String, Option<String>, f64, f64, bool, i32, bool, bool, bool)>(
+        "SELECT id, name, description, price_monthly, price_yearly, featured, sort_order, active, is_custom, show_in_portal
+         FROM license_plans WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or(AuthError::NotFound("Plan no encontrado".into()))?;
+
+    let modules: Vec<Value> = sqlx::query_as::<_, (String, String, bool, Option<serde_json::Value>)>(
+        "SELECT module_key, module_name, included, sub_modules FROM plan_modules WHERE plan_id = $1 ORDER BY module_key",
+    )
+    .bind(id)
+    .fetch_all(&state.pool).await.unwrap_or_default()
+    .into_iter()
+    .map(|(k, n, inc, sub)| json!({"module_key": k, "module_name": n, "included": inc, "sub_modules": sub}))
+    .collect();
+
+    Ok(Json(json!({
+        "id": plan.0, "name": plan.1, "description": plan.2,
+        "price_monthly": plan.3, "price_yearly": plan.4,
+        "featured": plan.5, "sort_order": plan.6,
+        "active": plan.7, "is_custom": plan.8, "show_in_portal": plan.9,
+        "modules": modules,
+    })))
 }
 
 async fn admin_create_plan(

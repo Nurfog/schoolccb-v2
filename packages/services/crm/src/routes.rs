@@ -892,7 +892,7 @@ async fn verify_signatures(
         "provider": provider,
         "request_id": sig_result.request_id,
         "signing_url": sig_result.signing_url,
-        "status": "signed",
+        "status": sig_result.status,
     })))
 }
 

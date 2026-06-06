@@ -7,6 +7,11 @@ use crate::components::layout::{sidebar::Sidebar, topbar::Topbar};
 use crate::components::pages::academic_years_page::AcademicYearsPage;
 use crate::components::pages::admission::AdmissionPage;
 
+use crate::components::pages::b2b::finance::B2bFinancePage;
+use crate::components::pages::b2b::hr::B2bHrPage;
+use crate::components::pages::b2b::license_plans::B2bLicensePlansPage;
+use crate::components::pages::b2b::roles::B2bRolesPage;
+
 use crate::components::pages::agenda_page::AgendaPage;
 use crate::components::pages::attendance_page::AttendancePage;
 use crate::components::pages::audit_page::AuditPage;
@@ -68,8 +73,8 @@ pub fn has_token() -> bool {
 
 fn require_auth() {
     if !has_token() {
-        let nav = navigator();
-        nav.push("/login");
+        let window = web_sys::window().unwrap();
+        let _ = window.location().set_href("/login");
     }
 }
 
@@ -184,6 +189,14 @@ pub enum Route {
         Curriculum {},
         #[route("/sales")]
         Sales {},
+        #[route("/b2b/hr")]
+        B2bHr {},
+        #[route("/b2b/roles")]
+        B2bRoles {},
+        #[route("/b2b/finance")]
+        B2bFinance {},
+        #[route("/b2b/license-plans")]
+        B2bLicensePlans {},
 }
 
 #[component]
@@ -216,7 +229,7 @@ pub fn SessionLogin() -> Element {
             match code {
                 Some(c) => {
                     match client::exchange_code(&c).await {
-                        Ok(_) => { let _ = nav.replace("/"); }
+                        Ok(_) => { let _ = nav.replace("/dashboard"); }
                         Err(e) => error.set(Some(e)),
                     }
                 }
@@ -371,5 +384,17 @@ pub fn Curriculum() -> Element { use_page_title("Currículum Nacional"); rsx! { 
 
 #[component]
 pub fn Sales() -> Element { require_auth(); use_page_title("CRM Ventas"); rsx! { SalesPage {} } }
+
+#[component]
+pub fn B2bHr() -> Element { require_auth(); use_page_title("Equipo B2B"); rsx! { B2bHrPage {} } }
+
+#[component]
+pub fn B2bRoles() -> Element { require_auth(); use_page_title("Roles B2B"); rsx! { B2bRolesPage {} } }
+
+#[component]
+pub fn B2bFinance() -> Element { require_auth(); use_page_title("Finanzas B2B"); rsx! { B2bFinancePage {} } }
+
+#[component]
+pub fn B2bLicensePlans() -> Element { require_auth(); use_page_title("Planes de Licencia"); rsx! { B2bLicensePlansPage {} } }
 
 

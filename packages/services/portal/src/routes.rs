@@ -46,7 +46,7 @@ async fn login_page(state: State<Arc<AppState>>, Query(q): Query<LoginQuery>) ->
     render(
         &state,
         "login.html",
-        json!({"title": "Iniciar Sesión — SchoolCBB", "error": q.error}),
+        json!({"title": "Iniciar Sesión — SchoolCBB", "error": q.error, "frontend_url": state.config.frontend_url}),
     )
     .await
 }

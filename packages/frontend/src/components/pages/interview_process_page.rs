@@ -11,7 +11,7 @@ pub fn InterviewProcessPage() -> Element {
     let mut show_form = use_signal(|| false);
     let mut saving = use_signal(|| false);
 
-    let reset_form = move || {
+    let mut reset_form = move || {
         candidate_name.set(String::new());
         position.set(String::new());
         interview_date.set(String::new());
@@ -40,6 +40,16 @@ pub fn InterviewProcessPage() -> Element {
         let id_c = id.clone();
         spawn(async move {
             let _ = client::update_interview(&id_c, &payload).await;
+            interviews.restart();
+        });
+    };
+
+    let do_delete = move |id: String| {
+        if !web_sys::window().unwrap().confirm_with_message("¿Estás seguro de eliminar esta entrevista?").unwrap_or(false) {
+            return;
+        }
+        spawn(async move {
+            let _ = client::delete_interview(&id).await;
             interviews.restart();
         });
     };
@@ -93,6 +103,7 @@ pub fn InterviewProcessPage() -> Element {
                                         button { class: "btn btn-sm btn-success", onclick: { let i = id.clone(); move |_| do_update(i.clone(), "passed") }, "Aprobar" }
                                         button { class: "btn btn-sm btn-primary", style: "margin-left:4px", onclick: { let i = id.clone(); move |_| do_update(i.clone(), "hired") }, "Contratar" }
                                         button { class: "btn btn-sm btn-danger", style: "margin-left:4px", onclick: { let i = id.clone(); move |_| do_update(i.clone(), "rejected") }, "Rechazar" }
+                                        button { class: "btn btn-sm btn-danger-outline", style: "margin-left:4px", onclick: { let i = id.clone(); move |_| do_delete(i.clone()) }, "Eliminar" }
                                     }
                                 }
                             }}

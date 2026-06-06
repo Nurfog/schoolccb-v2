@@ -708,6 +708,7 @@ pub async fn fetch_admission_metrics() -> Result<Value, String> {
     fetch_json("/api/admission/metrics").await
 }
 
+#[allow(dead_code)]
 pub async fn fetch_prospect_reminders(prospect_id: &str) -> Result<Value, String> {
     fetch_json(&format!("/api/admission/reminders?prospect_id={}", prospect_id)).await
 }
@@ -767,6 +768,62 @@ pub async fn update_interview(id: &str, payload: &Value) -> Result<Value, String
 }
 pub async fn delete_interview(id: &str) -> Result<Value, String> {
     delete_json(&format!("/api/hr/interviews/{}", id)).await
+}
+
+// ─── Admin License Plans ───
+pub async fn admin_list_plans() -> Result<Value, String> {
+    fetch_json("/api/management/license-plans").await
+}
+pub async fn admin_get_plan(id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/management/license-plans/{}", id)).await
+}
+pub async fn admin_create_plan(payload: &Value) -> Result<Value, String> {
+    post_json("/api/management/license-plans", payload).await
+}
+pub async fn admin_update_plan(id: &str, payload: &Value) -> Result<Value, String> {
+    put_json(&format!("/api/management/license-plans/{}", id), payload).await
+}
+#[allow(dead_code)]
+pub async fn admin_delete_plan(id: &str) -> Result<Value, String> {
+    delete_json(&format!("/api/management/license-plans/{}", id)).await
+}
+pub async fn admin_set_plan_modules(id: &str, payload: &Value) -> Result<Value, String> {
+    post_json(&format!("/api/management/license-plans/{}/modules", id), payload).await
+}
+#[allow(dead_code)]
+pub async fn admin_list_licenses(status: Option<&str>, corp_id: Option<&str>) -> Result<Value, String> {
+    let mut q = String::new();
+    if let Some(s) = status { q.push_str(&format!("status={}", s)); }
+    if let Some(c) = corp_id { if !q.is_empty() { q.push('&'); } q.push_str(&format!("corporation_id={}", c)); }
+    fetch_json(&format!("/api/management/licenses?{}", q)).await
+}
+#[allow(dead_code)]
+pub async fn admin_assign_license(payload: &Value) -> Result<Value, String> {
+    post_json("/api/management/licenses", payload).await
+}
+#[allow(dead_code)]
+pub async fn admin_extend_license(id: &str, payload: &Value) -> Result<Value, String> {
+    put_json(&format!("/api/management/licenses/{}/extend", id), payload).await
+}
+#[allow(dead_code)]
+pub async fn admin_change_plan(id: &str, payload: &Value) -> Result<Value, String> {
+    put_json(&format!("/api/management/licenses/{}/change-plan", id), payload).await
+}
+#[allow(dead_code)]
+pub async fn admin_update_license_status(id: &str, payload: &Value) -> Result<Value, String> {
+    put_json(&format!("/api/management/licenses/{}/status", id), payload).await
+}
+#[allow(dead_code)]
+pub async fn admin_list_payments() -> Result<Value, String> {
+    fetch_json("/api/management/payments").await
+}
+#[allow(dead_code)]
+pub async fn admin_register_payment(payload: &Value) -> Result<Value, String> {
+    post_json("/api/management/payments", payload).await
+}
+#[allow(dead_code)]
+pub async fn admin_list_corporations() -> Result<Value, String> {
+    fetch_json("/api/management/corporations").await
 }
 
 fn urlencoding(s: &str) -> String {

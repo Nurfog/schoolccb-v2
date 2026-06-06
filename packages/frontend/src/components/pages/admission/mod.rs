@@ -39,11 +39,34 @@ pub fn AdmissionPage() -> Element {
     let edit_notes = use_signal(String::new);
     let vacancies = use_resource(|| client::check_vacancies());
     let mut contracts = use_resource(|| client::list_enrollment_contracts());
-    let scholarships = use_resource(|| client::list_scholarships());
+    let mut scholarships = use_resource(|| client::list_scholarships());
+    let mut show_new_scholarship = use_signal(|| false);
+    let mut new_scholarship_name = use_signal(String::new);
+    let mut new_scholarship_discount = use_signal(|| "10".to_string());
+    let mut new_scholarship_max = use_signal(|| "10".to_string());
+    let mut saving_scholarship = use_signal(|| false);
     let mut active_tab = use_signal(|| "pipeline".to_string());
     let mut enrolling_id = use_signal(|| None::<String>);
     let mut enroll_msg = use_signal(|| None::<String>);
     let mut enroll_success = use_signal(|| false);
+    let mut show_apply_scholarship = use_signal(|| None::<String>);
+    let mut apply_student_id = use_signal(String::new);
+    let mut apply_msg = use_signal(|| None::<String>);
+    let mut show_new_contract = use_signal(|| false);
+    let mut new_contract_student = use_signal(String::new);
+    let mut new_contract_grade = use_signal(String::new);
+    let mut new_contract_amount = use_signal(|| "0".to_string());
+    let mut saving_contract = use_signal(|| false);
+    let mut view_contract_id = use_signal(|| None::<String>);
+    let contract_detail = use_resource(move || {
+        let vid = view_contract_id();
+        async move {
+            match vid {
+                Some(id) => client::get_enrollment_contract(&id).await,
+                None => Err("none".to_string()),
+            }
+        }
+    });
 
     let do_create = move |_| {
         saving.set(true);
@@ -68,6 +91,61 @@ pub fn AdmissionPage() -> Element {
             source.set(String::new());
             notes.set(String::new());
             prospects.restart();
+        });
+    };
+
+    let do_create_scholarship = move |_| {
+        saving_scholarship.set(true);
+        let payload = serde_json::json!({
+            "name": new_scholarship_name(),
+            "discount": new_scholarship_discount().parse::<f64>().unwrap_or(0.0),
+            "max": new_scholarship_max().parse::<i64>().unwrap_or(10),
+        });
+        spawn(async move {
+            let _ = client::create_admission_scholarship(&payload).await;
+            saving_scholarship.set(false);
+            show_new_scholarship.set(false);
+            new_scholarship_name.set(String::new());
+            new_scholarship_discount.set("10".to_string());
+            new_scholarship_max.set("10".to_string());
+            scholarships.restart();
+        });
+    };
+
+    let do_toggle_scholarship = move |id: String| {
+        spawn(async move {
+            let _ = client::toggle_scholarship(&id).await;
+            scholarships.restart();
+        });
+    };
+
+    let do_apply_scholarship = move |_| {
+        let sid = apply_student_id();
+        if sid.is_empty() { return; }
+        let s_id = show_apply_scholarship().unwrap_or_default();
+        spawn(async move {
+            match client::apply_scholarship(&s_id, &sid).await {
+                Ok(resp) => apply_msg.set(Some(resp["message"].as_str().unwrap_or("Aplicada").to_string())),
+                Err(e) => apply_msg.set(Some(format!("Error: {e}"))),
+            }
+        });
+    };
+
+    let do_create_contract = move |_| {
+        saving_contract.set(true);
+        let payload = serde_json::json!({
+            "student": new_contract_student(),
+            "grade": new_contract_grade(),
+            "amount": new_contract_amount().parse::<f64>().unwrap_or(0.0),
+        });
+        spawn(async move {
+            let _ = client::create_enrollment_contract(&payload).await;
+            saving_contract.set(false);
+            show_new_contract.set(false);
+            new_contract_student.set(String::new());
+            new_contract_grade.set(String::new());
+            new_contract_amount.set("0".to_string());
+            contracts.restart();
         });
     };
 
@@ -208,7 +286,52 @@ pub fn AdmissionPage() -> Element {
                 }
             } else if tab == "contracts" {
                 rsx! {
-                    div { class: "page-toolbar", h3 { "Contratos de Matrícula" } }
+                    div { class: "page-toolbar",
+                        h3 { "Contratos de Matrícula" }
+                        button { class: "btn btn-primary", onclick: move |_| show_new_contract.set(!show_new_contract()), if show_new_contract() { "Cancelar" } else { "Nuevo Contrato" } }
+                    }
+                    {
+                        if show_new_contract() {
+                            rsx! {
+                                div { class: "form-card",
+                                    div { class: "form-row",
+                                        div { class: "form-group",
+                                            label { "Estudiante:" }
+                                            input { class: "form-input", value: "{new_contract_student}", oninput: move |e| new_contract_student.set(e.value()), placeholder: "Nombre del estudiante" }
+                                        }
+                                        div { class: "form-group",
+                                            label { "Nivel:" }
+                                            select { class: "form-input", value: "{new_contract_grade}", oninput: move |e| new_contract_grade.set(e.value()),
+                                                option { value: "", "Seleccionar..." }
+                                                option { value: "Pre-Kínder", "Pre-Kínder" }
+                                                option { value: "Kínder", "Kínder" }
+                                                option { value: "1° Básico", "1° Básico" }
+                                                option { value: "2° Básico", "2° Básico" }
+                                                option { value: "3° Básico", "3° Básico" }
+                                                option { value: "4° Básico", "4° Básico" }
+                                                option { value: "5° Básico", "5° Básico" }
+                                                option { value: "6° Básico", "6° Básico" }
+                                                option { value: "7° Básico", "7° Básico" }
+                                                option { value: "8° Básico", "8° Básico" }
+                                                option { value: "1° Medio", "1° Medio" }
+                                                option { value: "2° Medio", "2° Medio" }
+                                                option { value: "3° Medio", "3° Medio" }
+                                                option { value: "4° Medio", "4° Medio" }
+                                            }
+                                        }
+                                    }
+                                    div { class: "form-group",
+                                        label { "Monto:" }
+                                        input { class: "form-input", value: "{new_contract_amount}", oninput: move |e| new_contract_amount.set(e.value()), type: "number", min: "0" }
+                                    }
+                                    div { class: "form-actions",
+                                        button { class: "btn btn-primary", disabled: saving_contract(), onclick: do_create_contract, if saving_contract() { "Guardando..." } else { "Crear Contrato" } }
+                                        button { class: "btn", onclick: move |_| show_new_contract.set(false), "Cancelar" }
+                                    }
+                                }
+                            }
+                        } else { rsx! {} }
+                    }
                     if enroll_success() {
                         div { class: "success-card",
                             h2 { "✅ Matrícula Confirmada" }
@@ -242,11 +365,12 @@ pub fn AdmissionPage() -> Element {
                                                     button {
                                                         class: "btn btn-primary btn-small",
                                                         style: "margin-right: 4px;",
-                                                        onclick: move |_| enrolling_id.set(Some(cid.clone())),
+                                                        onclick: { let cid_enroll = cid.clone(); move |_| enrolling_id.set(Some(cid_enroll.clone())) },
                                                         "Matricular"
                                                     }
                                                     button {
                                                         class: "btn btn-outline btn-small",
+                                                        style: "margin-right: 4px;",
                                                         onclick: move |_| {
                                                             let cid3 = cid2.clone();
                                                             spawn(async move {
@@ -258,6 +382,11 @@ pub fn AdmissionPage() -> Element {
                                                     }
                                                 } else {
                                                     span { class: "badge badge-success", "Completado" }
+                                                }
+                                                button {
+                                                    class: "btn btn-sm",
+                                                    onclick: { let cid4 = cid.clone(); move |_| view_contract_id.set(Some(cid4.clone())) },
+                                                    "Ver"
                                                 }
                                             }
                                         }
@@ -327,6 +456,51 @@ pub fn AdmissionPage() -> Element {
                                         });
                                         enroll_modal.unwrap_or(rsx! {})
                                     }
+                                    {
+                                        let show_view = view_contract_id();
+                                        let view_modal = show_view.as_ref().map(|vid| {
+                                            let cid = vid.clone();
+                                            rsx! {
+                                                div { class: "modal-overlay", role: "dialog", onclick: move |_| view_contract_id.set(None),
+                                                    div { class: "modal-content", onclick: move |e| e.stop_propagation(),
+                                                        div { class: "modal-header",
+                                                            h2 { "Detalle del Contrato" }
+                                                            button { class: "btn-icon", onclick: move |_| view_contract_id.set(None), "✕" }
+                                                        }
+                                                        div { class: "modal-body",
+                                                            match contract_detail() {
+                                                                Some(Ok(j)) => {
+                                                                    let student = j["student"].as_str().unwrap_or("").to_string();
+                                                                    let grade = j["grade"].as_str().unwrap_or("").to_string();
+                                                                    let amount = j["amount"].as_str().unwrap_or("").to_string();
+                                                                    let status = j["status"].as_str().unwrap_or("").to_string();
+                                                                    let date = j["date"].as_str().unwrap_or("").to_string();
+                                                                    rsx! {
+                                                                        table { class: "detail-table",
+                                                                            tbody {
+                                                                                tr { td { "ID:" } td { "{cid}" } }
+                                                                                tr { td { "Estudiante:" } td { "{student}" } }
+                                                                                tr { td { "Nivel:" } td { "{grade}" } }
+                                                                                tr { td { "Monto:" } td { "{amount}" } }
+                                                                                tr { td { "Estado:" } td { "{status}" } }
+                                                                                tr { td { "Creado:" } td { "{date}" } }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                },
+                                                                Some(Err(e)) => rsx! { p { "Error: {e}" } },
+                                                                None => rsx! { p { "Cargando..." } },
+                                                            }
+                                                        }
+                                                        div { class: "modal-footer",
+                                                            button { class: "btn", onclick: move |_| view_contract_id.set(None), "Cerrar" }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        });
+                                        view_modal.unwrap_or(rsx! {})
+                                    }
                                 }
                             }
                             _ => rsx! { div { class: "loading-spinner", "Cargando contratos..." } },
@@ -335,11 +509,41 @@ pub fn AdmissionPage() -> Element {
                 }
             } else {
                 rsx! {
-                    div { class: "page-toolbar", h3 { "Becas y Descuentos" } }
+                    div { class: "page-toolbar",
+                        h3 { "Becas y Descuentos" }
+                        button { class: "btn btn-primary", onclick: move |_| show_new_scholarship.set(!show_new_scholarship()), if show_new_scholarship() { "Cancelar" } else { "Nueva Beca" } }
+                    }
+                    {
+                        if show_new_scholarship() {
+                            rsx! {
+                                div { class: "form-card",
+                                    div { class: "form-row",
+                                        div { class: "form-group",
+                                            label { "Nombre:" }
+                                            input { class: "form-input", value: "{new_scholarship_name}", oninput: move |e| new_scholarship_name.set(e.value()), placeholder: "Beca Excelencia" }
+                                        }
+                                        div { class: "form-group",
+                                            label { "% Descuento:" }
+                                            input { class: "form-input", value: "{new_scholarship_discount}", oninput: move |e| new_scholarship_discount.set(e.value()), type: "number", min: "1", max: "100" }
+                                        }
+                                        div { class: "form-group",
+                                            label { "Cupo Máx:" }
+                                            input { class: "form-input", value: "{new_scholarship_max}", oninput: move |e| new_scholarship_max.set(e.value()), type: "number", min: "1" }
+                                        }
+                                    }
+                                    div { class: "form-actions",
+                                        button { class: "btn btn-primary", disabled: saving_scholarship(), onclick: do_create_scholarship, if saving_scholarship() { "Guardando..." } else { "Crear Beca" } }
+                                        button { class: "btn", onclick: move |_| show_new_scholarship.set(false), "Cancelar" }
+                                    }
+                                }
+                            }
+                        } else { rsx! {} }
+                    }
                     match scholarships() {
                         Some(Ok(data)) => {
                             let list = data["scholarships"].as_array().cloned().unwrap_or_default();
                             let s_rows: Vec<Element> = list.iter().map(|s| {
+                                let sid = s["id"].as_str().unwrap_or("").to_string();
                                 let sname = s["name"].as_str().unwrap_or("-").to_string();
                                 let sdiscount = format!("{:.0}%", s["discount"].as_f64().unwrap_or(0.0));
                                 let sbenef = format!("{}/{}", s["current"].as_i64().unwrap_or(0), s["max"].as_i64().unwrap_or(0));
@@ -349,7 +553,11 @@ pub fn AdmissionPage() -> Element {
                                         td { "{sname}" }
                                         td { "{sdiscount}" }
                                         td { "{sbenef}" }
-                                        td { if sactive { "✓" } else { "✗" } }
+                                        td { if sactive { span { class: "grade-good", "✓ Activa" } } else { span { class: "grade-bad", "✗ Inactiva" } } }
+                                        td {
+                                            button { class: "btn btn-sm", onclick: { let id = sid.clone(); move |_| do_toggle_scholarship(id.clone()) }, if sactive { "Desactivar" } else { "Activar" } }
+                                            button { class: "btn btn-sm btn-primary", style: "margin-left: 4px;", onclick: { let id = sid.clone(); move |_| { show_apply_scholarship.set(Some(id.clone())); apply_student_id.set(String::new()); apply_msg.set(None); } }, "Aplicar" }
+                                        }
                                     }
                                 }
                             }).collect();
@@ -361,13 +569,43 @@ pub fn AdmissionPage() -> Element {
                                             th { "Nombre" }
                                             th { "Descuento" }
                                             th { "Beneficiarios" }
-                                            th { "Activa" }
+                                            th { "Estado" }
+                                            th { "Acciones" }
                                         }}
                                         tbody { {s_rows.into_iter()} }
                                     }
                                     if s_empty {
                                         div { class: "empty-state", "Sin becas configuradas" }
                                     }
+                                }
+                                {
+                                    let show_apply = show_apply_scholarship();
+                                    let apply_modal = show_apply.as_ref().map(|_| {
+                                        rsx! {
+                                            div { class: "modal-overlay", role: "dialog", onclick: move |_| show_apply_scholarship.set(None),
+                                                div { class: "modal-content", onclick: move |e| e.stop_propagation(),
+                                                    div { class: "modal-header",
+                                                        h2 { "Aplicar Beca" }
+                                                        button { class: "btn-icon", onclick: move |_| show_apply_scholarship.set(None), "✕" }
+                                                    }
+                                                    div { class: "modal-body",
+                                                        div { class: "form-group",
+                                                            label { "ID del Estudiante:" }
+                                                            input { class: "form-input", value: "{apply_student_id}", oninput: move |e| apply_student_id.set(e.value()), placeholder: "Ingrese el ID del estudiante" }
+                                                        }
+                                                        if let Some(ref msg) = apply_msg() {
+                                                            div { class: "alert alert-info", "{msg}" }
+                                                        }
+                                                    }
+                                                    div { class: "modal-footer",
+                                                        button { class: "btn btn-primary", onclick: do_apply_scholarship, "Aplicar" }
+                                                        button { class: "btn", onclick: move |_| show_apply_scholarship.set(None), "Cancelar" }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    });
+                                    apply_modal.unwrap_or(rsx! {})
                                 }
                             }
                         }

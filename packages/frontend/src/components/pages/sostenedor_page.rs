@@ -349,7 +349,7 @@ pub fn SostenedorPage() -> Element {
                     if sd == -1 { sorted.reverse(); }
                     let rows: Vec<Element> = sorted.iter().map(|school| {
                         let name = school["name"].as_str().unwrap_or("-").to_string();
-                        let sid = school["id"].as_str().unwrap_or("").to_string();
+                        let _sid = school["id"].as_str().unwrap_or("").to_string();
                         let students = school["students"].as_i64().unwrap_or(0);
                         let teachers = school["teachers"].as_i64().unwrap_or(0);
                         let att = school["attendance"].as_str().unwrap_or("100").to_string();

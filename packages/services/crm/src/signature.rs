@@ -119,6 +119,7 @@ async fn request_toku_signature(
 }
 
 /// Verifica el estado de una solicitud de firma en Toku.
+#[allow(dead_code)]
 pub async fn check_signature_status(
     config: &SignatureConfig,
     request_id: &str,

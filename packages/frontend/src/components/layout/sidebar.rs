@@ -117,19 +117,107 @@ pub fn Sidebar() -> Element {
 
                 {if user_role == "GerenteGeneral" {
                     rsx! {
+                        div { class: "nav-section-label", "Gestión"}
+                        a { class: "nav-item", href: "/dashboard", aria_current: is_active("/dashboard").then_some("page"),
+                            span { class: "icon",
+                                svg { role: "presentation", view_box: "0 0 24 24",
+                                    rect { x: "3", y: "3", width: "7", height: "7", rx: "1" }
+                                    rect { x: "14", y: "3", width: "7", height: "7", rx: "1" }
+                                    rect { x: "3", y: "14", width: "7", height: "7", rx: "1" }
+                                    rect { x: "14", y: "14", width: "7", height: "7", rx: "1" }
+                                }
+                            }
+                            span { class: "label", "Dashboard Corporativo" }
+                        }
                         a { class: "nav-item", href: "/sales", aria_current: is_active("/sales").then_some("page"),
                             span { class: "icon",
                                 svg { role: "presentation", view_box: "0 0 24 24",
                                     path { d: "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" }
                                 }
                             }
-                            span { class: "label", "Panel Gestión" }
+                            span { class: "label", "CRM Ventas" }
+                        }
+                        a { class: "nav-item", href: "/b2b/finance", aria_current: is_active("/b2b/finance").then_some("page"),
+                            span { class: "icon",
+                                svg { role: "presentation", view_box: "0 0 24 24",
+                                    path { d: "M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" }
+                                }
+                            }
+                            span { class: "label", "Finanzas B2B" }
+                        }
+                        div { class: "nav-section-label", "RRHH"}
+                        a { class: "nav-item", href: "/b2b/hr", aria_current: is_active("/b2b/hr").then_some("page"),
+                            span { class: "icon",
+                                svg { role: "presentation", view_box: "0 0 24 24",
+                                    path { d: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" }
+                                    circle { cx: "9", cy: "7", r: "4" }
+                                    path { d: "M23 21v-2a4 4 0 0 0-3-3.87" }
+                                    path { d: "M16 3.13a4 4 0 0 1 0 7.75" }
+                                }
+                            }
+                            span { class: "label", "Recursos Humanos" }
+                        }
+                        a { class: "nav-item", href: "/b2b/roles", aria_current: is_active("/b2b/roles").then_some("page"),
+                            span { class: "icon",
+                                svg { role: "presentation", view_box: "0 0 24 24",
+                                    path { d: "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" }
+                                }
+                            }
+                            span { class: "label", "Roles y Permisos" }
+                        }
+                        a { class: "nav-item", href: "/payroll", aria_current: is_active("/payroll").then_some("page"),
+                            span { class: "icon",
+                                svg { role: "presentation", view_box: "0 0 24 24",
+                                    path { d: "M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" }
+                                }
+                            }
+                            span { class: "label", "Remuneraciones" }
+                        }
+                        a { class: "nav-item", href: "/my-portal", aria_current: is_active("/my-portal").then_some("page"),
+                            span { class: "icon",
+                                svg { role: "presentation", view_box: "0 0 24 24",
+                                    path { d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" }
+                                    circle { cx: "12", cy: "7", r: "4" }
+                                }
+                            }
+                            span { class: "label", "Mi Portal" }
+                        }
+                        div { class: "nav-section-label", "Configuración"}
+                        a { class: "nav-item", href: "/corporations", aria_current: is_active("/corporations").then_some("page"),
+                            span { class: "icon",
+                                svg { role: "presentation", view_box: "0 0 24 24",
+                                    path { d: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" }
+                                    polyline { points: "9 22 9 12 15 12 15 22" }
+                                }
+                            }
+                            span { class: "label", "Corporaciones" }
+                        }
+                        a { class: "nav-item", href: "/license-portal", aria_current: is_active("/license-portal").then_some("page"),
+                            span { class: "icon",
+                                svg { role: "presentation", view_box: "0 0 24 24",
+                                    path { d: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" }
+                                }
+                            }
+                            span { class: "label", "Portal de Licencias" }
+                        }
+                        a { class: "nav-item", href: "/b2b/license-plans", aria_current: is_active("/b2b/license-plans").then_some("page"),
+                            span { class: "icon",
+                                svg { role: "presentation", view_box: "0 0 24 24",
+                                    path { d: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" }
+                                    polyline { points: "14 2 14 8 20 8" }
+                                    line { x1: "16", y1: "13", x2: "8", y2: "13" }
+                                    line { x1: "16", y1: "17", x2: "8", y2: "17" }
+                                    polyline { points: "10 9 9 9 8 9" }
+                                }
+                            }
+                            span { class: "label", "Planes de Licencia" }
                         }
                     }
                 } else { rsx! {} }}
 
                 {if user_role != "GerenteGeneral" {
                     rsx! {
+                        div { class: "nav-section-label", "General"}
                         a { class: "nav-item", href: "/dashboard", aria_current: is_active("/dashboard").then_some("page"),
                             span { class: "icon",
                                 svg { role: "presentation", view_box: "0 0 24 24",
@@ -268,11 +356,11 @@ pub fn Sidebar() -> Element {
 
 
                 button { class: "nav-item logout", onclick: move |_| {
-                        let nav = navigator();
                         spawn(async move {
                             let _ = client::logout().await;
                             client::remove_token();
-                            nav.replace("/login");
+                            let window = web_sys::window().unwrap();
+                            let _ = window.location().set_href("/login");
                         });
                     },
                     span { class: "icon",

@@ -55,7 +55,7 @@ pub fn ClassroomsPage() -> Element {
         });
     };
 
-    let do_edit = move |id: String, n: String, cap: i32, loc: String| {
+    let mut do_edit = move |id: String, n: String, cap: i32, loc: String| {
         name.set(n);
         capacity.set(cap);
         location.set(loc);
@@ -98,41 +98,49 @@ pub fn ClassroomsPage() -> Element {
         }
         div { class: "data-table-container",
             style { "
-                .cap-bar { display: flex; align-items: center; gap: 8px; }
-                .cap-track { flex: 1; height: 8px; background: #eceff1; border-radius: 4px; overflow: hidden; }
-                .cap-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
-                .cap-fill.low { background: #4caf50; }
-                .cap-fill.med { background: #ff9800; }
-                .cap-fill.high { background: #f44336; }
-                .cap-label { font-size: 0.85rem; color: #546e7a; white-space: nowrap; }
+                .cap-bar {{ display: flex; align-items: center; gap: 8px; }}
+                .cap-track {{ flex: 1; height: 8px; background: #eceff1; border-radius: 4px; overflow: hidden; }}
+                .cap-fill {{ height: 100%; border-radius: 4px; transition: width 0.3s; }}
+                .cap-fill.low {{ background: #4caf50; }}
+                .cap-fill.med {{ background: #ff9800; }}
+                .cap-fill.high {{ background: #f44336; }}
+                .cap-label {{ font-size: 0.85rem; color: #546e7a; white-space: nowrap; }}
             " }
             match rooms() {
                 Some(Ok(j)) => {
                     let rows: Vec<(String, String, i32, String)> = j["classrooms"].as_array().map(|arr| arr.iter().map(|r| {
                         (r["id"].as_str().unwrap_or("").to_string(), r["name"].as_str().unwrap_or("").to_string(), r["capacity"].as_i64().unwrap_or(0) as i32, r["location"].as_str().unwrap_or("").to_string())
                     }).collect()).unwrap_or_default();
+
+                    let av_map = availability();
+
+                    let rows_enhanced: Vec<(String, String, i32, String, String, String, String)> = rows.iter().map(|(id, n, cap, loc)| {
+                        let enrolled = av_map.as_ref().and_then(|m| m.get(id)).and_then(|a| a.get("enrolled").and_then(|v| v.as_i64())).unwrap_or(0);
+                        let pct = if *cap > 0 { (enrolled as f64 / *cap as f64) * 100.0 } else { 0.0 };
+                        let fill_class = if pct >= 90.0 { "high".to_string() } else if pct >= 70.0 { "med".to_string() } else { "low".to_string() };
+                        let style_width = format!("width: {:.0}%", pct);
+                        let label = format!("{}/{} ({:.0}%)", enrolled, cap, pct);
+                        (id.clone(), n.clone(), *cap, loc.clone(), style_width, fill_class, label)
+                    }).collect();
+
                     rsx! {
                         table { class: "data-table",
                             thead { tr { th { "Nombre" } th { "Capacidad" } th { "Ocupación" } th { "Ubicación" } th { "Acciones" } } }
-                            tbody { for (id, n, cap, loc) in &rows {
-                                let av = availability().as_ref().and_then(|m| m.get(id));
-                                let enrolled = av.and_then(|a| a.get("enrolled").and_then(|v| v.as_i64())).unwrap_or(0);
-                                let pct = if *cap > 0 { (enrolled as f64 / *cap as f64) * 100.0 } else { 0.0 };
-                                let fill_class = if pct >= 90.0 { "high" } else if pct >= 70.0 { "med" } else { "low" };
+                            tbody { for (id, n, cap, loc, style_width, fill_class, label) in &rows_enhanced {
                                 tr {
                                     td { "{n}" }
                                     td { "{cap}" }
                                     td {
                                         div { class: "cap-bar",
                                             div { class: "cap-track",
-                                                div { class: "cap-fill {fill_class}", style: "width: {pct:.0}%" }
+                                                div { class: "cap-fill {fill_class}", style: "{style_width}" }
                                             }
-                                            span { class: "cap-label", "{enrolled}/{cap} ({pct:.0}%)" }
+                                            span { class: "cap-label", "{label}" }
                                         }
                                     }
                                     td { if loc.is_empty() { "-" } else { "{loc}" } }
                                     td {
-                                        button { class: "btn btn-sm", onclick: { let i = id.clone(); let n = n.clone(); let loc = loc.clone(); move |_| do_edit(i.clone(), n.clone(), *cap, loc.clone()) }, "Editar" }
+                                        button { class: "btn btn-sm", onclick: { let i = id.clone(); let nn = n.clone(); let cc = *cap; let ll = loc.clone(); move |_| do_edit(i.clone(), nn.clone(), cc, ll.clone()) }, "Editar" }
                                         button { class: "btn btn-sm btn-danger", style: "margin-left: 4px;", onclick: { let i = id.clone(); move |_| do_delete(i.clone()) }, "Eliminar" }
                                     }
                                 }

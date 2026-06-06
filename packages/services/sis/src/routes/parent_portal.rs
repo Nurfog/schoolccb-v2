@@ -315,10 +315,6 @@ async fn request_certificate(
     let date = chrono::Utc::now().format("%d/%m/%Y");
 
     // Generate minimal valid PDF (no external deps)
-    let text = format!(
-        "{}|{}|{}|{}|{}|{}",
-        title, student_info.0, student_info.1, student_info.2, student_info.3, date,
-    );
     let stream_content = format!(
         "BT /F1 18 Tf 50 730 Td ({}) Tj /F1 12 Tf 50 690 Td (Alumno: {}) Tj \
          /F1 12 Tf 50 670 Td (RUT: {}) Tj /F1 12 Tf 50 650 Td (Curso: {}) Tj \
