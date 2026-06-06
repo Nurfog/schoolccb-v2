@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-section">
+  <div class="container">
+    <h1>Preguntas Frecuentes</h1>
+    <p class="subtitle">Resuelve tus dudas sobre SchoolCBB</p>
+
+    <div class="faq-list">
+      <details class="faq-item" open>
+        <summary>¿Qué es SchoolCBB?</summary>
+        <p>SchoolCBB es una plataforma integral de gestión escolar diseñada para colegios, corporaciones educacionales y sostenedores en Chile. Unifica administración, finanzas, RRHH, admisión, comunicaciones y reporting en un solo sistema.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Qué tipos de planes ofrecen?</summary>
+        <p>Ofrecemos tres planes: <strong>Básico</strong> para un colegio individual, <strong>Profesional</strong> con módulos adicionales como finanzas y RRHH, y <strong>Corporativo</strong> para corporaciones con múltiples colegios, dashboard centralizado y soporte prioritario.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿El sistema cumple con la normativa chilena?</summary>
+        <p>Sí. SchoolCBB cumple con la Ley General de Educación, Decreto 67 (evaluación), Decreto 83 (DUA), Ley TEA, Ley Karin, Ley de Inclusión, y formatos SIGE/MINEDUC. Además, estamos alineados con las Bases Curriculares del Ministerio de Educación para todos los niveles.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Cómo funciona el proceso de admisión?</summary>
+        <p>SchoolCBB incluye un CRM de admisión completo con pipeline kanban, registro de prospectos, preparación de contratos de matrícula, aplicación de becas, gestión de pagos (Webpay, efectivo, transferencia) e inscripción final del alumno en el curso correspondiente.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Ofrecen portal para apoderados y alumnos?</summary>
+        <p>Sí. Apoderados pueden revisar notas, asistencia, anotaciones, horarios, solicitar certificados, agendar reuniones con profesores y comunicarse con el colegio. Alumnos tienen su propio portal con notas, horario, agenda de citas y más.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿El sistema es multi-colegio?</summary>
+        <p>Sí. El plan Corporativo permite gestionar múltiples colegios desde un dashboard centralizado con KPIs comparativos, alertas, tendencias y reportes consolidados para el sostenedor.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Cómo se protegen los datos?</summary>
+        <p>Cumplimos con la Ley 21.719 de protección de datos personales. Toda la información se transmite cifrada (HTTPS), los tokens JWT tienen expiración, y los roles de usuario limitan el acceso a la información sensible.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Ofrecen soporte e implementación?</summary>
+        <p>Sí. Todos los planes incluyen soporte técnico. Los planes Profesional y Corporativo incluyen capacitación para el personal del colegio y soporte prioritario. El plan Corporativo además incluye un account manager dedicado.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Cómo puedo contratar el servicio?</summary>
+        <p>Puedes contactarnos a través del <a href="/contact">formulario de contacto</a>, llamarnos directamente o solicitar una demo en vivo. Uno de nuestros agentes comerciales te contactará para entender tus necesidades y ofrecerte el plan adecuado.</p>
+      </details>
+
+      <details class="faq-item">
+        <summary>¿Se puede integrar con otros sistemas?</summary>
+        <p>Sí. SchoolCBB expone una API REST pública que permite la integración con sistemas externos como portales web, aplicaciones móviles, sistemas contables y otras plataformas educativas.</p>
+      </details>
+    </div>
+
+    <div class="faq-cta">
+      <h2>¿No encuentras lo que buscas?</h2>
+      <p>Contáctanos directamente y te responderemos a la brevedad.</p>
+      <a href="/contact" class="btn btn-primary">Contactar</a>
+      <a href="/pricing" class="btn btn-outline">Ver Planes</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

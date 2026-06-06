@@ -23,6 +23,7 @@ pub fn router() -> Router<Arc<AppState>> {
         .route("/features", get(features))
         .route("/pricing", get(pricing))
         .route("/about", get(about))
+        .route("/faq", get(faq_page))
         .route("/contact", get(contact_page))
         .route("/blog", get(blog_index))
         .route("/blog/{slug}", get(blog_post))
@@ -148,6 +149,7 @@ async fn sitemap_xml(state: State<Arc<AppState>>) -> ([(axum::http::header::Head
         r#"  <url><loc>https://schoolccb.cl/pricing</loc><priority>0.8</priority></url>"#.to_string(),
         r#"  <url><loc>https://schoolccb.cl/about</loc><priority>0.6</priority></url>"#.to_string(),
         r#"  <url><loc>https://schoolccb.cl/contact</loc><priority>0.7</priority></url>"#.to_string(),
+        r#"  <url><loc>https://schoolccb.cl/faq</loc><priority>0.6</priority></url>"#.to_string(),
         r#"  <url><loc>https://schoolccb.cl/blog</loc><priority>0.8</priority></url>"#.to_string(),
     ];
     for post in &state.blog_posts {
@@ -176,7 +178,21 @@ async fn index(state: State<Arc<AppState>>) -> Result<Html<String>, StatusCode> 
 }
 
 async fn features(state: State<Arc<AppState>>) -> Result<Html<String>, StatusCode> {
-    render(&state, "features.html", json!({"title": "Características — SchoolCBB"})).await
+    let features = fetch_features(&state).await.unwrap_or_default();
+    render(&state, "features.html", json!({"title": "Características — SchoolCBB", "features": features})).await
+}
+
+async fn fetch_features(state: &AppState) -> Result<Vec<Value>, ()> {
+    let resp = state
+        .client
+        .get(format!("{}/api/public/features", state.config.identity_url))
+        .send()
+        .await
+        .map_err(|e| tracing::error!("Failed to fetch features: {e}"))?;
+    let body: Value = resp.json().await.map_err(|e| {
+        tracing::error!("Failed to parse features response: {e}");
+    })?;
+    Ok(body["features"].as_array().cloned().unwrap_or_default())
 }
 
 async fn pricing(state: State<Arc<AppState>>) -> Result<Html<String>, StatusCode> {
@@ -191,6 +207,10 @@ async fn pricing(state: State<Arc<AppState>>) -> Result<Html<String>, StatusCode
 
 async fn about(state: State<Arc<AppState>>) -> Result<Html<String>, StatusCode> {
     render(&state, "about.html", json!({"title": "Sobre Nosotros — SchoolCBB"})).await
+}
+
+async fn faq_page(state: State<Arc<AppState>>) -> Result<Html<String>, StatusCode> {
+    render(&state, "faq.html", json!({"title": "Preguntas Frecuentes — SchoolCBB"})).await
 }
 
 async fn contact_page(state: State<Arc<AppState>>) -> Result<Html<String>, StatusCode> {

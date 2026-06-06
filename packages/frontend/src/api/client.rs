@@ -1,5 +1,6 @@
 use serde_json::{Value, json};
 use std::sync::{Mutex, OnceLock};
+use wasm_bindgen::JsCast;
 
 fn base_url() -> String {
     web_sys::window()
@@ -381,6 +382,23 @@ pub async fn clone_academic_year(payload: &Value) -> Result<Value, String> {
     post_json("/api/academic-years/clone", payload).await
 }
 
+// ─── Academic Periods ───
+pub async fn fetch_academic_periods() -> Result<Value, String> {
+    fetch_json("/api/grades/periods").await
+}
+pub async fn create_academic_period(payload: &Value) -> Result<Value, String> {
+    post_json("/api/grades/periods", payload).await
+}
+pub async fn get_academic_period(id: &str) -> Result<Value, String> {
+    fetch_json(&format!("/api/grades/periods/{}", id)).await
+}
+pub async fn update_academic_period(id: &str, payload: &Value) -> Result<Value, String> {
+    put_json(&format!("/api/grades/periods/{}", id), payload).await
+}
+pub async fn get_current_period() -> Result<Value, String> {
+    fetch_json("/api/grades/periods/current").await
+}
+
 // ─── Grade Levels ───
 pub async fn fetch_grade_levels() -> Result<Value, String> {
     fetch_json("/api/academic/grade-levels").await
@@ -497,6 +515,30 @@ pub async fn save_custom_field_values(entity_id: &str, payload: &Value) -> Resul
 pub async fn init_online_payment(fee_id: &str) -> Result<Value, String> {
     fetch_json(&format!("/api/finance/payment/init/{}", fee_id)).await
 }
+pub async fn download_certificate_pdf(student_id: &str) -> Result<(), String> {
+    let url = abs_url(&format!("/api/reports/certificate/student/{}/pdf", student_id));
+    let mut req = client().get(&url);
+    if let Some(auth) = auth_header() {
+        req = req.header("Authorization", auth);
+    }
+    let resp = req.send().await.map_err(|e| format!("Error: {e}"))?;
+    let bytes = resp.bytes().await.map_err(|e| format!("Error obteniendo PDF: {e}"))?;
+    let array = js_sys::Uint8Array::from(&bytes[..]);
+    let blob = web_sys::Blob::new_with_u8_array_sequence(&array)
+        .map_err(|_| "Error creando blob".to_string())?;
+    let blob_url = web_sys::Url::create_object_url_with_blob(&blob)
+        .map_err(|_| "Error creando URL".to_string())?;
+    let window = web_sys::window().ok_or("No window")?;
+    let doc = window.document().ok_or("No document")?;
+    let link = doc.create_element("a").map_err(|_| "Error creando link")?;
+    link.set_attribute("href", &blob_url).map_err(|_| "Error")?;
+    link.set_attribute("download", "certificado.pdf").map_err(|_| "Error")?;
+    if let Some(el) = link.dyn_ref::<web_sys::HtmlElement>() {
+        el.click();
+    }
+    Ok(())
+}
+
 // ─── Parent Portal (Apoderado) ───
 pub async fn fetch_parent_children() -> Result<Value, String> {
     fetch_json("/api/portal/parent/children").await

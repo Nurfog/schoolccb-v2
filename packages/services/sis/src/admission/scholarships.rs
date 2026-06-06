@@ -133,19 +133,46 @@ async fn apply_scholarship(
         return Err(crate::error::SisError::Validation("La beca ha alcanzado su máximo de beneficiarios".into()));
     }
 
-    // Apply to enrollment contract
-    sqlx::query("UPDATE enrollment_contracts SET scholarship_id = $1, updated_at = NOW() WHERE student_id = $2 AND status = 'draft'")
-        .bind(id)
-        .bind(student_id)
-        .execute(&state.pool)
-        .await?;
+    // Get contract to recalculate amounts
+    let contract_data = sqlx::query_as::<_, (f64,)>(
+        "SELECT total_fee FROM enrollment_contracts WHERE student_id = $1 AND status = 'draft' LIMIT 1",
+    )
+    .bind(student_id)
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or(crate::error::SisError::NotFound("No hay un contrato en borrador para este estudiante".into()))?;
+
+    let total_fee = contract_data.0;
+    let discount_val: f64 = sqlx::query_as::<_, (f64,)>(
+        "SELECT discount_value FROM admission_scholarships WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await?
+    .ok_or(crate::error::SisError::NotFound("Beca no encontrada".into()))?
+    .0;
+
+    let discount_amount = total_fee * discount_val / 100.0;
+    let final_amount = total_fee - discount_amount;
+
+    // Apply to enrollment contract with recalculated amounts
+    sqlx::query(
+        "UPDATE enrollment_contracts SET scholarship_id = $1, discount_amount = $2, final_amount = $3,
+         updated_at = NOW() WHERE student_id = $4 AND status = 'draft'",
+    )
+    .bind(id)
+    .bind(discount_amount)
+    .bind(final_amount)
+    .bind(student_id)
+    .execute(&state.pool)
+    .await?;
 
     sqlx::query("UPDATE admission_scholarships SET current_beneficiaries = current_beneficiaries + 1 WHERE id = $1")
         .bind(id)
         .execute(&state.pool)
         .await?;
 
-    Ok(Json(json!({"message": "Beca aplicada"})))
+    Ok(Json(json!({"message": "Beca aplicada", "discount": discount_amount, "final_amount": final_amount})))
 }
 
 async fn list_contracts(
@@ -180,24 +207,59 @@ async fn create_contract(
     require_any_role(&claims, &["Administrador", "Admision", "GerenteGeneral"])?;
     let id = Uuid::new_v4();
 
+    let total_fee = payload.get("total_fee").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let final_amount = payload.get("final_amount").and_then(|v| v.as_f64()).unwrap_or(total_fee);
+    let discount_amount = payload.get("discount_amount").and_then(|v| v.as_f64()).unwrap_or(0.0);
+    let scholarship_id = payload.get("scholarship_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok());
+
+    // If scholarship_id is provided but no discount, auto-calculate
+    let (final_discount, final_total) = if scholarship_id.is_some() && discount_amount == 0.0 {
+        let discount_val: Option<f64> = sqlx::query_scalar(
+            "SELECT discount_value FROM admission_scholarships WHERE id = $1 AND is_active = true",
+        )
+        .bind(scholarship_id)
+        .fetch_optional(&state.pool)
+        .await?;
+
+        match discount_val {
+            Some(dv) => {
+                let d = total_fee * dv / 100.0;
+                (d, total_fee - d)
+            }
+            None => (discount_amount, final_amount),
+        }
+    } else {
+        (discount_amount, final_amount)
+    };
+
     sqlx::query(
         "INSERT INTO enrollment_contracts (id, student_id, school_id, grade_level, guardian_user_id,
-         total_fee, discount_amount, final_amount, payment_plan, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8, $9)",
+         scholarship_id, total_fee, discount_amount, final_amount, payment_plan, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
     )
     .bind(id)
     .bind(payload.get("student_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
     .bind(payload.get("school_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
     .bind(payload.get("grade_level").and_then(|v| v.as_str()).unwrap_or(""))
     .bind(payload.get("guardian_user_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()))
-    .bind(payload.get("total_fee").and_then(|v| v.as_f64()).unwrap_or(0.0))
-    .bind(payload.get("final_amount").and_then(|v| v.as_f64()).unwrap_or(0.0))
+    .bind(scholarship_id)
+    .bind(total_fee)
+    .bind(final_discount)
+    .bind(final_total)
     .bind(payload.get("payment_plan").and_then(|v| v.as_str()).unwrap_or("monthly"))
     .bind(payload.get("notes").and_then(|v| v.as_str()))
     .execute(&state.pool)
     .await?;
 
-    Ok(Json(json!({"id": id})))
+    schoolccb_common::audit::log(&state.pool, &schoolccb_common::audit::AuditEntry {
+        entity_type: "enrollment_contract".into(),
+        entity_id: id,
+        action: "create".into(),
+        user_id: Some(Uuid::parse_str(&claims.sub).unwrap_or_default()),
+        changes: Some(serde_json::json!({"total_fee": total_fee, "final_amount": final_total, "has_scholarship": scholarship_id.is_some()})),
+    }).await;
+
+    Ok(Json(json!({"id": id, "discount_amount": final_discount, "final_amount": final_total})))
 }
 
 async fn get_contract(
@@ -207,11 +269,13 @@ async fn get_contract(
 ) -> SisResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Admision", "GerenteGeneral"])?;
 
-    let contract = sqlx::query_as::<_, (Uuid, String, String, String, f64, f64, f64, String, String)>(
+    let contract = sqlx::query_as::<_, (Uuid, String, String, String, f64, f64, f64, String, String, Option<Uuid>, Option<String>)>(
         "SELECT ec.id, s.first_name || ' ' || s.last_name, ec.grade_level, ec.status,
-                ec.total_fee, ec.discount_amount, ec.final_amount, ec.payment_plan, COALESCE(ec.notes, '')
+                ec.total_fee, ec.discount_amount, ec.final_amount, ec.payment_plan, COALESCE(ec.notes, ''),
+                ec.scholarship_id, as2.name
          FROM enrollment_contracts ec
          JOIN students s ON s.id = ec.student_id
+         LEFT JOIN admission_scholarships as2 ON as2.id = ec.scholarship_id
          WHERE ec.id = $1",
     )
     .bind(id)
@@ -223,6 +287,7 @@ async fn get_contract(
         "id": contract.0, "student": contract.1, "grade": contract.2, "status": contract.3,
         "total_fee": contract.4, "discount": contract.5, "final_amount": contract.6,
         "payment_plan": contract.7, "notes": contract.8,
+        "scholarship_id": contract.9, "scholarship_name": contract.10,
     })))
 }
 
@@ -264,7 +329,29 @@ async fn register_contract_payment(
     .bind(payment_id).bind(fee_id).bind(student_id).bind(amount).bind(method)
     .execute(&state.pool).await?;
 
-    Ok(Json(json!({"fee_id": fee_id, "payment_id": payment_id, "message": "Pago registrado"})))
+    // Update contract status to paid
+    sqlx::query(
+        "UPDATE enrollment_contracts SET status = 'paid', updated_at = NOW() WHERE id = $1 AND status = 'draft'",
+    )
+    .bind(id)
+    .execute(&state.pool).await?;
+
+    schoolccb_common::audit::log(&state.pool, &schoolccb_common::audit::AuditEntry {
+        entity_type: "enrollment_payment".into(),
+        entity_id: id,
+        action: "pay".into(),
+        user_id: Some(Uuid::parse_str(&claims.sub).unwrap_or_default()),
+        changes: Some(serde_json::json!({"student_id": student_id, "amount": amount, "method": method})),
+    }).await;
+
+    // If Webpay, return gateway URL to redirect
+    let resp = json!({"fee_id": fee_id, "payment_id": payment_id, "message": "Pago registrado"});
+    if method == "Webpay" {
+        let gateway = json!({"gateway_url": format!("/api/finance/payment/init/{}", fee_id)});
+        Ok(Json(json!({"fee_id": fee_id, "payment_id": payment_id, "message": "Redirigiendo a Webpay...", "gateway_url": gateway["gateway_url"]})))
+    } else {
+        Ok(Json(resp))
+    }
 }
 
 async fn enroll_student(
@@ -274,14 +361,21 @@ async fn enroll_student(
 ) -> SisResult<Json<Value>> {
     require_any_role(&claims, &["Administrador", "Admision", "GerenteGeneral"])?;
 
-    let contract = sqlx::query_as::<_, (Uuid, String, String)>(
-        "SELECT ec.student_id, ec.grade_level, ec.school_id::text
-         FROM enrollment_contracts ec WHERE ec.id = $1 AND ec.status = 'draft'",
+    let contract = sqlx::query_as::<_, (Uuid, String, String, String)>(
+        "SELECT ec.student_id, ec.grade_level, ec.school_id::text, ec.status
+         FROM enrollment_contracts ec WHERE ec.id = $1 AND ec.status IN ('draft', 'paid')",
     )
     .bind(id)
     .fetch_optional(&state.pool)
     .await?
     .ok_or(crate::error::SisError::NotFound("Contrato no encontrado o ya procesado".into()))?;
+
+    let status = &contract.3;
+    if status == "draft" {
+        return Err(crate::error::SisError::Validation(
+            "El contrato debe estar pagado antes de matricular. Registre el pago primero.".into(),
+        ));
+    }
 
     // Mark contract as enrolled
     sqlx::query("UPDATE enrollment_contracts SET status = 'enrolled', enrolled_at = NOW(), updated_at = NOW() WHERE id = $1")
@@ -295,6 +389,14 @@ async fn enroll_student(
     .bind(contract.0)
     .execute(&state.pool)
     .await?;
+
+    schoolccb_common::audit::log(&state.pool, &schoolccb_common::audit::AuditEntry {
+        entity_type: "enrollment".into(),
+        entity_id: id,
+        action: "enroll".into(),
+        user_id: Some(Uuid::parse_str(&claims.sub).unwrap_or_default()),
+        changes: Some(serde_json::json!({"student_id": contract.0, "grade": contract.1})),
+    }).await;
 
     Ok(Json(json!({"message": "Alumno matriculado exitosamente"})))
 }

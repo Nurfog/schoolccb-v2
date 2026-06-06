@@ -111,6 +111,21 @@
         .blog-content th { background: #eceff1; font-weight: 600; }
         .blog-content blockquote { border-left: 4px solid #4fc3f7; padding-left: 1rem; margin: 1.5rem 0; color: #546e7a; font-style: italic; }
         .blog-content code { background: #eceff1; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9rem; }
+        .faq-list { max-width: 800px; margin: 0 auto; }
+        .faq-item { background: #fff; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+        .faq-item summary { padding: 1.2rem 1.5rem; font-weight: 600; font-size: 1.05rem; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item summary::after { content: "+"; font-size: 1.3rem; color: #4fc3f7; font-weight: 700; }
+        .faq-item[open] summary::after { content: "−"; }
+        .faq-item[open] summary { background: #f0f9ff; border-bottom: 1px solid #e0e0e0; }
+        .faq-item p { padding: 1.2rem 1.5rem; color: #546e7a; line-height: 1.7; }
+        .faq-cta { text-align: center; margin-top: 3rem; padding: 3rem; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .faq-cta h2 { margin-bottom: 0.8rem; }
+        .faq-cta p { color: #546e7a; margin-bottom: 1.5rem; }
+        .faq-cta .btn { margin: 0 0.5rem; }
+        .page-section { padding: 3rem 0; }
+        .page-section h1 { font-size: 2.2rem; font-weight: 700; text-align: center; margin-bottom: 0.5rem; }
+        .page-section .subtitle { text-align: center; color: #546e7a; margin-bottom: 2rem; font-size: 1.1rem; }
         @media (max-width: 768px) {
             nav .nav-links { display: none; }
             .hero h1 { font-size: 2rem; }
@@ -126,6 +141,7 @@
                 <a href="/">Inicio</a>
                 <a href="/features">Características</a>
                 <a href="/pricing">Planes</a>
+                <a href="/faq">FAQ</a>
                 <a href="/blog">Blog</a>
                 <a href="/about">Nosotros</a>
                 <a href="/contact">Contacto</a>
@@ -146,6 +162,7 @@
                 <h4>Enlaces</h4>
                 <a href="/features">Características</a><br>
                 <a href="/pricing">Planes y Precios</a><br>
+                <a href="/faq">FAQ</a><br>
                 <a href="/blog">Blog</a><br>
                 <a href="/about">Sobre Nosotros</a><br>
                 <a href="/contact">Contacto</a>

@@ -201,6 +201,7 @@ pub struct CreateEnrollmentContractPayload {
     pub school_id: Uuid,
     pub grade_level: String,
     pub guardian_user_id: Option<Uuid>,
+    pub scholarship_id: Option<Uuid>,
     pub total_fee: f64,
     pub discount_amount: Option<f64>,
     pub payment_plan: Option<String>,

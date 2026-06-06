@@ -1,4 +1,5 @@
 mod config;
+mod email;
 mod error;
 mod push;
 mod ws;
@@ -18,6 +19,7 @@ pub struct AppState {
     pub pool: PgPool,
     pub config: Arc<Config>,
     pub ws_hub: Arc<ws::hub::WsHub>,
+    pub mailer: email::Mailer,
 }
 
 #[tokio::main]
@@ -38,12 +40,33 @@ async fn main() {
     tracing::info!("Notifications Service connected to database");
     schoolccb_common::db_schema::run(&pool).await;
 
+    let mailer = email::Mailer::new(
+        pool.clone(),
+        config.smtp_host.clone(),
+        config.smtp_port,
+        config.smtp_user.clone(),
+        config.smtp_pass.clone(),
+        config.from_address.clone(),
+        config.from_name.clone(),
+    );
+
     let ws_hub = Arc::new(ws::hub::WsHub::new());
+
+    // Background email queue processor
+    let mailer_clone = mailer.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(30));
+        loop {
+            interval.tick().await;
+            mailer_clone.process_email_queue().await;
+        }
+    });
 
     let state = AppState {
         pool,
         config: config.clone(),
         ws_hub,
+        mailer,
     };
 
     let addr = config.addr();

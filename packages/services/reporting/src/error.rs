@@ -19,6 +19,9 @@ pub enum ReportError {
 
     #[error("Forbidden: {0}")]
     Forbidden(String),
+
+    #[error("{0}")]
+    Other(String),
 }
 
 impl IntoResponse for ReportError {
@@ -35,6 +38,7 @@ impl IntoResponse for ReportError {
             ReportError::Validation(m) => (StatusCode::BAD_REQUEST, m.clone()),
             ReportError::Unauthorized => (StatusCode::UNAUTHORIZED, "No autorizado".into()),
             ReportError::Forbidden(m) => (StatusCode::FORBIDDEN, m.clone()),
+            ReportError::Other(m) => (StatusCode::INTERNAL_SERVER_ERROR, m.clone()),
         };
         (status, Json(json!({"error": message}))).into_response()
     }

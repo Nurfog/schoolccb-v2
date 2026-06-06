@@ -4,71 +4,18 @@
     <div class="container">
         <h2>Características de SchoolCBB</h2>
         <div class="features-grid">
+            {% for f in features %}
             <div class="feature-item">
-                <h3>📊 Dashboard Inteligente</h3>
-                <p>Panel de control con KPIs, gráficos en tiempo real y alertas personalizables para una visión completa de tu colegio.</p>
+                <h3>{{ f.name }}</h3>
+                <p>{{ f.description }}</p>
             </div>
-            <div class="feature-item">
-                <h3>👨‍🎓 Gestión de Alumnos</h3>
-                <p>Fichas completas con datos personales, antecedentes de salud, emergencias, y documentos adjuntos.</p>
-            </div>
-            <div class="feature-item">
-                <h3>📚 Cursos y Asignaturas</h3>
-                <p>Configuración flexible de niveles, cursos y asignaturas con clonación anual automática.</p>
-            </div>
-            <div class="feature-item">
-                <h3>✅ Asistencia Diaria</h3>
-                <p>Toma de asistencia por bloque con justificación, reportes y exportación para subvenciones.</p>
-            </div>
-            <div class="feature-item">
-                <h3>📝 Calificaciones</h3>
-                <p>Evaluaciones formativas y sumativas con ponderaciones, promedios y cálculo automático Decreto 67.</p>
-            </div>
-            <div class="feature-item">
-                <h3>💬 Comunicaciones</h3>
-                <p>Mensajería interna, notificaciones push, agenda escolar y bitácora de entrevistas.</p>
-            </div>
-            <div class="feature-item">
-                <h3>👥 Admisión CRM</h3>
-                <p>Pipeline visual tipo kanban, campos personalizados, gestión documental y workflow automático.</p>
-            </div>
-            <div class="feature-item">
-                <h3>💰 Finanzas</h3>
-                <p>Cobros, becas, mensualidades, pasarela de pago Webpay y reportes financieros.</p>
-            </div>
-            <div class="feature-item">
-                <h3>👔 RRHH</h3>
-                <p>Fichas empleados, contratos Ley 40 Horas, vacaciones, ausencias y control de asistencia DT.</p>
-            </div>
-            <div class="feature-item">
-                <h3>📄 Remuneraciones</h3>
-                <p>Liquidaciones de sueldo, cálculo de haberes, descuentos legales, LRE y Previred.</p>
-            </div>
-            <div class="feature-item">
-                <h3>🏛️ SIGE / MINEDUC</h3>
-                <p>Exportación de datos en formato oficial del Ministerio de Educación.</p>
-            </div>
-            <div class="feature-item">
-                <h3>🛡️ Ley Karin</h3>
-                <p>Canal de denuncias anónimas, protocolos de prevención y gestión de casos.</p>
-            </div>
-            <div class="feature-item">
-                <h3>🏢 Multi-colegio</h3>
-                <p>Gestión centralizada de múltiples colegios desde una sola plataforma con datos segregados.</p>
-            </div>
-            <div class="feature-item">
-                <h3>🔍 Búsqueda Global</h3>
-                <p>Quick search con Cmd+K para encontrar alumnos, empleados y registros al instante.</p>
-            </div>
-            <div class="feature-item">
-                <h3>📊 Reportes</h3>
-                <p>Certificados de alumno regular, concentraciones de notas y actas finales.</p>
-            </div>
-            <div class="feature-item">
-                <h3>🔐 Roles y Permisos</h3>
-                <p>RBAC granular con árbol de permisos CRUD por módulo y recurso.</p>
-            </div>
+            {% endfor %}
         </div>
+        {% if features|length == 0 %}
+        <div class="faq-cta">
+            <p>Las características se cargan dinámicamente. Si no ves nada, <a href="/contact">contáctanos</a>.</p>
+        </div>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

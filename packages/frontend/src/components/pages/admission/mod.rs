@@ -56,8 +56,11 @@ pub fn AdmissionPage() -> Element {
     let mut new_contract_student = use_signal(String::new);
     let mut new_contract_grade = use_signal(String::new);
     let mut new_contract_amount = use_signal(|| "0".to_string());
+    let mut new_contract_scholarship = use_signal(|| String::new());
     let mut saving_contract = use_signal(|| false);
     let mut view_contract_id = use_signal(|| None::<String>);
+    let mut pay_method = use_signal(|| "Efectivo".to_string());
+    let mut pay_msg = use_signal(|| None::<String>);
     let contract_detail = use_resource(move || {
         let vid = view_contract_id();
         async move {
@@ -133,11 +136,15 @@ pub fn AdmissionPage() -> Element {
 
     let do_create_contract = move |_| {
         saving_contract.set(true);
-        let payload = serde_json::json!({
+        let mut payload = serde_json::json!({
             "student": new_contract_student(),
             "grade": new_contract_grade(),
             "amount": new_contract_amount().parse::<f64>().unwrap_or(0.0),
         });
+        let sid = new_contract_scholarship();
+        if !sid.is_empty() {
+            payload["scholarship_id"] = serde_json::json!(sid);
+        }
         spawn(async move {
             let _ = client::create_enrollment_contract(&payload).await;
             saving_contract.set(false);
@@ -145,6 +152,7 @@ pub fn AdmissionPage() -> Element {
             new_contract_student.set(String::new());
             new_contract_grade.set(String::new());
             new_contract_amount.set("0".to_string());
+            new_contract_scholarship.set(String::new());
             contracts.restart();
         });
     };
@@ -320,11 +328,35 @@ pub fn AdmissionPage() -> Element {
                                             }
                                         }
                                     }
-                                    div { class: "form-group",
-                                        label { "Monto:" }
-                                        input { class: "form-input", value: "{new_contract_amount}", oninput: move |e| new_contract_amount.set(e.value()), type: "number", min: "0" }
+                    div { class: "form-group",
+                        label { "Monto:" }
+                        input { class: "form-input", value: "{new_contract_amount}", oninput: move |e| new_contract_amount.set(e.value()), type: "number", min: "0" }
+                    }
+                    div { class: "form-group",
+                        label { "Beca (opcional):" }
+                        select { class: "form-input", value: "{new_contract_scholarship}", oninput: move |e| new_contract_scholarship.set(e.value()),
+                            option { value: "", "Sin beca" }
+                            {
+                                match scholarships() {
+                                    Some(Ok(data)) => {
+                                        let list = data["scholarships"].as_array().cloned().unwrap_or_default();
+                                        let opts: Vec<Element> = list.iter().map(|s| {
+                                            let sid = s["id"].as_str().unwrap_or("").to_string();
+                                            let sname = s["name"].as_str().unwrap_or("").to_string();
+                                            let disc = s["discount"].as_f64().unwrap_or(0.0);
+                                            let label = format!("{} ({:.0}%)", sname, disc);
+                                            rsx! {
+                                                option { value: "{sid}", "{label}" }
+                                            }
+                                        }).collect();
+                                        rsx! { {opts.into_iter()} }
                                     }
-                                    div { class: "form-actions",
+                                    _ => rsx! {}
+                                }
+                            }
+                        }
+                    }
+                    div { class: "form-actions",
                                         button { class: "btn btn-primary", disabled: saving_contract(), onclick: do_create_contract, if saving_contract() { "Guardando..." } else { "Crear Contrato" } }
                                         button { class: "btn", onclick: move |_| show_new_contract.set(false), "Cancelar" }
                                     }
@@ -346,41 +378,64 @@ pub fn AdmissionPage() -> Element {
                                 let contract_rows: Vec<Element> = list.iter().map(|c| {
                                     let cid = c["id"].as_str().unwrap_or("").to_string();
                                     let cid2 = cid.clone();
-                                    let is_draft = c["status"].as_str() == Some("draft");
-                                    let cstudent = c["student"].as_str().unwrap_or("-").to_string();
-                                    let cgrade = c["grade"].as_str().unwrap_or("-").to_string();
-                                    let camt = c["amount"].as_f64().unwrap_or(0.0);
-                                    let camt_str = format!("${:.0}", camt);
-                                    let cstatus = c["status"].as_str().unwrap_or("-").to_string();
-                                    let cdate = c["date"].as_str().unwrap_or("-").to_string();
-                                    rsx! {
-                                        tr {
-                                            td { "{cstudent}" }
-                                            td { "{cgrade}" }
-                                            td { "{camt_str}" }
-                                            td { "{cstatus}" }
-                                            td { "{cdate}" }
-                                            td {
-                                                if is_draft {
-                                                    button {
-                                                        class: "btn btn-primary btn-small",
-                                                        style: "margin-right: 4px;",
-                                                        onclick: { let cid_enroll = cid.clone(); move |_| enrolling_id.set(Some(cid_enroll.clone())) },
-                                                        "Matricular"
+                    let is_draft = c["status"].as_str() == Some("draft");
+                    let cstudent = c["student"].as_str().unwrap_or("-").to_string();
+                    let cgrade = c["grade"].as_str().unwrap_or("-").to_string();
+                    let camt = c["amount"].as_f64().unwrap_or(0.0);
+                    let camt_str = format!("${:.0}", camt);
+                    let cstatus = c["status"].as_str().unwrap_or("-").to_string();
+                    let cdate = c["date"].as_str().unwrap_or("-").to_string();
+                    rsx! {
+                        tr {
+                            td { "{cstudent}" }
+                            td { "{cgrade}" }
+                            td { "{camt_str}" }
+                            td { "{cstatus}" }
+                            td { "{cdate}" }
+                            td {
+                                if is_draft {
+                                    button {
+                                        class: "btn btn-primary btn-small",
+                                        style: "margin-right: 4px;",
+                                        onclick: { let cid_enroll = cid.clone(); move |_| enrolling_id.set(Some(cid_enroll.clone())) },
+                                        "Matricular"
+                                    }
+                                    select {
+                                        class: "form-input",
+                                        style: "width: auto; display: inline-block; margin-right: 4px; font-size: 0.85rem; padding: 4px 8px;",
+                                        value: "{pay_method}",
+                                        oninput: move |e| pay_method.set(e.value()),
+                                        option { value: "Efectivo", "Efectivo" }
+                                        option { value: "Webpay", "Webpay (Débito/Crédito)" }
+                                        option { value: "Transferencia", "Transferencia" }
+                                        option { value: "Debito", "Débito" }
+                                        option { value: "Credito", "Crédito" }
+                                    }
+                                    button {
+                                        class: "btn btn-outline btn-small",
+                                        style: "margin-right: 4px;",
+                                        onclick: move |_| {
+                                            let cid3 = cid2.clone();
+                                            let method = pay_method();
+                                            spawn(async move {
+                                                let result = client::pay_contract(&cid3, camt, &method).await;
+                                                if let Ok(ref resp) = result {
+                                                    if method == "Webpay" {
+                                                        if let Some(url) = resp.get("gateway_url").and_then(|v| v.as_str()) {
+                                                            let _ = web_sys::window().and_then(|w| w.location().assign(url).ok());
+                                                        }
                                                     }
-                                                    button {
-                                                        class: "btn btn-outline btn-small",
-                                                        style: "margin-right: 4px;",
-                                                        onclick: move |_| {
-                                                            let cid3 = cid2.clone();
-                                                            spawn(async move {
-                                                                let _ = client::pay_contract(&cid3, camt, "Efectivo").await;
-                                                                contracts.restart();
-                                                            });
-                                                        },
-                                                        "Pagar"
-                                                    }
-                                                } else {
+                                                }
+                                                pay_msg.set(Some(match &result {
+                                                    Ok(r) => r["message"].as_str().unwrap_or("Pago registrado").to_string(),
+                                                    Err(e) => format!("Error: {e}"),
+                                                }));
+                                                contracts.restart();
+                                            });
+                                        },
+                                        "Pagar"
+                                    }
+                                } else {
                                                     span { class: "badge badge-success", "Completado" }
                                                 }
                                                 button {
@@ -470,23 +525,32 @@ pub fn AdmissionPage() -> Element {
                                                         div { class: "modal-body",
                                                             match contract_detail() {
                                                                 Some(Ok(j)) => {
-                                                                    let student = j["student"].as_str().unwrap_or("").to_string();
-                                                                    let grade = j["grade"].as_str().unwrap_or("").to_string();
-                                                                    let amount = j["amount"].as_str().unwrap_or("").to_string();
-                                                                    let status = j["status"].as_str().unwrap_or("").to_string();
-                                                                    let date = j["date"].as_str().unwrap_or("").to_string();
-                                                                    rsx! {
-                                                                        table { class: "detail-table",
-                                                                            tbody {
-                                                                                tr { td { "ID:" } td { "{cid}" } }
-                                                                                tr { td { "Estudiante:" } td { "{student}" } }
-                                                                                tr { td { "Nivel:" } td { "{grade}" } }
-                                                                                tr { td { "Monto:" } td { "{amount}" } }
-                                                                                tr { td { "Estado:" } td { "{status}" } }
-                                                                                tr { td { "Creado:" } td { "{date}" } }
-                                                                            }
-                                                                        }
-                                                                    }
+                                                    let student = j["student"].as_str().unwrap_or("").to_string();
+                                                    let grade = j["grade"].as_str().unwrap_or("").to_string();
+                                                    let total_fee = format!("${:.0}", j["total_fee"].as_f64().unwrap_or(0.0));
+                                                    let discount = format!("${:.0}", j["discount"].as_f64().unwrap_or(0.0));
+                                                    let final_amount = format!("${:.0}", j["final_amount"].as_f64().unwrap_or(0.0));
+                                                    let status = j["status"].as_str().unwrap_or("").to_string();
+                                                    let date = j["date"].as_str().unwrap_or("").to_string();
+                                                    let scholarship_name = j["scholarship_name"].as_str().unwrap_or("").to_string();
+                                                    let has_scholarship = !scholarship_name.is_empty();
+                                                    rsx! {
+                                                        table { class: "detail-table",
+                                                            tbody {
+                                                                tr { td { "ID:" } td { "{cid}" } }
+                                                                tr { td { "Estudiante:" } td { "{student}" } }
+                                                                tr { td { "Nivel:" } td { "{grade}" } }
+                                                                tr { td { "Valor Matrícula:" } td { "{total_fee}" } }
+                                                                if has_scholarship {
+                                                                    tr { td { "Beca:" } td { "{scholarship_name}" } }
+                                                                    tr { td { "Descuento:" } td { style: "color: #4caf50;", "-{discount}" } }
+                                                                }
+                                                                tr { td { "Monto Final:" } td { style: "font-weight: 700;", "{final_amount}" } }
+                                                                tr { td { "Estado:" } td { "{status}" } }
+                                                                tr { td { "Creado:" } td { "{date}" } }
+                                                            }
+                                                        }
+                                                    }
                                                                 },
                                                                 Some(Err(e)) => rsx! { p { "Error: {e}" } },
                                                                 None => rsx! { p { "Cargando..." } },

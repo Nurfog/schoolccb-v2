@@ -39,6 +39,7 @@ pub mod subjects_page;
 pub mod users_page;
 
 pub mod academic_calendar_page;
+pub mod academic_periods_page;
 pub mod admission;
 pub mod finance;
 pub mod parent_meetings_page;

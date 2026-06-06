@@ -6,6 +6,7 @@ use crate::seo::use_page_title;
 use crate::components::layout::{sidebar::Sidebar, topbar::Topbar};
 use crate::components::pages::academic_years_page::AcademicYearsPage;
 use crate::components::pages::admission::AdmissionPage;
+use crate::components::pages::academic_periods_page::AcademicPeriodsPage;
 
 use crate::components::pages::b2b::finance::B2bFinancePage;
 use crate::components::pages::b2b::hr::B2bHrPage;
@@ -155,6 +156,8 @@ pub enum Route {
         AcademicYears {},
         #[route("/academic-calendar")]
         AcademicCalendar {},
+        #[route("/academic-periods")]
+        AcademicPeriods {},
         #[route("/audit")]
         Audit {},
         #[route("/grade-levels")]
@@ -333,6 +336,9 @@ pub fn AcademicYears() -> Element { require_auth(); use_page_title("Años Acadé
 
 #[component]
 pub fn AcademicCalendar() -> Element { require_auth(); use_page_title("Calendario Académico"); rsx! { AcademicCalendarPage {} } }
+
+#[component]
+pub fn AcademicPeriods() -> Element { require_auth(); use_page_title("Períodos Académicos"); rsx! { AcademicPeriodsPage {} } }
 
 #[component]
 pub fn Audit() -> Element { require_auth(); use_page_title("Auditoría"); rsx! { AuditPage {} } }

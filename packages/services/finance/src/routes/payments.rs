@@ -70,6 +70,14 @@ async fn create_payment(
         .payment_date
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
 
+    schoolccb_common::audit::log(&state.pool, &schoolccb_common::audit::AuditEntry {
+        entity_type: "payment".into(),
+        entity_id: id,
+        action: "create".into(),
+        user_id: Some(uuid::Uuid::parse_str(&claims.sub).unwrap_or_default()),
+        changes: Some(serde_json::json!({"fee_id": payload.fee_id, "student_id": payload.student_id, "amount": payload.amount, "method": payload.payment_method})),
+    }).await;
+
     let result = sqlx::query_as::<_, schoolccb_common::finance::Payment>(
         r#"
         INSERT INTO payments (id, fee_id, student_id, amount, payment_date, payment_method, reference)
