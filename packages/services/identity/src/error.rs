@@ -33,6 +33,17 @@ pub enum AuthError {
     Internal(String),
 }
 
+impl From<schoolccb_common::auth::AuthError> for AuthError {
+    fn from(e: schoolccb_common::auth::AuthError) -> Self {
+        match e {
+            schoolccb_common::auth::AuthError::Unauthorized => AuthError::Unauthorized,
+            schoolccb_common::auth::AuthError::Forbidden(msg) => AuthError::Forbidden(msg),
+            schoolccb_common::auth::AuthError::TokenExpired => AuthError::TokenExpired,
+            schoolccb_common::auth::AuthError::TokenInvalid(msg) => AuthError::TokenInvalid(msg),
+        }
+    }
+}
+
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         let (status, message) = match &self {

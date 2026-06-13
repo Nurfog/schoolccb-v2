@@ -49,4 +49,15 @@ impl IntoResponse for AttendanceError {
     }
 }
 
+impl From<schoolccb_common::auth::AuthError> for AttendanceError {
+    fn from(e: schoolccb_common::auth::AuthError) -> Self {
+        match e {
+            schoolccb_common::auth::AuthError::Unauthorized => AttendanceError::Unauthorized,
+            schoolccb_common::auth::AuthError::Forbidden(msg) => AttendanceError::Forbidden(msg),
+            schoolccb_common::auth::AuthError::TokenExpired => AttendanceError::Unauthorized,
+            schoolccb_common::auth::AuthError::TokenInvalid(_msg) => AttendanceError::Unauthorized,
+        }
+    }
+}
+
 pub type AttendanceResult<T> = Result<T, AttendanceError>;

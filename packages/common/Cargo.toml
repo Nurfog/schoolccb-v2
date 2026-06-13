@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["db"]
+default = ["db", "auth"]
 db = ["dep:sqlx"]
+auth = ["dep:axum", "dep:jsonwebtoken"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -17,6 +18,8 @@ sqlx = { version = "0.8", optional = true, default-features = false, features = 
 tracing = "0.1"
 tokio = { version = "1", features = ["sync"] }
 async-trait = "0.1"
+axum = { version = "0.8", optional = true }
+jsonwebtoken = { version = "9", optional = true }
 
 [dev-dependencies]
 approx = "0.5"

@@ -1,69 +1,23 @@
 use axum::{
     Json, Router,
     extract::{
-        FromRequestParts, Path, Query, State,
+        Path, Query, State,
         ws::{Message, WebSocket, WebSocketUpgrade},
     },
-    http::{request::Parts, StatusCode},
+    http::{StatusCode},
     response::{IntoResponse, Response},
     routing::{get, post},
 };
 use futures_util::{SinkExt, StreamExt};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
 
 use crate::AppState;
 use crate::error::{NotifError, NotifResult};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Claims {
-    pub sub: String,
-    pub role: String,
-    pub name: String,
-    pub email: String,
-    pub exp: usize,
-    pub iat: usize,
-    pub school_id: Option<String>,
-    pub corporation_id: Option<String>,
-}
-
-impl FromRequestParts<AppState> for Claims {
-    type Rejection = NotifError;
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        _state: &AppState,
-    ) -> Result<Self, Self::Rejection> {
-        let auth_header = parts
-            .headers
-            .get("Authorization")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.strip_prefix("Bearer "))
-            .ok_or(NotifError::Unauthorized)?;
-
-        let secret = &_state.config.jwt_secret;
-
-        let token_data = jsonwebtoken::decode::<Claims>(
-            auth_header,
-            &jsonwebtoken::DecodingKey::from_secret(secret.as_bytes()),
-            &jsonwebtoken::Validation::default(),
-        )
-        .map_err(|_| NotifError::Unauthorized)?;
-
-        Ok(token_data.claims)
-    }
-}
-
-pub fn require_any_role(claims: &Claims, roles: &[&str]) -> Result<(), NotifError> {
-    if !roles.contains(&claims.role.as_str()) {
-        return Err(NotifError::Forbidden(format!(
-            "Se requiere uno de los roles {:?}, tiene '{}'",
-            roles, claims.role
-        )));
-    }
-    Ok(())
-}
+pub use schoolccb_common::auth::Claims;
+use schoolccb_common::auth::require_any_role;
 
 pub fn router() -> Router<AppState> {
     Router::new()

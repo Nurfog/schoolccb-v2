@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 use uuid::Uuid;
 
 use crate::error::{SisError, SisResult};
-use crate::routes::students::{require_any_role, Claims};
+use schoolccb_common::auth::{Claims, require_any_role};
 use crate::AppState;
 use schoolccb_common::rut::Rut;
 

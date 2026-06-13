@@ -144,39 +144,39 @@ pub async fn fetch_agenda() -> Result<Value, String> {
 
 // ─── Corporation Dashboard (Sostenedor) ───
 pub async fn fetch_corp_dashboard_summary() -> Result<Value, String> {
-    fetch_json("/api/corporation/dashboard/summary").await
+    fetch_json("/b2b/corporation/dashboard/summary").await
 }
 pub async fn fetch_corp_dashboard_schools() -> Result<Value, String> {
-    fetch_json("/api/corporation/dashboard/schools").await
+    fetch_json("/b2b/corporation/dashboard/schools").await
 }
 pub async fn fetch_corp_dashboard_comparisons() -> Result<Value, String> {
-    fetch_json("/api/corporation/dashboard/comparisons").await
+    fetch_json("/b2b/corporation/dashboard/comparisons").await
 }
 pub async fn fetch_corp_dashboard_trends() -> Result<Value, String> {
-    fetch_json("/api/corporation/dashboard/trends").await
+    fetch_json("/b2b/corporation/dashboard/trends").await
 }
 pub async fn fetch_corp_dashboard_alerts() -> Result<Value, String> {
-    fetch_json("/api/corporation/dashboard/alerts").await
+    fetch_json("/b2b/corporation/dashboard/alerts").await
 }
 pub async fn fetch_corp_license() -> Result<Value, String> {
-    fetch_json("/api/corporation/dashboard/license").await
+    fetch_json("/b2b/corporation/dashboard/license").await
 }
 
 // ─── School Dashboard (Colegio) ───
 pub async fn fetch_school_attendance_trends() -> Result<Value, String> {
-    fetch_json("/api/school/dashboard/attendance-trends").await
+    fetch_json("/b2b/schools/dashboard/attendance-trends").await
 }
 pub async fn fetch_school_grades_distribution() -> Result<Value, String> {
-    fetch_json("/api/school/dashboard/grades-distribution").await
+    fetch_json("/b2b/schools/dashboard/grades-distribution").await
 }
 pub async fn fetch_school_finance_summary() -> Result<Value, String> {
-    fetch_json("/api/school/dashboard/finance-summary").await
+    fetch_json("/b2b/schools/dashboard/finance-summary").await
 }
 pub async fn fetch_school_teacher_performance() -> Result<Value, String> {
-    fetch_json("/api/school/dashboard/teacher-performance").await
+    fetch_json("/b2b/schools/dashboard/teacher-performance").await
 }
 pub async fn fetch_school_top_alerts() -> Result<Value, String> {
-    fetch_json("/api/school/dashboard/top-alerts").await
+    fetch_json("/b2b/schools/dashboard/top-alerts").await
 }
 
 // ─── Students ───
@@ -308,7 +308,7 @@ pub async fn delete_scholarship(scholarship_id: &str) -> Result<Value, String> {
 
 // ─── Legal Representatives ───
 pub async fn fetch_legal_reps(corporation_id: &str) -> Result<Value, String> {
-    fetch_json(&format!("/api/legal-representatives?corporation_id={}", corporation_id)).await
+    fetch_json(&format!("/b2b/legal-representatives?corporation_id={}", corporation_id)).await
 }
 
 // ─── Reports ───
@@ -334,25 +334,25 @@ pub async fn fetch_sige_attendance(year: i32, month: u32) -> Result<Value, Strin
 
 // ─── Corporations & Schools ───
 pub async fn fetch_corporations() -> Result<Value, String> {
-    fetch_json("/api/corporations").await
+    fetch_json("/b2b/corporations").await
 }
 pub async fn create_corporation(payload: &Value) -> Result<Value, String> {
-    post_json("/api/corporations", payload).await
+    post_json("/b2b/corporations", payload).await
 }
 pub async fn fetch_schools(corporation_id: Option<&str>) -> Result<Value, String> {
     match corporation_id {
-        Some(id) => fetch_json(&format!("/api/schools?corporation_id={}", id)).await,
-        None => fetch_json("/api/schools").await,
+        Some(id) => fetch_json(&format!("/b2b/schools?corporation_id={}", id)).await,
+        None => fetch_json("/b2b/schools").await,
     }
 }
 pub async fn create_school(payload: &Value) -> Result<Value, String> {
-    post_json("/api/schools", payload).await
+    post_json("/b2b/schools", payload).await
 }
 pub async fn update_school(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/schools/{}", id), payload).await
+    put_json(&format!("/b2b/schools/{}", id), payload).await
 }
 pub async fn toggle_school(id: &str) -> Result<Value, String> {
-    put_json(&format!("/api/schools/{}/toggle", id), &json!({})).await
+    put_json(&format!("/b2b/schools/{}/toggle", id), &json!({})).await
 }
 
 // ─── Academic Years ───
@@ -389,12 +389,14 @@ pub async fn fetch_academic_periods() -> Result<Value, String> {
 pub async fn create_academic_period(payload: &Value) -> Result<Value, String> {
     post_json("/api/grades/periods", payload).await
 }
+#[allow(dead_code)]
 pub async fn get_academic_period(id: &str) -> Result<Value, String> {
     fetch_json(&format!("/api/grades/periods/{}", id)).await
 }
 pub async fn update_academic_period(id: &str, payload: &Value) -> Result<Value, String> {
     put_json(&format!("/api/grades/periods/{}", id), payload).await
 }
+#[allow(dead_code)]
 pub async fn get_current_period() -> Result<Value, String> {
     fetch_json("/api/grades/periods/current").await
 }
@@ -515,6 +517,7 @@ pub async fn save_custom_field_values(entity_id: &str, payload: &Value) -> Resul
 pub async fn init_online_payment(fee_id: &str) -> Result<Value, String> {
     fetch_json(&format!("/api/finance/payment/init/{}", fee_id)).await
 }
+#[allow(dead_code)]
 pub async fn download_certificate_pdf(student_id: &str) -> Result<(), String> {
     let url = abs_url(&format!("/api/reports/certificate/student/{}/pdf", student_id));
     let mut req = client().get(&url);
@@ -608,41 +611,41 @@ pub async fn create_student_appointment(payload: &Value) -> Result<Value, String
 
 // ─── CRM / Sales ───
 pub async fn fetch_sales_proposals() -> Result<Value, String> {
-    fetch_json("/api/sales/proposals").await
+    fetch_json("/b2b/sales/proposals").await
 }
 pub async fn create_sales_proposal(payload: &Value) -> Result<Value, String> {
-    post_json("/api/sales/proposals", payload).await
+    post_json("/b2b/sales/proposals", payload).await
 }
 pub async fn get_sales_proposal(id: &str) -> Result<Value, String> {
-    fetch_json(&format!("/api/sales/proposals/{}", id)).await
+    fetch_json(&format!("/b2b/sales/proposals/{}", id)).await
 }
 pub async fn apply_proposal_discount(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/sales/proposals/{}/discount", id), payload).await
+    put_json(&format!("/b2b/sales/proposals/{}/discount", id), payload).await
 }
 pub async fn generate_proposal_pdf(id: &str) -> Result<Value, String> {
-    post_json(&format!("/api/sales/proposals/{}/generate-pdf", id), &json!({})).await
+    post_json(&format!("/b2b/sales/proposals/{}/generate-pdf", id), &json!({})).await
 }
 pub async fn create_sales_contract(payload: &Value) -> Result<Value, String> {
-    post_json("/api/sales/contracts", payload).await
+    post_json("/b2b/sales/contracts", payload).await
 }
 pub async fn get_sales_contract(id: &str) -> Result<Value, String> {
-    fetch_json(&format!("/api/sales/contracts/{}", id)).await
+    fetch_json(&format!("/b2b/sales/contracts/{}", id)).await
 }
 pub async fn verify_contract_signatures(id: &str) -> Result<Value, String> {
-    put_json(&format!("/api/sales/contracts/{}/verify-signatures", id), &json!({})).await
+    put_json(&format!("/b2b/sales/contracts/{}/verify-signatures", id), &json!({})).await
 }
 
 pub async fn generate_contract_invoice(id: &str) -> Result<Value, String> {
-    post_json(&format!("/api/sales/contracts/{}/invoice", id), &json!({})).await
+    post_json(&format!("/b2b/sales/contracts/{}/invoice", id), &json!({})).await
 }
 pub async fn fetch_sales_plans() -> Result<Value, String> {
-    fetch_json("/api/sales/plans").await
+    fetch_json("/b2b/sales/plans").await
 }
 pub async fn fetch_contract_documents(contract_id: &str) -> Result<Value, String> {
-    fetch_json(&format!("/api/sales/contracts/{}/documents", contract_id)).await
+    fetch_json(&format!("/b2b/sales/contracts/{}/documents", contract_id)).await
 }
 pub async fn upload_contract_document(contract_id: &str, payload: &Value) -> Result<Value, String> {
-    post_json(&format!("/api/sales/contracts/{}/documents", contract_id), payload).await
+    post_json(&format!("/b2b/sales/contracts/{}/documents", contract_id), payload).await
 }
 
 // ─── Complementary Subjects ───
@@ -814,58 +817,58 @@ pub async fn delete_interview(id: &str) -> Result<Value, String> {
 
 // ─── Admin License Plans ───
 pub async fn admin_list_plans() -> Result<Value, String> {
-    fetch_json("/api/management/license-plans").await
+    fetch_json("/b2b/admin/management/license-plans").await
 }
 pub async fn admin_get_plan(id: &str) -> Result<Value, String> {
-    fetch_json(&format!("/api/management/license-plans/{}", id)).await
+    fetch_json(&format!("/b2b/admin/management/license-plans/{}", id)).await
 }
 pub async fn admin_create_plan(payload: &Value) -> Result<Value, String> {
-    post_json("/api/management/license-plans", payload).await
+    post_json("/b2b/admin/management/license-plans", payload).await
 }
 pub async fn admin_update_plan(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/management/license-plans/{}", id), payload).await
+    put_json(&format!("/b2b/admin/management/license-plans/{}", id), payload).await
 }
 #[allow(dead_code)]
 pub async fn admin_delete_plan(id: &str) -> Result<Value, String> {
-    delete_json(&format!("/api/management/license-plans/{}", id)).await
+    delete_json(&format!("/b2b/admin/management/license-plans/{}", id)).await
 }
 pub async fn admin_set_plan_modules(id: &str, payload: &Value) -> Result<Value, String> {
-    post_json(&format!("/api/management/license-plans/{}/modules", id), payload).await
+    post_json(&format!("/b2b/admin/management/license-plans/{}/modules", id), payload).await
 }
 #[allow(dead_code)]
 pub async fn admin_list_licenses(status: Option<&str>, corp_id: Option<&str>) -> Result<Value, String> {
     let mut q = String::new();
     if let Some(s) = status { q.push_str(&format!("status={}", s)); }
     if let Some(c) = corp_id { if !q.is_empty() { q.push('&'); } q.push_str(&format!("corporation_id={}", c)); }
-    fetch_json(&format!("/api/management/licenses?{}", q)).await
+    fetch_json(&format!("/b2b/admin/management/licenses?{}", q)).await
 }
 #[allow(dead_code)]
 pub async fn admin_assign_license(payload: &Value) -> Result<Value, String> {
-    post_json("/api/management/licenses", payload).await
+    post_json("/b2b/admin/management/licenses", payload).await
 }
 #[allow(dead_code)]
 pub async fn admin_extend_license(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/management/licenses/{}/extend", id), payload).await
+    put_json(&format!("/b2b/admin/management/licenses/{}/extend", id), payload).await
 }
 #[allow(dead_code)]
 pub async fn admin_change_plan(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/management/licenses/{}/change-plan", id), payload).await
+    put_json(&format!("/b2b/admin/management/licenses/{}/change-plan", id), payload).await
 }
 #[allow(dead_code)]
 pub async fn admin_update_license_status(id: &str, payload: &Value) -> Result<Value, String> {
-    put_json(&format!("/api/management/licenses/{}/status", id), payload).await
+    put_json(&format!("/b2b/admin/management/licenses/{}/status", id), payload).await
 }
 #[allow(dead_code)]
 pub async fn admin_list_payments() -> Result<Value, String> {
-    fetch_json("/api/management/payments").await
+    fetch_json("/b2b/admin/management/payments").await
 }
 #[allow(dead_code)]
 pub async fn admin_register_payment(payload: &Value) -> Result<Value, String> {
-    post_json("/api/management/payments", payload).await
+    post_json("/b2b/admin/management/payments", payload).await
 }
 #[allow(dead_code)]
 pub async fn admin_list_corporations() -> Result<Value, String> {
-    fetch_json("/api/management/corporations").await
+    fetch_json("/b2b/admin/management/corporations").await
 }
 
 fn urlencoding(s: &str) -> String {

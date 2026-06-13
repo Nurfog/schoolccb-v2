@@ -109,11 +109,11 @@ pub enum Route {
     Login {},
     #[route("/session-login")]
     SessionLogin {},
+    #[route("/app/session-login")]
+    AppSessionLogin {},
     #[layout(AppLayout)]
         #[route("/dashboard")]
         Dashboard {},
-        #[route("/sostenedor")]
-        SostenedorPortal {},
         #[route("/")]
         ModuleManagerRoot {},
         #[route("/students")]
@@ -148,8 +148,6 @@ pub enum Route {
         HrDetail { employee_id: String },
         #[route("/import")]
         Import {},
-        #[route("/corporations")]
-        Corporations {},
         #[route("/agenda")]
         Agenda {},
         #[route("/academic-years")]
@@ -168,8 +166,6 @@ pub enum Route {
         Classrooms {},
         #[route("/payroll")]
         Payroll {},
-        #[route("/license-portal")]
-        ClientPortal {},
         #[route("/my-portal")]
         EmployeePortal {},
         #[route("/parent-portal")]
@@ -190,8 +186,15 @@ pub enum Route {
         ComplementarySubjects {},
         #[route("/curriculum")]
         Curriculum {},
-        #[route("/sales")]
+        // ─── B2B Routes ───
+        #[route("/b2b/sales")]
         Sales {},
+        #[route("/b2b/sostenedor")]
+        SostenedorPortal {},
+        #[route("/b2b/corporations")]
+        Corporations {},
+        #[route("/b2b/license-portal")]
+        ClientPortal {},
         #[route("/b2b/hr")]
         B2bHr {},
         #[route("/b2b/roles")]
@@ -266,6 +269,11 @@ pub fn SessionLogin() -> Element {
             }
         }
     }
+}
+
+#[component]
+pub fn AppSessionLogin() -> Element {
+    SessionLogin()
 }
 
 #[component]

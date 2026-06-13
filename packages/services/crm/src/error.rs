@@ -18,6 +18,7 @@ pub enum CrmError {
     Forbidden(String),
 
     #[error("Token expired")]
+    #[allow(dead_code)]
     TokenExpired,
 
     #[error("Token invalid: {0}")]
@@ -56,6 +57,17 @@ impl IntoResponse for CrmError {
             CrmError::External(m) => (StatusCode::SERVICE_UNAVAILABLE, m.clone()),
         };
         (status, Json(json!({"error": message}))).into_response()
+    }
+}
+
+impl From<schoolccb_common::auth::AuthError> for CrmError {
+    fn from(e: schoolccb_common::auth::AuthError) -> Self {
+        match e {
+            schoolccb_common::auth::AuthError::Unauthorized => CrmError::Unauthorized,
+            schoolccb_common::auth::AuthError::Forbidden(msg) => CrmError::Forbidden(msg),
+            schoolccb_common::auth::AuthError::TokenExpired => CrmError::Unauthorized,
+            schoolccb_common::auth::AuthError::TokenInvalid(_msg) => CrmError::Unauthorized,
+        }
     }
 }
 

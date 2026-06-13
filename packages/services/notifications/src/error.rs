@@ -40,4 +40,15 @@ impl IntoResponse for NotifError {
     }
 }
 
+impl From<schoolccb_common::auth::AuthError> for NotifError {
+    fn from(e: schoolccb_common::auth::AuthError) -> Self {
+        match e {
+            schoolccb_common::auth::AuthError::Unauthorized => NotifError::Unauthorized,
+            schoolccb_common::auth::AuthError::Forbidden(msg) => NotifError::Forbidden(msg),
+            schoolccb_common::auth::AuthError::TokenExpired => NotifError::Unauthorized,
+            schoolccb_common::auth::AuthError::TokenInvalid(_msg) => NotifError::Unauthorized,
+        }
+    }
+}
+
 pub type NotifResult<T> = Result<T, NotifError>;

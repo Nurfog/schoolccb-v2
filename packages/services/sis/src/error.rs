@@ -49,4 +49,15 @@ impl IntoResponse for SisError {
     }
 }
 
+impl From<schoolccb_common::auth::AuthError> for SisError {
+    fn from(e: schoolccb_common::auth::AuthError) -> Self {
+        match e {
+            schoolccb_common::auth::AuthError::Unauthorized => SisError::Unauthorized,
+            schoolccb_common::auth::AuthError::Forbidden(msg) => SisError::Forbidden(msg),
+            schoolccb_common::auth::AuthError::TokenExpired => SisError::Unauthorized,
+            schoolccb_common::auth::AuthError::TokenInvalid(_msg) => SisError::Unauthorized,
+        }
+    }
+}
+
 pub type SisResult<T> = Result<T, SisError>;

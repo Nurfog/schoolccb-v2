@@ -92,6 +92,7 @@ async fn main() {
         .merge(client::client_router())
         .merge(admin::admin_router())
         .layer(TraceLayer::new_for_http())
+        .layer(axum::extract::Extension(schoolccb_common::auth::JwtSecret(config.jwt_secret.clone())))
         .with_state(state);
 
     if let Some(cors) = cors {

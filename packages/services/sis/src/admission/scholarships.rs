@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use uuid::Uuid;
 
 use crate::error::SisResult;
-use crate::routes::students::{Claims, require_any_role};
+use schoolccb_common::auth::{Claims, require_any_role};
 use crate::AppState;
 
 pub fn router() -> Router<AppState> {

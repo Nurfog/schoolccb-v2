@@ -2,7 +2,7 @@ use axum::{Json, Router, extract::{Path, State}, routing::{get, put}};
 use serde_json::{Value, json};
 use uuid::Uuid;
 use crate::error::SisResult;
-use crate::routes::students::{require_any_role, Claims};
+use schoolccb_common::auth::{Claims, require_any_role};
 use crate::AppState;
 
 pub fn router() -> Router<AppState> {

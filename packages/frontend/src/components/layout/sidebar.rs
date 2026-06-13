@@ -182,8 +182,8 @@ pub fn Sidebar() -> Element {
                             }
                             span { class: "label", "Mi Portal" }
                         }
-                        div { class: "nav-section-label", "Configuración"}
-                        a { class: "nav-item", href: "/corporations", aria_current: is_active("/corporations").then_some("page"),
+                        div { class: "nav-section-label", "Plataforma"}
+                        a { class: "nav-item", href: "/b2b/sostenedor", aria_current: is_active("/b2b/sostenedor").then_some("page"),
                             span { class: "icon",
                                 svg { role: "presentation", view_box: "0 0 24 24",
                                     path { d: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" }
@@ -192,7 +192,7 @@ pub fn Sidebar() -> Element {
                             }
                             span { class: "label", "Corporaciones" }
                         }
-                        a { class: "nav-item", href: "/license-portal", aria_current: is_active("/license-portal").then_some("page"),
+                        a { class: "nav-item", href: "/b2b/license-portal", aria_current: is_active("/b2b/license-portal").then_some("page"),
                             span { class: "icon",
                                 svg { role: "presentation", view_box: "0 0 24 24",
                                     path { d: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" }

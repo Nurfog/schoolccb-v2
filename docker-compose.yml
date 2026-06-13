@@ -28,7 +28,6 @@ services:
       PORT: 3001
       RUST_LOG: info
       DATABASE_URL: postgres://schoolccb:schoolccb@db:5432/schoolccb
-      JWT_SECRET: cambio-en-produccion
     depends_on:
       db:
         condition: service_healthy
@@ -51,7 +50,6 @@ services:
       PORT: 3002
       RUST_LOG: info
       DATABASE_URL: postgres://schoolccb:schoolccb@db:5432/schoolccb
-      JWT_SECRET: cambio-en-produccion
     depends_on:
       db:
         condition: service_healthy
@@ -74,7 +72,6 @@ services:
       PORT: 3003
       RUST_LOG: info
       DATABASE_URL: postgres://schoolccb:schoolccb@db:5432/schoolccb
-      JWT_SECRET: cambio-en-produccion
     depends_on:
       db:
         condition: service_healthy
@@ -97,7 +94,6 @@ services:
       PORT: 3004
       RUST_LOG: info
       DATABASE_URL: postgres://schoolccb:schoolccb@db:5432/schoolccb
-      JWT_SECRET: cambio-en-produccion
     depends_on:
       db:
         condition: service_healthy
@@ -120,7 +116,6 @@ services:
       PORT: 3005
       RUST_LOG: info
       DATABASE_URL: postgres://schoolccb:schoolccb@db:5432/schoolccb
-      JWT_SECRET: cambio-en-produccion
     depends_on:
       db:
         condition: service_healthy
@@ -143,7 +138,6 @@ services:
       PORT: 3006
       RUST_LOG: info
       DATABASE_URL: postgres://schoolccb:schoolccb@db:5432/schoolccb
-      JWT_SECRET: cambio-en-produccion
     depends_on:
       db:
         condition: service_healthy
@@ -166,7 +160,6 @@ services:
       PORT: 3007
       RUST_LOG: info
       DATABASE_URL: postgres://schoolccb:schoolccb@db:5432/schoolccb
-      JWT_SECRET: cambio-en-produccion
     depends_on:
       db:
         condition: service_healthy
@@ -235,7 +228,6 @@ services:
       PORT: 3012
       RUST_LOG: info
       DATABASE_URL: postgres://schoolccb:schoolccb@db:5432/schoolccb
-      JWT_SECRET: cambio-en-produccion
     depends_on:
       db:
         condition: service_healthy

@@ -8,6 +8,8 @@ use sha2::{Digest, Sha256};
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
+pub use schoolccb_common::auth::Claims;
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct UserRow {
     pub id: Uuid,
@@ -19,19 +21,6 @@ pub struct UserRow {
     pub active: bool,
     pub corporation_id: Option<Uuid>,
     pub school_id: Option<Uuid>,
-    pub admin_type: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Claims {
-    pub sub: String,
-    pub role: String,
-    pub name: String,
-    pub email: String,
-    pub exp: usize,
-    pub iat: usize,
-    pub school_id: Option<String>,
-    pub corporation_id: Option<String>,
     pub admin_type: Option<String>,
 }
 

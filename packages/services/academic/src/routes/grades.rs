@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::AppState;
 use crate::error::{AcademicError, AcademicResult};
-use crate::routes::subjects::{Claims, require_any_role};
+use schoolccb_common::auth::{Claims, require_any_role};
 
 #[derive(Deserialize)]
 pub struct GradeFilter {

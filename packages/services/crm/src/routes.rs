@@ -1,10 +1,8 @@
 use axum::{
     Json, Router,
-    extract::{FromRequestParts, Path, Query, State},
-    http::request::Parts,
+    extract::{Path, Query, State},
     routing::{get, post, put},
 };
-use jsonwebtoken::{DecodingKey, Validation};
 use schoolccb_common::rut::Rut;
 use serde::Deserialize;
 use sqlx::Row;
@@ -81,31 +79,6 @@ fn require_sales_manager(claims: &Claims) -> Result<(), CrmError> {
         return Ok(());
     }
     Err(CrmError::Forbidden("Se requiere rol GerenteGeneral o JefeVentas".into()))
-}
-
-impl FromRequestParts<AppState> for Claims {
-    type Rejection = CrmError;
-
-    async fn from_request_parts(parts: &mut Parts, _state: &AppState) -> Result<Self, Self::Rejection> {
-        let auth_header = parts
-            .headers
-            .get("Authorization")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.strip_prefix("Bearer "))
-            .ok_or(CrmError::Unauthorized)?;
-
-        let token_data = jsonwebtoken::decode::<Claims>(
-            auth_header,
-            &DecodingKey::from_secret(_state.config.jwt_secret.as_bytes()),
-            &Validation::default(),
-        )
-        .map_err(|e| match e.kind() {
-            jsonwebtoken::errors::ErrorKind::ExpiredSignature => CrmError::TokenExpired,
-            _ => CrmError::TokenInvalid("Token inválido".into()),
-        })?;
-
-        Ok(token_data.claims)
-    }
 }
 
 // ─── Stages ───

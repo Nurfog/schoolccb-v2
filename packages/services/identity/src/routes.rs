@@ -1,7 +1,7 @@
 use axum::{
     Json, Router,
-    extract::{FromRequestParts, Path, Query, State},
-    http::{HeaderMap, HeaderValue, header, request::Parts},
+    extract::{Path, Query, State},
+    http::{HeaderMap, HeaderValue, header},
     routing::{delete, get, post, put},
 };
 use jsonwebtoken::{EncodingKey, Header, encode};
@@ -12,6 +12,7 @@ use uuid::Uuid;
 use crate::AppState;
 use crate::error::{AuthError, AuthResult};
 use crate::models::{self, Claims};
+use schoolccb_common::auth::{require_role, require_any_role};
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -50,54 +51,6 @@ pub fn router() -> Router<AppState> {
         // Internal
         .route("/api/internal/onboarding", post(onboarding))
         .merge(roles_router())
-}
-
-pub fn require_role(claims: &Claims, required: &str) -> Result<(), AuthError> {
-    if claims.role == "GerenteGeneral" || claims.role == required {
-        return Ok(());
-    }
-    Err(AuthError::Forbidden(format!(
-        "Se requiere rol '{}', tiene '{}'",
-        required, claims.role
-    )))
-}
-
-fn require_any_role(claims: &Claims, roles: &[&str]) -> Result<(), AuthError> {
-    if claims.role == "GerenteGeneral" || roles.contains(&claims.role.as_str()) {
-        return Ok(());
-    }
-    Err(AuthError::Forbidden(format!(
-        "Se requiere uno de los roles {:?}, tiene '{}'",
-        roles, claims.role
-    )))
-}
-
-impl FromRequestParts<AppState> for Claims {
-    type Rejection = AuthError;
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        _state: &AppState,
-    ) -> Result<Self, Self::Rejection> {
-        let auth_header = parts
-            .headers
-            .get("Authorization")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.strip_prefix("Bearer "))
-            .ok_or(AuthError::Unauthorized)?;
-
-        let token_data = jsonwebtoken::decode::<Claims>(
-            auth_header,
-            &jsonwebtoken::DecodingKey::from_secret(_state.config.jwt_secret.as_bytes()),
-            &jsonwebtoken::Validation::default(),
-        )
-        .map_err(|e| match e.kind() {
-            jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
-            _ => AuthError::TokenInvalid("Token inválido".into()),
-        })?;
-
-        Ok(token_data.claims)
-    }
 }
 
 pub(crate) fn generate_token_pair(
@@ -167,12 +120,12 @@ async fn login(
 
     let mut headers = HeaderMap::new();
     if let Ok(cookie) = HeaderValue::from_str(&format!(
-        "jwt_token={}; Path=/; SameSite=Lax; Max-Age=43200",
+        "jwt_token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=43200",
         token
     )) {
         headers.insert(header::SET_COOKIE, cookie);
     }
-    if let Ok(marker) = HeaderValue::from_str("session_active=1; Path=/; SameSite=Lax; Max-Age=43200") {
+    if let Ok(marker) = HeaderValue::from_str("session_active=1; Path=/; Secure; SameSite=Lax; Max-Age=43200") {
         headers.append(header::SET_COOKIE, marker);
     }
 
@@ -586,10 +539,10 @@ async fn logout(claims: Claims, State(state): State<AppState>) -> AuthResult<(He
     models::revoke_all_user_tokens(&state.pool, user_id).await?;
 
     let mut headers = HeaderMap::new();
-    if let Ok(cookie) = HeaderValue::from_str("jwt_token=; HttpOnly; Path=/; Max-Age=0") {
+    if let Ok(cookie) = HeaderValue::from_str("jwt_token=; HttpOnly; Secure; Path=/; Max-Age=0") {
         headers.insert(header::SET_COOKIE, cookie);
     }
-    if let Ok(marker) = HeaderValue::from_str("session_active=; Path=/; Max-Age=0") {
+    if let Ok(marker) = HeaderValue::from_str("session_active=; Secure; Path=/; Max-Age=0") {
         headers.append(header::SET_COOKIE, marker);
     }
 
@@ -1183,6 +1136,7 @@ async fn list_modules(
     let fav_set: std::collections::HashSet<String> = favs.into_iter().map(|r| r.0).collect();
 
     let all_modules = if claims.role == "GerenteGeneral" {
+        // ─── B2B: GerenteGeneral sees platform management modules ───
         vec![
             schoolccb_common::modules::Module {
                 id: "dashboard".into(),
@@ -1197,8 +1151,8 @@ async fn list_modules(
                 id: "sales".into(),
                 name: "CRM de Ventas".into(),
                 icon: "trending-up".into(),
-                category: "Gestión".into(),
-                route: "/sales".into(),
+                category: "B2B".into(),
+                route: "/b2b/sales".into(),
                 parent: None,
                 is_favorite: false,
             },
@@ -1206,7 +1160,7 @@ async fn list_modules(
                 id: "finance".into(),
                 name: "Finanzas B2B".into(),
                 icon: "dollar".into(),
-                category: "Gestión".into(),
+                category: "B2B".into(),
                 route: "/b2b/finance".into(),
                 parent: None,
                 is_favorite: false,
@@ -1215,7 +1169,7 @@ async fn list_modules(
                 id: "b2b-hr".into(),
                 name: "Recursos Humanos B2B".into(),
                 icon: "users".into(),
-                category: "RRHH".into(),
+                category: "B2B".into(),
                 route: "/b2b/hr".into(),
                 parent: None,
                 is_favorite: false,
@@ -1224,7 +1178,7 @@ async fn list_modules(
                 id: "b2b-roles".into(),
                 name: "Roles y Permisos B2B".into(),
                 icon: "users".into(),
-                category: "Configuración".into(),
+                category: "B2B".into(),
                 route: "/b2b/roles".into(),
                 parent: None,
                 is_favorite: false,
@@ -1233,8 +1187,8 @@ async fn list_modules(
                 id: "payroll".into(),
                 name: "Remuneraciones".into(),
                 icon: "dollar".into(),
-                category: "RRHH".into(),
-                route: "/payroll".into(),
+                category: "B2B".into(),
+                route: "/b2b/hr".into(),
                 parent: Some("b2b-hr".into()),
                 is_favorite: false,
             },
@@ -1242,8 +1196,8 @@ async fn list_modules(
                 id: "my-portal".into(),
                 name: "Mi Portal".into(),
                 icon: "user".into(),
-                category: "RRHH".into(),
-                route: "/my-portal".into(),
+                category: "B2B".into(),
+                route: "/b2b/hr".into(),
                 parent: Some("b2b-hr".into()),
                 is_favorite: false,
             },
@@ -1251,8 +1205,8 @@ async fn list_modules(
                 id: "corporations".into(),
                 name: "Corporaciones".into(),
                 icon: "home".into(),
-                category: "Configuración".into(),
-                route: "/corporations".into(),
+                category: "B2B".into(),
+                route: "/b2b/corporations".into(),
                 parent: None,
                 is_favorite: false,
             },
@@ -1260,7 +1214,7 @@ async fn list_modules(
                 id: "users".into(),
                 name: "Usuarios y Perfiles".into(),
                 icon: "users".into(),
-                category: "Configuración".into(),
+                category: "B2B".into(),
                 route: "/users".into(),
                 parent: None,
                 is_favorite: false,
@@ -1269,8 +1223,8 @@ async fn list_modules(
                 id: "license-portal".into(),
                 name: "Portal de Licencias".into(),
                 icon: "key".into(),
-                category: "Sistema".into(),
-                route: "/license-portal".into(),
+                category: "B2B".into(),
+                route: "/b2b/license-portal".into(),
                 parent: None,
                 is_favorite: false,
             },
@@ -1278,7 +1232,7 @@ async fn list_modules(
                 id: "license-plans".into(),
                 name: "Planes de Licencia".into(),
                 icon: "file-text".into(),
-                category: "Configuración".into(),
+                category: "B2B".into(),
                 route: "/b2b/license-plans".into(),
                 parent: None,
                 is_favorite: false,
@@ -1303,21 +1257,21 @@ async fn list_modules(
             },
         ]
     } else if claims.role == "AdminGlobal" {
-        // AdminGlobal: solo configuración de colegios/corporaciones, sin datos académicos
+        // ─── B2B: AdminGlobal sees limited platform config ───
         vec![
             schoolccb_common::modules::Module {
                 id: "corporations".into(),
                 name: "Corporaciones y Colegios".into(),
                 icon: "home".into(),
-                category: "Configuración".into(),
-                route: "/corporations".into(),
+                category: "B2B".into(),
+                route: "/b2b/corporations".into(),
                 parent: None, is_favorite: false,
             },
             schoolccb_common::modules::Module {
                 id: "users".into(),
                 name: "Usuarios y Perfiles".into(),
                 icon: "users".into(),
-                category: "Configuración".into(),
+                category: "B2B".into(),
                 route: "/users".into(),
                 parent: None, is_favorite: false,
             },
@@ -1325,7 +1279,7 @@ async fn list_modules(
                 id: "roles".into(),
                 name: "Roles y Permisos".into(),
                 icon: "users".into(),
-                category: "Configuración".into(),
+                category: "B2B".into(),
                 route: "/roles".into(),
                 parent: None, is_favorite: false,
             },
@@ -1333,7 +1287,7 @@ async fn list_modules(
                 id: "config".into(),
                 name: "Configuración General".into(),
                 icon: "settings".into(),
-                category: "Configuración".into(),
+                category: "Sistema".into(),
                 route: "/config".into(),
                 parent: None, is_favorite: false,
             },
@@ -1349,8 +1303,8 @@ async fn list_modules(
                 id: "license-portal".into(),
                 name: "Portal de Licencias".into(),
                 icon: "key".into(),
-                category: "Sistema".into(),
-                route: "/license-portal".into(),
+                category: "B2B".into(),
+                route: "/b2b/license-portal".into(),
                 parent: None, is_favorite: false,
             },
         ]

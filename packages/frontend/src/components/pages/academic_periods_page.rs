@@ -26,7 +26,7 @@ pub fn AcademicPeriodsPage() -> Element {
         show_form.set(false);
     };
 
-    let mut do_save = move |_| {
+    let do_save = move |_| {
         saving.set(true);
         let payload = serde_json::json!({
             "name": name(),
@@ -49,7 +49,7 @@ pub fn AcademicPeriodsPage() -> Element {
         });
     };
 
-    let mut do_activate = move |id: String| {
+    let do_activate = move |id: String| {
         spawn(async move {
             let payload = serde_json::json!({"is_active": true});
             let _ = client::update_academic_period(&id, &payload).await;

@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 use axum::routing::get;
 use axum::Router;
+use schoolccb_common::auth::JwtSecret;
 use sqlx::PgPool;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -24,6 +25,20 @@ pub struct AppState {
     pub pool: PgPool,
     pub config: Arc<Config>,
     pub gateway: Option<&'static dyn PaymentGateway>,
+}
+
+async fn inject_jwt_secret(
+    mut req: axum::http::Request<axum::body::Body>,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let secret = req
+        .extensions()
+        .get::<AppState>()
+        .map(|s| s.config.jwt_secret.clone());
+    if let Some(secret) = secret {
+        req.extensions_mut().insert(JwtSecret(secret));
+    }
+    next.run(req).await
 }
 
 fn init_gateway() -> Option<&'static dyn PaymentGateway> {
@@ -74,6 +89,7 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
         .merge(routes::router())
+        .layer(axum::middleware::from_fn(inject_jwt_secret))
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 

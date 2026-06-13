@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::AppState;
 use crate::error::{ReportError, ReportResult};
-use crate::routes::certificate::{Claims, require_any_role};
+use schoolccb_common::auth::{Claims, require_any_role};
 
 pub fn router() -> Router<AppState> {
     Router::new().route(

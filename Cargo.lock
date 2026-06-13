@@ -3221,7 +3221,9 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "async-trait",
+ "axum 0.8.9",
  "chrono",
+ "jsonwebtoken",
  "serde",
  "serde_json",
  "sqlx",

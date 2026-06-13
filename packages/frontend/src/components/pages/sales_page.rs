@@ -49,8 +49,8 @@ pub fn SalesPage() -> Element {
 
 #[component]
 fn SalesPipeline() -> Element {
-    let stages = use_resource(|| client::fetch_json("/api/sales/stages"));
-    let mut prospects = use_resource(|| client::fetch_json("/api/sales/prospects"));
+    let stages = use_resource(|| client::fetch_json("/b2b/sales/stages"));
+    let mut prospects = use_resource(|| client::fetch_json("/b2b/sales/prospects"));
     let mut selected_id = use_signal(|| None::<String>);
     let mut show_new = use_signal(|| false);
     let mut view_mode = use_signal(|| "kanban".to_string());
@@ -60,7 +60,7 @@ fn SalesPipeline() -> Element {
         let sid = selected_id();
         async move {
             match sid {
-                Some(id) => client::fetch_json(&format!("/api/sales/prospects/{}", id)).await,
+                Some(id) => client::fetch_json(&format!("/b2b/sales/prospects/{}", id)).await,
                 None => Err("none".to_string()),
             }
         }
@@ -88,7 +88,7 @@ fn SalesPipeline() -> Element {
             "source": source(), "notes": notes(),
         });
         spawn(async move {
-            let _ = client::post_json("/api/sales/prospects", &payload).await;
+            let _ = client::post_json("/b2b/sales/prospects", &payload).await;
             saving.set(false);
             show_new.set(false);
             first_name.set(String::new()); last_name.set(String::new()); email.set(String::new());
@@ -441,7 +441,7 @@ fn ProspectDetailModal(
 fn ContactTimeline(prospect_id: String) -> Element {
     let activities = use_resource(move || {
         let pid = prospect_id.clone();
-        async move { client::fetch_json(&format!("/api/sales/prospects/{}/activities", pid)).await }
+        async move { client::fetch_json(&format!("/b2b/sales/prospects/{}/activities", pid)).await }
     });
 
     let items = match activities() {
@@ -492,8 +492,8 @@ fn ContactTimeline(prospect_id: String) -> Element {
 
 #[component]
 fn SalesDashboard() -> Element {
-    let dashboard = use_resource(|| client::fetch_json("/api/sales/dashboard/summary"));
-    let agents = use_resource(|| client::fetch_json("/api/sales/agents"));
+    let dashboard = use_resource(|| client::fetch_json("/b2b/sales/dashboard/summary"));
+    let agents = use_resource(|| client::fetch_json("/b2b/sales/agents"));
 
     let data = match dashboard() {
         Some(Ok(ref d)) => Some(d.clone()),
@@ -723,7 +723,7 @@ fn SalesProposals() -> Element {
 #[component]
 fn SalesContracts() -> Element {
     let proposals = use_resource(client::fetch_sales_proposals);
-    let contracts = use_resource(|| client::fetch_json("/api/sales/contracts"));
+    let contracts = use_resource(|| client::fetch_json("/b2b/sales/contracts"));
     let mut sel_proposal_id = use_signal(String::new);
     let mut tax_rate = use_signal(|| 19.0);
     let mut notes = use_signal(String::new);
@@ -1223,8 +1223,8 @@ fn SalesDocuments() -> Element {
 
 #[component]
 fn SalesTeam() -> Element {
-    let agents_data = use_resource(|| client::fetch_json("/api/sales/agents"));
-    let rr_status = use_resource(|| client::fetch_json("/api/sales/round-robin/status"));
+    let agents_data = use_resource(|| client::fetch_json("/b2b/sales/agents"));
+    let rr_status = use_resource(|| client::fetch_json("/b2b/sales/round-robin/status"));
 
     let agents_list: Vec<Value> = match agents_data() {
         Some(Ok(d)) => d["agents"].as_array().cloned().unwrap_or_default(),
@@ -1326,7 +1326,7 @@ fn build_activation_wizard(
                                     let id = prospect_id.clone();
                                     spawn(async move {
                                         is_activating.set(true);
-                                        if let Ok(resp) = client::post_json(&format!("/api/sales/contracts/{}/activate", id), &json!({})).await {
+                                        if let Ok(resp) = client::post_json(&format!("/b2b/sales/contracts/{}/activate", id), &json!({})).await {
                                             activation_result.set(Some(resp));
                                             wizard_step.set(2);
                                         }

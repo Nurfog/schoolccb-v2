@@ -49,4 +49,15 @@ impl IntoResponse for AcademicError {
     }
 }
 
+impl From<schoolccb_common::auth::AuthError> for AcademicError {
+    fn from(e: schoolccb_common::auth::AuthError) -> Self {
+        match e {
+            schoolccb_common::auth::AuthError::Unauthorized => AcademicError::Unauthorized,
+            schoolccb_common::auth::AuthError::Forbidden(msg) => AcademicError::Forbidden(msg),
+            schoolccb_common::auth::AuthError::TokenExpired => AcademicError::Unauthorized,
+            schoolccb_common::auth::AuthError::TokenInvalid(_msg) => AcademicError::Unauthorized,
+        }
+    }
+}
+
 pub type AcademicResult<T> = Result<T, AcademicError>;

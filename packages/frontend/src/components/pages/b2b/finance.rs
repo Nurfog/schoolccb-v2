@@ -3,7 +3,7 @@ use crate::api::client;
 
 #[component]
 pub fn B2bFinancePage() -> Element {
-    let dashboard = use_resource(|| client::fetch_json("/api/sales/dashboard/summary"));
+    let dashboard = use_resource(|| client::fetch_json("/b2b/sales/dashboard/summary"));
 
     rsx! {
         div { class: "page-header",

@@ -44,4 +44,15 @@ impl IntoResponse for ReportError {
     }
 }
 
+impl From<schoolccb_common::auth::AuthError> for ReportError {
+    fn from(e: schoolccb_common::auth::AuthError) -> Self {
+        match e {
+            schoolccb_common::auth::AuthError::Unauthorized => ReportError::Unauthorized,
+            schoolccb_common::auth::AuthError::Forbidden(msg) => ReportError::Forbidden(msg),
+            schoolccb_common::auth::AuthError::TokenExpired => ReportError::Unauthorized,
+            schoolccb_common::auth::AuthError::TokenInvalid(_msg) => ReportError::Unauthorized,
+        }
+    }
+}
+
 pub type ReportResult<T> = Result<T, ReportError>;

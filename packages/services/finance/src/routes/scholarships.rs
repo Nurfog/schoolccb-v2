@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::AppState;
 use crate::error::FinanceResult;
-use crate::routes::fees::{Claims, require_any_role};
+use schoolccb_common::auth::{Claims, require_any_role};
 
 pub fn router() -> Router<AppState> {
     Router::new()

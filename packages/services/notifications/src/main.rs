@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use axum::routing::get;
 use axum::Router;
+use schoolccb_common::auth::JwtSecret;
 use sqlx::PgPool;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -20,6 +21,20 @@ pub struct AppState {
     pub config: Arc<Config>,
     pub ws_hub: Arc<ws::hub::WsHub>,
     pub mailer: email::Mailer,
+}
+
+async fn inject_jwt_secret(
+    mut req: axum::http::Request<axum::body::Body>,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let secret = req
+        .extensions()
+        .get::<AppState>()
+        .map(|s| s.config.jwt_secret.clone());
+    if let Some(secret) = secret {
+        req.extensions_mut().insert(JwtSecret(secret));
+    }
+    next.run(req).await
 }
 
 #[tokio::main]
@@ -75,6 +90,7 @@ async fn main() {
         .route("/health", get(|| async { "ok" }))
         .merge(ws::routes::router())
         .merge(push::router())
+        .layer(axum::middleware::from_fn(inject_jwt_secret))
         .layer(TraceLayer::new_for_http())
         .with_state(state);
     tracing::info!("Notifications Service starting on {addr}");

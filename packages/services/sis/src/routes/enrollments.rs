@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use uuid::Uuid;
 
-use super::students::{Claims, require_any_role};
+use schoolccb_common::auth::{Claims, require_any_role};
 use crate::AppState;
 use crate::error::{SisError, SisResult};
 

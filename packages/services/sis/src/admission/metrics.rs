@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::AppState;
 use crate::error::{SisError, SisResult};
-use crate::routes::students::{Claims, require_any_role};
+use schoolccb_common::auth::{Claims, require_any_role};
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/api/admission/metrics", get(admission_metrics))

@@ -1,4 +1,5 @@
 mod graphql;
+mod rate_limit;
 
 use std::env;
 
@@ -38,6 +39,7 @@ struct AppState {
     crm_url: String,
     frontend_url: String,
     ollama_url: String,
+    auth_rate_limiter: rate_limit::RateLimiter,
 }
 
 #[tokio::main]
@@ -68,6 +70,8 @@ async fn main() {
         curriculum_url: env::var("CURRICULUM_URL").unwrap_or_else(|_| "http://localhost:3011".into()),
         crm_url: env::var("CRM_URL").unwrap_or_else(|_| "http://localhost:3012".into()),
         ollama_url: env::var("OLLAMA_URL").unwrap_or_else(|_| "http://localhost:11434".into()),
+        // Rate limit: 10 requests per minute for auth endpoints
+        auth_rate_limiter: rate_limit::RateLimiter::new(10, std::time::Duration::from_secs(60)),
     };
     let frontend_origin = state
         .frontend_url
@@ -91,14 +95,12 @@ async fn main() {
                 )
             }),
         )
+        // ─── Shared Auth ───
         .route("/api/auth/exchange", any(proxy_portal))
         .route("/api/auth/exchange/{*path}", any(proxy_portal))
-        .route("/api/admin", any(proxy_identity))
-        .route("/api/admin/{*path}", any(proxy_identity))
-        .route("/api/public", any(proxy_identity))
-        .route("/api/public/{*path}", any(proxy_identity))
-        .route("/api/client", any(proxy_identity))
-        .route("/api/client/{*path}", any(proxy_identity))
+        .route("/api/auth/login", any(proxy_identity_ratelimited))
+        .route("/api/auth/forgot-password", any(proxy_identity_ratelimited))
+        .route("/api/auth/register", any(proxy_identity_ratelimited))
         .route("/api/auth", any(proxy_identity))
         .route("/api/auth/{*path}", any(proxy_identity))
         .route("/api/user", any(proxy_identity))
@@ -107,14 +109,29 @@ async fn main() {
         .route("/api/roles/{*path}", any(proxy_identity))
         .route("/api/permissions", any(proxy_identity))
         .route("/api/permissions/{*path}", any(proxy_identity))
-        .route("/api/corporations", any(proxy_identity))
-        .route("/api/corporations/{*path}", any(proxy_identity))
-        .route("/api/schools", any(proxy_identity))
-        .route("/api/schools/{*path}", any(proxy_identity))
         .route("/api/config", any(proxy_identity))
         .route("/api/config/{*path}", any(proxy_identity))
         .route("/api/users", any(proxy_identity))
         .route("/api/users/{*path}", any(proxy_identity))
+        // ─── B2B: Platform Admin (identity) ───
+        .route("/b2b/admin", any(proxy_identity))
+        .route("/b2b/admin/{*path}", any(proxy_identity))
+        .route("/b2b/public", any(proxy_identity_ratelimited))
+        .route("/b2b/public/{*path}", any(proxy_identity_ratelimited))
+        .route("/b2b/client", any(proxy_identity))
+        .route("/b2b/client/{*path}", any(proxy_identity))
+        .route("/b2b/corporations", any(proxy_identity))
+        .route("/b2b/corporations/{*path}", any(proxy_identity))
+        .route("/b2b/schools", any(proxy_identity))
+        .route("/b2b/schools/{*path}", any(proxy_identity))
+        .route("/b2b/legal-representatives", any(proxy_identity))
+        .route("/b2b/legal-representatives/{*path}", any(proxy_identity))
+        // ─── B2B: CRM Sales (crm) ───
+        .route("/b2b/sales", any(proxy_crm))
+        .route("/b2b/sales/{*path}", any(proxy_crm))
+        // ─── B2B: Corporation Dashboard (sis) ───
+        .route("/b2b/corporation", any(proxy_sis))
+        .route("/b2b/corporation/{*path}", any(proxy_sis))
         .route("/api/students", any(proxy_sis))
         .route("/api/students/{*path}", any(proxy_sis))
         .route("/api/courses", any(proxy_sis))
@@ -147,12 +164,8 @@ async fn main() {
         .route("/api/finance/{*path}", any(proxy_finance))
         .route("/api/reports", any(proxy_reporting))
         .route("/api/reports/{*path}", any(proxy_reporting))
-        .route("/api/legal-representatives", any(proxy_identity))
-        .route("/api/legal-representatives/{*path}", any(proxy_identity))
         .route("/api/curriculum", any(proxy_curriculum))
         .route("/api/curriculum/{*path}", any(proxy_curriculum))
-        .route("/api/sales", any(proxy_crm))
-        .route("/api/sales/{*path}", any(proxy_crm))
         .route("/api/ai/{*path}", any(proxy_ai))
         .route("/graphql", get(graphql_playground).post(graphql_handler))
         .layer(Extension(schema))
@@ -322,6 +335,37 @@ proxy_handler!(proxy_reporting, "reporting");
 proxy_handler!(proxy_portal, "portal");
 proxy_handler!(proxy_curriculum, "curriculum");
 proxy_handler!(proxy_crm, "crm");
+
+async fn proxy_identity_ratelimited(
+    State(state): State<AppState>,
+    req: Request,
+) -> Response {
+    // Extract client IP from X-Forwarded-For or connect info
+    let ip = req
+        .headers()
+        .get("X-Forwarded-For")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.split(',').next())
+        .and_then(|v| v.trim().parse::<std::net::IpAddr>().ok())
+        .or_else(|| {
+            req.extensions()
+                .get::<axum::extract::ConnectInfo<std::net::SocketAddr>>()
+                .map(|ci| ci.0.ip())
+        })
+        .unwrap_or(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)));
+
+    if !state.auth_rate_limiter.check(ip).await {
+        return (
+            StatusCode::TOO_MANY_REQUESTS,
+            Json(serde_json::json!({
+                "error": "Demasiadas solicitudes. Intenta nuevamente en un minuto."
+            })),
+        )
+            .into_response();
+    }
+
+    proxy_request(&state, "identity", req).await
+}
 
 async fn proxy_ai(State(state): State<AppState>, req: Request) -> Response {
     let base_url = &state.ollama_url;

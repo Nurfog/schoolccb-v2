@@ -3,7 +3,7 @@ use crate::api::client;
 
 #[component]
 pub fn B2bHrPage() -> Element {
-    let agents = use_resource(|| client::fetch_json("/api/sales/agents"));
+    let agents = use_resource(|| client::fetch_json("/b2b/sales/agents"));
     let mut search = use_signal(String::new);
 
     rsx! {

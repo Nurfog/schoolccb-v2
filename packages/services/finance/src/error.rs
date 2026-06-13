@@ -48,4 +48,15 @@ impl IntoResponse for FinanceError {
     }
 }
 
+impl From<schoolccb_common::auth::AuthError> for FinanceError {
+    fn from(e: schoolccb_common::auth::AuthError) -> Self {
+        match e {
+            schoolccb_common::auth::AuthError::Unauthorized => FinanceError::Unauthorized,
+            schoolccb_common::auth::AuthError::Forbidden(msg) => FinanceError::Forbidden(msg),
+            schoolccb_common::auth::AuthError::TokenExpired => FinanceError::Unauthorized,
+            schoolccb_common::auth::AuthError::TokenInvalid(_msg) => FinanceError::Unauthorized,
+        }
+    }
+}
+
 pub type FinanceResult<T> = Result<T, FinanceError>;

@@ -26,7 +26,7 @@ impl Config {
                 .expect("PORT must be a valid number"),
             jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET must be set"),
             identity_url: env::var("IDENTITY_URL").unwrap_or_else(|_| "http://localhost:3001".into()),
-            internal_api_secret: env::var("INTERNAL_API_SECRET").unwrap_or_else(|_| "dev_secret_only".into()),
+            internal_api_secret: env::var("INTERNAL_API_SECRET").expect("INTERNAL_API_SECRET debe estar definida en producción"),
             smtp_host: env::var("SMTP_HOST").ok(),
             smtp_port: env::var("SMTP_PORT").unwrap_or_else(|_| "587".into()).parse().unwrap_or(587),
             smtp_username: env::var("SMTP_USERNAME").ok(),

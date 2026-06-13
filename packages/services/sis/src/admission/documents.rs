@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::AppState;
 use crate::error::{SisError, SisResult};
-use crate::routes::students::{Claims, require_any_role};
+use schoolccb_common::auth::{Claims, require_any_role};
 use crate::workflow::CrmEvent;
 
 pub fn router() -> Router<AppState> {

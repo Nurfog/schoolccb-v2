@@ -11,10 +11,10 @@ use uuid::Uuid;
 use crate::AppState;
 use crate::error::{AuthError, AuthResult};
 use crate::models::{self, Claims};
-use crate::routes::require_role;
+use schoolccb_common::auth::require_role;
 
 fn require_management(claims: &Claims) -> Result<(), AuthError> {
-    require_role(claims, "GerenteGeneral")
+    Ok(require_role(claims, "GerenteGeneral")?)
 }
 
 pub fn admin_router() -> Router<AppState> {

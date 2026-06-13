@@ -19,7 +19,7 @@ impl Config {
                 .parse()
                 .expect("PORT must be a valid number"),
             jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET debe estar definida en producción"),
-            internal_api_secret: env::var("INTERNAL_API_SECRET").unwrap_or_else(|_| "dev_secret_only".into()),
+            internal_api_secret: env::var("INTERNAL_API_SECRET").expect("INTERNAL_API_SECRET debe estar definida en producción"),
         }
     }
 

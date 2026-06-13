@@ -7,6 +7,8 @@
 pub mod academic;
 pub mod admission;
 pub mod attendance;
+#[cfg(feature = "auth")]
+pub mod auth;
 pub mod audit;
 pub mod communication;
 pub mod email;

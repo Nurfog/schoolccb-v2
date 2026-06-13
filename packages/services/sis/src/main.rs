@@ -12,6 +12,7 @@ use std::sync::Arc;
 
 use axum::routing::get;
 use axum::Router;
+use schoolccb_common::auth::JwtSecret;
 use schoolccb_common::event_bus::BroadcastBus;
 use sqlx::PgPool;
 use tokio::sync::broadcast;
@@ -27,6 +28,20 @@ pub struct AppState {
     pub config: Arc<Config>,
     pub workflow: Arc<WorkflowEngine>,
     pub event_bus: Arc<BroadcastBus>,
+}
+
+async fn inject_jwt_secret(
+    mut req: axum::http::Request<axum::body::Body>,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let secret = req
+        .extensions()
+        .get::<AppState>()
+        .map(|s| s.config.jwt_secret.clone());
+    if let Some(secret) = secret {
+        req.extensions_mut().insert(JwtSecret(secret));
+    }
+    next.run(req).await
 }
 
 #[tokio::main]
@@ -103,6 +118,7 @@ async fn main() {
         .merge(hr_extended::router())
         .merge(extras::router())
         .merge(search::router())
+        .layer(axum::middleware::from_fn(inject_jwt_secret))
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 

@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::models::Claims;
-use crate::routes::{generate_token_pair, require_role};
+use crate::routes::generate_token_pair;
+use schoolccb_common::auth::require_role;
 use uuid::Uuid;
 
 fn make_admin_claims() -> Claims {

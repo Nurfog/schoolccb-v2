@@ -3,18 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Claims {
-    pub sub: String,
-    pub role: String,
-    pub name: String,
-    pub email: String,
-    pub exp: usize,
-    pub iat: usize,
-    pub school_id: Option<String>,
-    pub corporation_id: Option<String>,
-    pub admin_type: Option<String>,
-}
+pub use schoolccb_common::auth::Claims;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct SalesStage {
